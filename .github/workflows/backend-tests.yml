@@ -1,0 +1,42 @@
+name: Backend Tests
+
+on:
+  workflow_call:
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      APP_ENV: test
+      USAGE_DAILY_DAYS: "7"
+      MAX_AGENT_ESTIMATED_TOKENS: "120000"
+      MAX_AGENT_EXPECTED_DURATION_MS: "120000"
+      MAX_AGENT_EXPECTED_FILES_CHANGED: "40"
+      MAX_AGENT_TOTAL_CHANGED_BYTES: "5242880"
+      MAX_AGENT_CONCURRENT_RUNNING_TASKS: "5"
+      MAX_AGENT_RUNTIME_TOKENS_USED: "120000"
+      MAX_AGENT_RUNTIME_DURATION_MS: "120000"
+      MAX_AGENT_RUNTIME_FILES_CHANGED: "40"
+      MAX_AGENT_EVALUATIONS_PER_MINUTE: "60"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Backend Test Dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Run Backend Unit Tests
+        shell: bash
+        working-directory: backend
+        run: |
+          python -m unittest discover -s tests -v

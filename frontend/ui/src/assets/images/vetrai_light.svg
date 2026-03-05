@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="72" viewBox="0 0 320 72" role="img" aria-label="Vetrai">
+  <defs>
+    <linearGradient id="vetraiGradLight" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0ea5e9"/>
+      <stop offset="100%" stop-color="#14b8a6"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="8" width="56" height="56" rx="14" fill="url(#vetraiGradLight)"/>
+  <path d="M20 24l12 24 12-24h8L32 58 12 24z" fill="#ffffff"/>
+  <text x="78" y="47" font-family="Poppins, Inter, Arial, sans-serif" font-weight="700" font-size="34" fill="#0f172a">Vetrai</text>
+</svg>

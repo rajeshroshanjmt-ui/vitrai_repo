@@ -1,0 +1,215 @@
+x-default-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-default-restart: &default-restart
+  restart: unless-stopped
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    <<: *default-restart
+    ports:
+      - "80:80"
+    networks:
+      - edge
+      - app
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "nginx -t -q"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+    logging: *default-logging
+
+  frontend:
+    build:
+      context: ./frontend/ui
+    <<: *default-restart
+    networks:
+      - app
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+    logging: *default-logging
+
+  backend:
+    build:
+      context: ./backend
+    <<: *default-restart
+    networks:
+      - app
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-ai_platform}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      TENANT_TOKEN_PLAN_LIMIT: "${TENANT_TOKEN_PLAN_LIMIT:-200000}"
+      USAGE_DAILY_DAYS: "${USAGE_DAILY_DAYS:-7}"
+      MAX_AGENT_ESTIMATED_TOKENS: "${MAX_AGENT_ESTIMATED_TOKENS:-120000}"
+      MAX_AGENT_EXPECTED_DURATION_MS: "${MAX_AGENT_EXPECTED_DURATION_MS:-120000}"
+      MAX_AGENT_EXPECTED_FILES_CHANGED: "${MAX_AGENT_EXPECTED_FILES_CHANGED:-40}"
+      MAX_AGENT_TOTAL_CHANGED_BYTES: "${MAX_AGENT_TOTAL_CHANGED_BYTES:-5242880}"
+      MAX_AGENT_CONCURRENT_RUNNING_TASKS: "${MAX_AGENT_CONCURRENT_RUNNING_TASKS:-5}"
+      MAX_AGENT_RUNTIME_TOKENS_USED: "${MAX_AGENT_RUNTIME_TOKENS_USED:-120000}"
+      MAX_AGENT_RUNTIME_DURATION_MS: "${MAX_AGENT_RUNTIME_DURATION_MS:-120000}"
+      MAX_AGENT_RUNTIME_FILES_CHANGED: "${MAX_AGENT_RUNTIME_FILES_CHANGED:-40}"
+      MAX_AGENT_EVALUATIONS_PER_MINUTE: "${MAX_AGENT_EVALUATIONS_PER_MINUTE:-60}"
+      EXECUTION_QUEUE: ${EXECUTION_QUEUE:-execution_queue}
+      INGEST_QUEUE: ${INGEST_QUEUE:-ingest_queue}
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=3).getcode()==200 else 1)\"",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    logging: *default-logging
+
+  langgraph:
+    build:
+      context: ./langgraph
+    <<: *default-restart
+    networks:
+      - app
+    ports:
+      - "${LANGGRAPH_BIND_HOST:-127.0.0.1}:${LANGGRAPH_PORT:-8001}:8001"
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-ai_platform}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      EXECUTION_QUEUE: ${EXECUTION_QUEUE:-execution_queue}
+      INGEST_QUEUE: ${INGEST_QUEUE:-ingest_queue}
+      EXECUTION_DLQ: ${EXECUTION_DLQ:-execution_dlq}
+      INGESTION_DLQ: ${INGESTION_DLQ:-ingestion_dlq}
+      MAX_JOB_RETRIES: "${MAX_JOB_RETRIES:-2}"
+      QDRANT_URL: http://qdrant:6333
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_LLM_MODEL: ${OLLAMA_LLM_MODEL:-llama3.2}
+      OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-nomic-embed-text}
+      RETRIEVAL_TOP_K: "${RETRIEVAL_TOP_K:-4}"
+      DEFAULT_LLM_PROVIDER: ${DEFAULT_LLM_PROVIDER:-ollama}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+      ollama:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8001/health', timeout=3).getcode()==200 else 1)\"",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    logging: *default-logging
+
+  postgres:
+    image: postgres:15-alpine
+    <<: *default-restart
+    networks:
+      - app
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-ai_platform}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d ai_platform"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    logging: *default-logging
+
+  redis:
+    image: redis:7-alpine
+    <<: *default-restart
+    networks:
+      - app
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    logging: *default-logging
+
+  qdrant:
+    image: qdrant/qdrant:v1.13.4
+    <<: *default-restart
+    networks:
+      - app
+    ports:
+      - "${QDRANT_BIND_HOST:-127.0.0.1}:${QDRANT_PORT:-6333}:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -lc \"exec 3<>/dev/tcp/127.0.0.1/6333\""]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    logging: *default-logging
+
+  ollama:
+    image: ollama/ollama:0.6.0
+    <<: *default-restart
+    networks:
+      - app
+    ports:
+      - "${OLLAMA_BIND_HOST:-127.0.0.1}:${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 20s
+      timeout: 8s
+      retries: 10
+    logging: *default-logging
+
+volumes:
+  postgres_data:
+  qdrant_data:
+  ollama_data:
+
+networks:
+  edge:
+    name: vetrai-edge
+  app:
+    name: vetrai-app
