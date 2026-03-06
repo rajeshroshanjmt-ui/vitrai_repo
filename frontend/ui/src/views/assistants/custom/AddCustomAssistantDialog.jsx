@@ -11,11 +11,12 @@ import {
 import { v4 as uuidv4 } from 'uuid'
 
 // Material
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Box, Typography, OutlinedInput } from '@mui/material'
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Box, Typography, OutlinedInput, FormControl, InputLabel, Select, MenuItem } from '@mui/material'
 
 // Project imports
 import { StyledButton } from '@/ui-component/button/StyledButton'
 import ConfirmDialog from '@/ui-component/dialog/ConfirmDialog'
+import { CUSTOM_ASSISTANT_PROFILES, DEFAULT_CUSTOM_ASSISTANT_PROFILE, getCustomAssistantProfile } from './assistantProfiles'
 
 // Icons
 import { IconX, IconFiles } from '@tabler/icons-react'
@@ -39,6 +40,14 @@ const AddCustomAssistantDialog = ({ show, dialogProps, onCancel, onConfirm }) =>
     const closeSnackbar = (...args) => dispatch(closeSnackbarAction(...args))
 
     const [customAssistantName, setCustomAssistantName] = useState('')
+    const [selectedProfileId, setSelectedProfileId] = useState(DEFAULT_CUSTOM_ASSISTANT_PROFILE.id)
+
+    useEffect(() => {
+        if (show) {
+            setSelectedProfileId(DEFAULT_CUSTOM_ASSISTANT_PROFILE.id)
+            setCustomAssistantName(DEFAULT_CUSTOM_ASSISTANT_PROFILE.defaultName)
+        }
+    }, [show])
 
     useEffect(() => {
         if (show) dispatch({ type: SHOW_CANVAS_DIALOG })
@@ -48,9 +57,15 @@ const AddCustomAssistantDialog = ({ show, dialogProps, onCancel, onConfirm }) =>
 
     const createCustomAssistant = async () => {
         try {
+            const selectedProfile = getCustomAssistantProfile(selectedProfileId)
+            const assistantName = customAssistantName.trim() || selectedProfile.defaultName
             const obj = {
                 details: JSON.stringify({
-                    name: customAssistantName
+                    name: assistantName,
+                    instruction: selectedProfile.instruction,
+                    profileId: selectedProfile.id,
+                    profileLabel: selectedProfile.label,
+                    qualityPreset: 'real_world_v1'
                 }),
                 credential: uuidv4(),
                 type: 'CUSTOM'
@@ -116,6 +131,7 @@ const AddCustomAssistantDialog = ({ show, dialogProps, onCancel, onConfirm }) =>
                         <div style={{ flexGrow: 1 }}></div>
                     </div>
                     <OutlinedInput
+                        id='custom-assistant-name'
                         size='small'
                         sx={{ mt: 1 }}
                         type='string'
@@ -124,6 +140,37 @@ const AddCustomAssistantDialog = ({ show, dialogProps, onCancel, onConfirm }) =>
                         onChange={(e) => setCustomAssistantName(e.target.value)}
                         value={customAssistantName ?? ''}
                     />
+                </Box>
+                <Box sx={{ p: 2, pt: 0 }}>
+                    <Typography sx={{ mb: 1 }}>
+                        Use Case Template<span style={{ color: 'red' }}>&nbsp;*</span>
+                    </Typography>
+                    <FormControl size='small' fullWidth>
+                        <InputLabel id='assistant-profile-label'>Use Case</InputLabel>
+                        <Select
+                            labelId='assistant-profile-label'
+                            id='assistant-profile-select'
+                            value={selectedProfileId}
+                            label='Use Case'
+                            onChange={(event) => {
+                                const nextProfileId = event.target.value
+                                const nextProfile = getCustomAssistantProfile(nextProfileId)
+                                setSelectedProfileId(nextProfileId)
+                                if (!customAssistantName.trim() || customAssistantName === getCustomAssistantProfile(selectedProfileId).defaultName) {
+                                    setCustomAssistantName(nextProfile.defaultName)
+                                }
+                            }}
+                        >
+                            {CUSTOM_ASSISTANT_PROFILES.map((profile) => (
+                                <MenuItem key={profile.id} value={profile.id}>
+                                    {profile.label}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    <Typography variant='caption' sx={{ mt: 1, display: 'block', opacity: 0.85 }}>
+                        {getCustomAssistantProfile(selectedProfileId).summary}
+                    </Typography>
                 </Box>
             </DialogContent>
             <DialogActions>

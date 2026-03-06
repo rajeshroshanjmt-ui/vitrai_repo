@@ -1,0 +1,420 @@
+{
+  "baseUrl": "http://172.30.160.1:4174",
+  "loginFinalUrl": "http://172.30.160.1:4174/dashboard",
+  "totalRoutes": 8,
+  "routesWithPageErrors": 1,
+  "routesWithConsoleErrors": 5,
+  "routesWithFailedRequests": 4,
+  "results": [
+    {
+      "path": "/dashboard",
+      "finalUrl": "http://172.30.160.1:4174/dashboard",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [
+        {
+          "url": "http://172.30.160.1:4174/dashboard",
+          "message": "TypeError: Cannot read properties of undefined (reading 'status')"
+        },
+        {
+          "url": "http://172.30.160.1:4174/dashboard",
+          "message": "TypeError: Cannot read properties of undefined (reading 'status')"
+        },
+        {
+          "url": "http://172.30.160.1:4174/dashboard",
+          "message": "TypeError: Cannot read properties of undefined (reading 'status')"
+        }
+      ],
+      "consoleErrors": [
+        {
+          "url": "http://172.30.160.1:4174/dashboard",
+          "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        },
+        {
+          "url": "http://172.30.160.1:4174/dashboard",
+          "message": "The above error occurred in the <ErrorBoundary> component:\n\n    at ErrorBoundary (http://172.30.160.1:4174/src/ErrorBoundary.jsx:21:26)\n    at div\n    at http://172.30.160.1:4174/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=0d6bcd46:1333:49\n    at CardContent2 (http://172.30.160.1:4174/node_modules/.vite/deps/chunk-UQ3JXZLD.js?v=0d6bcd46:84:17)\n    at div\n    at http://172.30.160.1:4174/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=0d6bcd46:1333:49\n    at Paper2 (http://172.30.160.1:4174/node_modules/.vite/deps/chunk-QMPDNCYH.js?v=0d6bcd46:115:17)\n    at http://172.30.160.1:4174/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=0d6bcd46:1333:49\n    at Card2 (http://172.30.160.1:4174/node_modules/.vite/deps/chunk-CFNTVPSJ.js?v=0d6bcd46:86:17)\n    at MainCard2 (http://172.30.160.1:4174/src/ui-component/cards/MainCard.jsx:24:3)\n    at Dashboard (http://172.30.160.1:4174/src/views/dashboard/index.jsx:74:29)\n    at Suspense\n    at WithLoader\n    at Outlet (http://172.30.160.1:4174/node_modules/.vite/deps/chunk-ZD5PXKS2.js?v=0d6bcd46:1108:26)\n    at main\n    at http://172.30.160.1:4174/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=0d6bcd46:1333:49\n    at div\n    at http://172.30.160.1:4174/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=0d6bcd46:1333:49\n    at Box3 (http://172.30.160.1:4174/node_modules/.vite/deps/chunk-2F43D7RM.js?v=0d6bcd46:2160:19)\n    at MainLayout (http://172.30.160.1:4174/src/layout/MainLayout/index.jsx:70:17)\n    at ThemeRoutes (http://172.30.160.1:4174/src/routes/index.jsx:26:10)\n    at NavigationScroll (http://172.30.160.1:4174/src/layout/NavigationScroll.jsx:20:29)\n    at DefaultPropsProvider (http://172.30.160.1:4174/node_modules/.vite/deps/chunk-2F43D7RM.js?v=0d6bcd46:2718:3)\n    at RtlProvider (http://172.30.160.1:4174/node_modules/.vite/deps/chunk-2F43D7RM.js?v=0d6bcd46:2692:5)\n    at ThemeProvider (http://172.30.160.1:4174/node_modules/.vite/deps/chunk-2F43D7RM.js?v=0d6bcd46:2623:5)\n    at ThemeProvider2 (http://172.30.160.1:4174/node_modules/.vite/deps/chunk-2F43D7RM.js?v=0d6bcd46:2836:5)\n    at ThemeProvider (http://172.30.160.1:4174/node_modules/.vite/deps/chunk-PHRPW53Z.js?v=0d6bcd46:303:12)\n    at StyledEngineProvider (http://172.30.160.1:4174/node_modules/.vite/deps/chunk-2F43D7RM.js?v=0d6bcd46:89:5)\n    at App (http://172.30.160.1:4174/src/App.jsx:26:25)\n    at ReactFlowContext (http://172.30.160.1:4174/src/store/context/ReactFlowContext.jsx:38:36)\n    at ConfirmContextProvider (http://172.30.160.1:4174/src/store/context/ConfirmContextProvider.jsx:22:35)\n    at ErrorProvider (http://172.30.160.1:4174/src/store/context/ErrorContext.jsx:26:33)\n    at ConfigProvider (http://172.30.160.1:4174/src/store/context/ConfigContext.jsx:22:34)\n    at SnackbarProvider2 (http://172.30.160.1:4174/node_modules/.vite/deps/notistack.js?v=0d6bcd46:636:24)\n    at Router (http://172.30.160.1:4174/node_modules/.vite/deps/chunk-ZD5PXKS2.js?v=0d6bcd46:1115:15)\n    at BrowserRouter (http://172.30.160.1:4174/node_modules/.vite/deps/react-router-dom.js?v=0d6bcd46:83:5)\n    at Provider (http://172.30.160.1:4174/node_modules/.vite/deps/react-redux.js?v=0d6bcd46:839:3)\n\nConsider adding an error boundary to your tree to customize error handling behavior.\nVisit https://reactjs.org/link/error-boundaries to learn more about error boundaries."
+        }
+      ],
+      "failedRequests": []
+    },
+    {
+      "path": "/chatflows",
+      "finalUrl": "http://172.30.160.1:4174/login",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "message": "WebSocket connection to 'ws://localhost/vite-hmr?token=GSP99fxp9kQ6' failed: Error during WebSocket handshake: Unexpected response code: 400"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "message": "WebSocket connection to 'ws://localhost/vite-hmr?token=GSP99fxp9kQ6' failed: Error during WebSocket handshake: Unexpected response code: 400"
+        }
+      ],
+      "failedRequests": [
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://localhost/vite-hmr",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        }
+      ]
+    },
+    {
+      "path": "/agentflows",
+      "finalUrl": "http://172.30.160.1:4174/login",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "message": "WebSocket connection to 'ws://localhost/vite-hmr?token=GSP99fxp9kQ6' failed: Error during WebSocket handshake: Unexpected response code: 400"
+        }
+      ],
+      "failedRequests": [
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://localhost/vite-hmr",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        }
+      ]
+    },
+    {
+      "path": "/marketplaces",
+      "finalUrl": "http://172.30.160.1:4174/login",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [],
+      "failedRequests": []
+    },
+    {
+      "path": "/datasets",
+      "finalUrl": "http://172.30.160.1:4174/login",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [],
+      "failedRequests": []
+    },
+    {
+      "path": "/evaluators",
+      "finalUrl": "http://172.30.160.1:4174/login",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [],
+      "failedRequests": []
+    },
+    {
+      "path": "/evaluations",
+      "finalUrl": "http://172.30.160.1:4174/login",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "message": "WebSocket connection to 'ws://localhost/vite-hmr?token=GSP99fxp9kQ6' failed: Error during WebSocket handshake: Unexpected response code: 400"
+        }
+      ],
+      "failedRequests": [
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://localhost/vite-hmr",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        }
+      ]
+    },
+    {
+      "path": "/canvas",
+      "finalUrl": "http://172.30.160.1:4174/login",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "message": "WebSocket connection to 'ws://localhost/vite-hmr?token=GSP99fxp9kQ6' failed: Error during WebSocket handshake: Unexpected response code: 400"
+        }
+      ],
+      "failedRequests": [
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/node_modules/.vite/deps/axios.js?v=0d6bcd46",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/src/menu-items/index.js",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/node_modules/.vite/deps/chunk-AP6IPAVY.js?v=0d6bcd46",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/src/utils/exportImport.js",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/node_modules/.vite/deps/zod.js?v=0d6bcd46",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/node_modules/.vite/deps/@mui_icons-material_StopCircle.js?v=0d6bcd46",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/src/layout/MainLayout/Sidebar/MenuList/NavGroup/index.jsx",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/node_modules/.vite/deps/@mui_material_ToggleButton.js?v=0d6bcd46",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/src/hooks/useSearchShortcut.jsx",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/src/ui-component/tooltip/MoreItemsTooltip.jsx",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/node_modules/.vite/deps/@mui_icons-material_DragHandle.js?v=0d6bcd46",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/node_modules/.vite/deps/@mui_x-tree-view_TreeItem2Icon.js?v=0d6bcd46",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/node_modules/.vite/deps/@mui_x-tree-view_useTreeItem2.js?v=0d6bcd46",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/node_modules/.vite/deps/chunk-IGZTR2LQ.js?v=0d6bcd46",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/node_modules/.vite/deps/@mui_x-tree-view_TreeItem2Provider.js?v=0d6bcd46",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/src/ui-component/button/StyledFab.jsx",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/src/assets/images/Exporting.gif?import",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/node_modules/.vite/deps/chunk-HSJC5GOI.js?v=0d6bcd46",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/src/api/vetraiResources.js",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/node_modules/.vite/deps/@mui_icons-material_CheckCircle.js?v=0d6bcd46",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/src/views/apikey/APIKeyDialog.css",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/src/ui-component/button/FlowListMenu.jsx",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/src/utils/errorHandler.js",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/node_modules/.vite/deps/@tabler_icons-react.js?v=0d6bcd46",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/src/views/agentexecutions/NodeExecutionDetails.jsx",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/node_modules/.vite/deps/@mui_x-tree-view_TreeItem2DragAndDropOverlay.js?v=0d6bcd46",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/node_modules/.vite/deps/@mui_x-tree-view_TreeItem2.js?v=0d6bcd46",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/node_modules/.vite/deps/chunk-DNVYUZU2.js?v=0d6bcd46",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/src/views/agentexecutions/ShareExecutionDialog.jsx",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/src/ui-component/extended/Transitions.jsx",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/node_modules/.vite/deps/chunk-W5ZLBOOR.js?v=0d6bcd46",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/src/api/exportimport.js",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/node_modules/.vite/deps/@mui_lab.js?v=0d6bcd46",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/src/api/sso.js",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/node_modules/.vite/deps/@mui_icons-material.js?v=0d6bcd46",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/src/views/variables/AddEditVariableDialog.jsx",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/node_modules/.vite/deps/@mui_icons-material_Error.js?v=0d6bcd46",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/src/ui-component/dialog/AboutDialog.jsx",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/node_modules/.vite/deps/@mui_x-tree-view_RichTreeView.js?v=0d6bcd46",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/src/ui-component/input/Input.jsx",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/src/layout/MainLayout/Header/ProfileSection/index.css",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/node_modules/.vite/deps/chunk-KLSPVMQU.js?v=0d6bcd46",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/src/api/responseAdapter.js",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://172.30.160.1:4174/node_modules/.vite/deps/chunk-HBUTU6O4.js?v=0d6bcd46",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://172.30.160.1:4174/login",
+          "requestUrl": "http://localhost/vite-hmr",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        }
+      ]
+    }
+  ]
+}

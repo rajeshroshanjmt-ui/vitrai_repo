@@ -58,6 +58,74 @@ import { FLOWISE_CREDENTIAL_ID } from '@/store/constant'
 const nodeTypes = { customNode: CanvasNode, stickyNote: StickyNote }
 const edgeTypes = { buttonedge: ButtonEdge }
 
+const toNumber = (value, fallback = 0) => {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : fallback
+}
+
+const normalizeFlowNodes = (rawNodes) => {
+    if (!Array.isArray(rawNodes)) return []
+
+    return rawNodes
+        .filter((node) => node && typeof node === 'object')
+        .map((node, index) => {
+            const nodeId = node.id || `node_${index}`
+            const rawData = node.data && typeof node.data === 'object' ? node.data : {}
+
+            const position =
+                node.position && typeof node.position === 'object'
+                    ? {
+                          x: toNumber(node.position.x, toNumber(node.x, 0)),
+                          y: toNumber(node.position.y, toNumber(node.y, 0))
+                      }
+                    : node.positionAbsolute && typeof node.positionAbsolute === 'object'
+                      ? {
+                            x: toNumber(node.positionAbsolute.x, toNumber(node.x, 0)),
+                            y: toNumber(node.positionAbsolute.y, toNumber(node.y, 0))
+                        }
+                      : {
+                            x: toNumber(node.x, 0),
+                            y: toNumber(node.y, 0)
+                        }
+
+            const nodeName = rawData.name || 'unknownNode'
+            const isSticky = nodeName === 'stickyNote' || nodeName === 'stickyNoteAgentflow' || node.type === 'stickyNote'
+
+            return {
+                ...node,
+                id: nodeId,
+                type: node.type || (isSticky ? 'stickyNote' : 'customNode'),
+                position,
+                data: {
+                    id: rawData.id || nodeId,
+                    label: rawData.label || nodeName,
+                    name: nodeName,
+                    inputParams: Array.isArray(rawData.inputParams) ? rawData.inputParams : [],
+                    inputAnchors: Array.isArray(rawData.inputAnchors) ? rawData.inputAnchors : [],
+                    outputAnchors: Array.isArray(rawData.outputAnchors) ? rawData.outputAnchors : [],
+                    inputs: rawData.inputs && typeof rawData.inputs === 'object' ? rawData.inputs : {},
+                    outputs: rawData.outputs && typeof rawData.outputs === 'object' ? rawData.outputs : {},
+                    ...rawData
+                }
+            }
+        })
+}
+
+const normalizeFlowEdges = (rawEdges, validNodeIds) => {
+    if (!Array.isArray(rawEdges)) return []
+    const allowed = new Set(validNodeIds)
+
+    return rawEdges.filter(
+        (edge) => edge && typeof edge === 'object' && edge.source && edge.target && allowed.has(edge.source) && allowed.has(edge.target)
+    )
+}
+
+const normalizeFlowDefinition = (flow) => {
+    const nodes = normalizeFlowNodes(flow?.nodes)
+    const edges = normalizeFlowEdges(flow?.edges, nodes.map((node) => node.id))
+    return { nodes, edges }
+}
+
 // ==============================|| CANVAS ||============================== //
 
 const Canvas = () => {
@@ -166,10 +234,10 @@ const Canvas = () => {
     const handleLoadFlow = (file) => {
         try {
             const flowData = JSON.parse(file)
-            const nodes = flowData.nodes || []
+            const normalizedFlow = normalizeFlowDefinition(flowData)
 
-            setNodes(nodes)
-            setEdges(flowData.edges || [])
+            setNodes(normalizedFlow.nodes)
+            setEdges(normalizedFlow.edges)
             setTimeout(() => setDirty(), 0)
         } catch (e) {
             console.error(e)
@@ -324,7 +392,7 @@ const Canvas = () => {
     )
 
     const syncNodes = () => {
-        const componentNodes = canvas.componentNodes
+        const componentNodes = Array.isArray(canvas.componentNodes) ? canvas.componentNodes : []
 
         const cloneNodes = cloneDeep(nodes)
         const cloneEdges = cloneDeep(edges)
@@ -389,7 +457,12 @@ const Canvas = () => {
     }
 
     const checkIfSyncNodesAvailable = (nodes) => {
-        const componentNodes = canvas.componentNodes
+        if (!Array.isArray(nodes) || nodes.length === 0) {
+            setIsSyncNodesButtonEnabled(false)
+            return
+        }
+
+        const componentNodes = Array.isArray(canvas.componentNodes) ? canvas.componentNodes : []
 
         for (let i = 0; i < nodes.length; i++) {
             const node = nodes[i]
@@ -414,10 +487,11 @@ const Canvas = () => {
                 navigate('/unauthorized')
                 return
             }
-            const initialFlow = chatflow.flowData ? JSON.parse(chatflow.flowData) : []
+            const initialFlow = chatflow.flowData ? JSON.parse(chatflow.flowData) : {}
+            const normalizedFlow = normalizeFlowDefinition(initialFlow)
             setLasUpdatedDateTime(chatflow.updatedDate)
-            setNodes(initialFlow.nodes || [])
-            setEdges(initialFlow.edges || [])
+            setNodes(normalizedFlow.nodes)
+            setEdges(normalizedFlow.edges)
             dispatch({ type: SET_CHATFLOW, chatflow })
         } else if (getSpecificChatflowApi.error) {
             errorFailed(`Failed to retrieve ${canvasTitle}: ${getSpecificChatflowApi.error.response.data.message}`)

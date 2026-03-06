@@ -61,7 +61,7 @@ const NavCollapse = ({ menu, level }) => {
             <ListItemButton
                 sx={{
                     borderRadius: `${customization.borderRadius}px`,
-                    mb: 0.5,
+                    mb: 0.6,
                     alignItems: 'flex-start',
                     backgroundColor: level > 1 ? 'transparent !important' : 'inherit',
                     py: level > 1 ? 1 : 1.25,
@@ -100,12 +100,12 @@ const NavCollapse = ({ menu, level }) => {
                         '&:after': {
                             content: "''",
                             position: 'absolute',
-                            left: '32px',
-                            top: 0,
-                            height: '100%',
+                            left: '34px',
+                            top: 6,
+                            height: 'calc(100% - 12px)',
                             width: '1px',
-                            opacity: 1,
-                            background: theme.palette.primary.light
+                            opacity: 0.5,
+                            background: `linear-gradient(180deg, ${theme.palette.outline?.subtle || theme.palette.divider} 0%, transparent 100%)`
                         }
                     }}
                 >

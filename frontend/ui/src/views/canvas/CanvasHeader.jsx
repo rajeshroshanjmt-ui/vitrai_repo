@@ -175,9 +175,10 @@ const CanvasHeader = ({ chatflow, isAgentCanvas, isAgentflowV2, handleSaveFlow, 
         let isFormDataRequired = false
         try {
             const flowData = JSON.parse(chatflow.flowData)
-            const nodes = flowData.nodes
+            const nodes = Array.isArray(flowData?.nodes) ? flowData.nodes : []
             for (const node of nodes) {
-                if (node.data.inputParams.find((param) => param.type === 'file')) {
+                const inputParams = Array.isArray(node?.data?.inputParams) ? node.data.inputParams : []
+                if (inputParams.find((param) => param?.type === 'file')) {
                     isFormDataRequired = true
                     break
                 }
@@ -190,9 +191,10 @@ const CanvasHeader = ({ chatflow, isAgentCanvas, isAgentflowV2, handleSaveFlow, 
         let isSessionMemory = false
         try {
             const flowData = JSON.parse(chatflow.flowData)
-            const nodes = flowData.nodes
+            const nodes = Array.isArray(flowData?.nodes) ? flowData.nodes : []
             for (const node of nodes) {
-                if (node.data.inputParams.find((param) => param.name === 'sessionId')) {
+                const inputParams = Array.isArray(node?.data?.inputParams) ? node.data.inputParams : []
+                if (inputParams.find((param) => param?.name === 'sessionId')) {
                     isSessionMemory = true
                     break
                 }

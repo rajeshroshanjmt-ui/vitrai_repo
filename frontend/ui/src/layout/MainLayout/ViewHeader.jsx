@@ -54,8 +54,8 @@ const ViewHeader = ({
                     <Box sx={{ display: 'flex', alignItems: 'start', flexDirection: 'column' }}>
                         <Typography
                             sx={{
-                                fontSize: '1.8rem',
-                                fontWeight: 600,
+                                fontSize: '1.88rem',
+                                fontWeight: 700,
                                 display: '-webkit-box',
                                 WebkitLineClamp: 3,
                                 WebkitBoxOrient: 'vertical',
@@ -70,13 +70,14 @@ const ViewHeader = ({
                         </Typography>
                         {description && (
                             <Typography
-                                sx={{
-                                    fontSize: '1rem',
-                                    fontWeight: 500,
-                                    mt: 2,
-                                    display: '-webkit-box',
-                                    WebkitLineClamp: 5,
-                                    WebkitBoxOrient: 'vertical',
+                            sx={{
+                                fontSize: '1rem',
+                                fontWeight: 500,
+                                color: theme.palette.text.secondary,
+                                mt: 1.5,
+                                display: '-webkit-box',
+                                WebkitLineClamp: 5,
+                                WebkitBoxOrient: 'vertical',
                                     textOverflow: 'ellipsis',
                                     overflow: 'hidden',
                                     flex: 1,
@@ -102,10 +103,12 @@ const ViewHeader = ({
                                 width: '325px',
                                 height: '100%',
                                 display: { xs: 'none', sm: 'flex' },
-                                borderRadius: 2,
+                                borderRadius: 3,
+                                backgroundColor: theme.palette.surface?.sunken,
 
                                 '& .MuiOutlinedInput-notchedOutline': {
-                                    borderRadius: 2
+                                    borderRadius: 3,
+                                    borderColor: theme.palette.outline?.subtle || theme.palette.divider
                                 }
                             }}
                             variant='outlined'

@@ -1,0 +1,82 @@
+{
+  "baseUrl": "http://localhost",
+  "loginFinalUrl": "http://localhost/dashboard",
+  "totalRoutes": 8,
+  "routesWithPageErrors": 0,
+  "routesWithConsoleErrors": 0,
+  "routesWithFailedRequests": 0,
+  "results": [
+    {
+      "path": "/dashboard",
+      "finalUrl": "http://localhost/dashboard",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [],
+      "failedRequests": []
+    },
+    {
+      "path": "/chatflows",
+      "finalUrl": "http://localhost/chatflows",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [],
+      "failedRequests": []
+    },
+    {
+      "path": "/agentflows",
+      "finalUrl": "http://localhost/agentflows",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [],
+      "failedRequests": []
+    },
+    {
+      "path": "/marketplaces",
+      "finalUrl": "http://localhost/marketplaces",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [],
+      "failedRequests": []
+    },
+    {
+      "path": "/datasets",
+      "finalUrl": "http://localhost/unauthorized",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [],
+      "failedRequests": []
+    },
+    {
+      "path": "/evaluators",
+      "finalUrl": "http://localhost/unauthorized",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [],
+      "failedRequests": []
+    },
+    {
+      "path": "/evaluations",
+      "finalUrl": "http://localhost/unauthorized",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [],
+      "failedRequests": []
+    },
+    {
+      "path": "/canvas",
+      "finalUrl": "http://localhost/canvas",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [],
+      "failedRequests": []
+    }
+  ]
+}

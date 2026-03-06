@@ -48,9 +48,23 @@ export const RequireAuth = ({ permission, display, children }) => {
     }
 
     // Step 2: Deployment Type Specific Logic
-    // Open Source: Only show features without display property
+    // Open Source: allow standard routes + feature-flagged routes when the OSS backend exposes the feature flag.
     if (isOpenSource) {
-        return !display ? children : <Navigate to='/unauthorized' replace />
+        const OSS_DISPLAY_ALLOWLIST = new Set(['feat:datasets', 'feat:evaluators', 'feat:evaluations', 'feat:logs'])
+        if (permission && !hasPermission(permission) && !isGlobal && !(display && OSS_DISPLAY_ALLOWLIST.has(display))) {
+            return <Navigate to='/unauthorized' replace />
+        }
+        if (display) {
+            if (!features || Array.isArray(features) || Object.keys(features).length === 0) {
+                return OSS_DISPLAY_ALLOWLIST.has(display) ? children : <Navigate to='/unauthorized' replace />
+            }
+            if (Object.prototype.hasOwnProperty.call(features, display)) {
+                const enabled = features[display] === true || features[display] === 'true'
+                return enabled ? children : <Navigate to='/unauthorized' replace />
+            }
+            return OSS_DISPLAY_ALLOWLIST.has(display) ? children : <Navigate to='/unauthorized' replace />
+        }
+        return children
     }
 
     // Cloud & Enterprise: Check both permissions and feature flags

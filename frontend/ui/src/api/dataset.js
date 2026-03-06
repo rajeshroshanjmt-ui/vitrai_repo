@@ -1,26 +1,43 @@
 import client from './client'
+import { unavailableResponse } from './responseAdapter'
+
+const isNotFound = (error) => error?.response?.status === 404
 
 const getAllDatasets = async (params) => {
-    const hasPaging = params && Object.keys(params).length > 0
-    const response = await client.get('/datasets', {
-        params: hasPaging
-            ? {
-                  page: params?.page || 1,
-                  limit: params?.limit || 10
-              }
-            : undefined
-    })
-    return { data: response.data }
+    try {
+        const hasPaging = params && Object.keys(params).length > 0
+        const response = await client.get('/datasets', {
+            params: hasPaging
+                ? {
+                      page: params?.page || 1,
+                      limit: params?.limit || 10
+                  }
+                : undefined
+        })
+        return { data: response.data }
+    } catch (error) {
+        if (isNotFound(error)) {
+            return unavailableResponse({ data: [], total: 0 }, 404)
+        }
+        throw error
+    }
 }
 
 const getDataset = async (id, params = {}) => {
-    const response = await client.get(`/datasets/set/${id}`, {
-        params: {
-            page: params?.page || 1,
-            limit: params?.limit || 10
+    try {
+        const response = await client.get(`/datasets/set/${id}`, {
+            params: {
+                page: params?.page || 1,
+                limit: params?.limit || 10
+            }
+        })
+        return { data: response.data }
+    } catch (error) {
+        if (isNotFound(error)) {
+            return unavailableResponse({ id, name: '', description: '', rows: [], total: 0 }, 404)
         }
-    })
-    return { data: response.data }
+        throw error
+    }
 }
 
 const createDataset = async (body) => {

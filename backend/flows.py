@@ -852,6 +852,15 @@ def delete_flow(
     user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
 ) -> dict[str, Any]:
     flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
+
+    version_ids = [item.id for item in db.query(FlowVersion.id).filter(FlowVersion.flow_id == flow.id).all()]
+    if version_ids:
+        db.query(ExecutionLog).filter(ExecutionLog.flow_version_id.in_(version_ids)).delete(synchronize_session=False)
+        db.query(FlowVersion).filter(FlowVersion.id.in_(version_ids)).delete(synchronize_session=False)
+
+    db.query(IngestionJob).filter(IngestionJob.tenant_id == user["tenant_id"], IngestionJob.flow_id == flow.id).delete(
+        synchronize_session=False
+    )
     db.delete(flow)
     db.commit()
     return {"status": "deleted", "flow_id": flow_id}

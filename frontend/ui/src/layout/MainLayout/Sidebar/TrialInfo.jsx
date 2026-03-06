@@ -17,7 +17,7 @@ const TrialInfo = ({ billingPortalUrl, isLoading, paymentMethodExists, trialDays
                 gap: 2,
                 borderTop: 1,
                 borderBottom: '1px solid',
-                borderColor: theme.palette.grey[900] + 25,
+                borderColor: theme.palette.outline?.subtle || theme.palette.divider,
                 width: '100%'
             }}
         >

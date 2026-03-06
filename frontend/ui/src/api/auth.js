@@ -130,7 +130,8 @@ const PERMISSIONS_BY_CATEGORY = {
 }
 
 const resolveLogin = async () => {
-    return { data: { redirectUrl: '/login' } }
+    // `/login` is the resolver route; it must send users to the actual sign-in page.
+    return { data: { redirectUrl: '/signin' } }
 }
 
 const buildLoginPayload = (token, meData, tenantId) => {

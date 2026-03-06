@@ -6,9 +6,10 @@ export const Available = ({ permission, children }) => {
     if (hasPermission(permission)) {
         return children
     }
+    return null
 }
 
 Available.propTypes = {
     permission: PropTypes.string,
-    children: PropTypes.element
+    children: PropTypes.node
 }

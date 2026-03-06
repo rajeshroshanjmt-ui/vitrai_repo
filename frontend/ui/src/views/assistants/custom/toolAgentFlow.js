@@ -1,3 +1,5 @@
+import { DEFAULT_REAL_WORLD_INSTRUCTION } from './assistantProfiles'
+
 export const toolAgentFlow = {
     nodes: [
         {
@@ -323,7 +325,7 @@ export const toolAgentFlow = {
                     memory: '{{bufferMemory_0.data.instance}}',
                     model: '{{chatOpenAI_0.data.instance}}',
                     chatPromptTemplate: '',
-                    systemMessage: 'You are helpful assistant',
+                    systemMessage: DEFAULT_REAL_WORLD_INSTRUCTION,
                     inputModeration: '',
                     maxIterations: ''
                 },

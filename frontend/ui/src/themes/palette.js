@@ -4,26 +4,31 @@
  */
 
 export default function themePalette(theme) {
+    const isDark = theme.customization.isDarkMode
+    const semantic = theme.semantic || {}
+
     return {
-        mode: theme?.customization?.navType,
+        mode: isDark ? 'dark' : 'light',
+        divider: semantic.outline?.subtle || theme.divider,
         transparent: theme.colors?.transparent,
         common: {
-            black: theme.colors?.darkPaper,
-            dark: theme.colors?.darkPrimaryMain
+            black: isDark ? theme.colors?.darkBackground : theme.colors?.grey900,
+            dark: isDark ? theme.colors?.darkPrimaryMain : theme.colors?.primaryMain,
+            white: theme.colors?.paper
         },
         primary: {
-            light: theme.customization.isDarkMode ? theme.colors?.darkPrimaryLight : theme.colors?.primaryLight,
-            main: theme.colors?.primaryMain,
-            dark: theme.customization.isDarkMode ? theme.colors?.darkPrimaryDark : theme.colors?.primaryDark,
-            200: theme.customization.isDarkMode ? theme.colors?.darkPrimary200 : theme.colors?.primary200,
-            800: theme.customization.isDarkMode ? theme.colors?.darkPrimary800 : theme.colors?.primary800
+            light: isDark ? theme.colors?.darkPrimaryLight : theme.colors?.primaryLight,
+            main: isDark ? theme.colors?.darkPrimaryMain : theme.colors?.primaryMain,
+            dark: isDark ? theme.colors?.darkPrimaryDark : theme.colors?.primaryDark,
+            200: isDark ? theme.colors?.darkPrimary200 : theme.colors?.primary200,
+            800: isDark ? theme.colors?.darkPrimary800 : theme.colors?.primary800
         },
         secondary: {
-            light: theme.customization.isDarkMode ? theme.colors?.darkSecondaryLight : theme.colors?.secondaryLight,
-            main: theme.customization.isDarkMode ? theme.colors?.darkSecondaryMain : theme.colors?.secondaryMain,
-            dark: theme.customization.isDarkMode ? theme.colors?.darkSecondaryDark : theme.colors?.secondaryDark,
-            200: theme.colors?.secondary200,
-            800: theme.colors?.secondary800
+            light: isDark ? theme.colors?.darkSecondaryLight : theme.colors?.secondaryLight,
+            main: isDark ? theme.colors?.darkSecondaryMain : theme.colors?.secondaryMain,
+            dark: isDark ? theme.colors?.darkSecondaryDark : theme.colors?.secondaryDark,
+            200: isDark ? theme.colors?.darkSecondary200 : theme.colors?.secondary200,
+            800: isDark ? theme.colors?.darkSecondary800 : theme.colors?.secondary800
         },
         error: {
             light: theme.colors?.errorLight,
@@ -56,9 +61,10 @@ export default function themePalette(theme) {
             100: theme.colors?.grey100,
             200: theme.colors?.grey200,
             300: theme.colors?.grey300,
-            500: theme.darkTextSecondary,
+            400: theme.colors?.grey400,
+            500: theme.colors?.grey500,
             600: theme.heading,
-            700: theme.darkTextPrimary,
+            700: theme.darkTextSecondary,
             900: theme.textDark
         },
         dark: {
@@ -78,20 +84,25 @@ export default function themePalette(theme) {
             paper: theme.paper,
             default: theme.backgroundDefault
         },
+        brand: semantic.brand,
+        surface: semantic.surface,
+        outline: semantic.outline,
+        glow: semantic.glow,
+        focusRing: semantic.focusRing,
         textBackground: {
-            main: theme.customization.isDarkMode ? theme.colors?.darkPrimary800 : theme.colors?.grey50,
-            border: theme.customization.isDarkMode ? theme.colors?.transparent : theme.colors?.grey400
+            main: isDark ? semantic.surface?.sunken : theme.colors?.grey50,
+            border: semantic.outline?.subtle || theme.colors?.grey400
         },
         card: {
-            main: theme.customization.isDarkMode ? theme.colors?.darkPrimaryMain : theme.colors?.paper,
-            light: theme.customization.isDarkMode ? theme.colors?.darkPrimary200 : theme.colors?.paper,
-            hover: theme.customization.isDarkMode ? theme.colors?.darkPrimary800 : theme.colors?.paper
+            main: semantic.surface?.raised || theme.paper,
+            light: semantic.surface?.base || theme.backgroundDefault,
+            hover: semantic.surface?.sunken || theme.paper
         },
         asyncSelect: {
-            main: theme.customization.isDarkMode ? theme.colors?.darkPrimary800 : theme.colors?.grey50
+            main: semantic.surface?.sunken || theme.colors?.grey50
         },
         timeMessage: {
-            main: theme.customization.isDarkMode ? theme.colors?.darkLevel2 : theme.colors?.grey200
+            main: isDark ? theme.colors?.darkLevel2 : theme.colors?.grey200
         },
         canvasHeader: {
             deployLight: theme.colors?.primaryLight,
@@ -102,11 +113,11 @@ export default function themePalette(theme) {
             settingsDark: theme.colors?.grey700
         },
         codeEditor: {
-            main: theme.customization.isDarkMode ? theme.colors?.darkPrimary800 : theme.colors?.primaryLight
+            main: isDark ? theme.colors?.darkLevel2 : theme.colors?.primaryLight
         },
         nodeToolTip: {
-            background: theme.customization.isDarkMode ? theme.colors?.darkPrimary800 : theme.colors?.paper,
-            color: theme.customization.isDarkMode ? theme.colors?.paper : 'rgba(0, 0, 0, 0.87)'
+            background: semantic.surface?.raised || theme.paper,
+            color: isDark ? theme.colors?.darkTextPrimary : 'rgba(0, 0, 0, 0.87)'
         }
     }
 }

@@ -1,0 +1,716 @@
+{
+  "generatedAt": "2026-03-06T21:23:56.947Z",
+  "baseUrl": "http://localhost",
+  "executablePath": null,
+  "login": {
+    "resolverRouteFinalUrl": "http://localhost/login",
+    "postLoginUrl": "http://localhost/",
+    "resolverReachedSignIn": true,
+    "localStorage": {
+      "hasAccessToken": true,
+      "hasTenantId": true,
+      "hasRole": true
+    },
+    "authChain": {
+      "tokenStatus": 200,
+      "meStatus": 200
+    }
+  },
+  "dataSetup": {
+    "detectedChatflowId": "a14b99b7-5de3-4234-8cba-e2c798a55d9d",
+    "detectedAgentflowId": "f36410ae-a1f7-4fbe-92e8-b80f2544bc27",
+    "detectedMarketplaceChatTemplate": "64efb5af-6be2-4a95-a7e2-d003cd424d05",
+    "detectedMarketplaceAgentTemplate": "8add6524-84a6-4350-9afe-e6027857d597"
+  },
+  "metrics": {
+    "totalRoutes": 13,
+    "routesWithNavErrors": 0,
+    "routesWithPageErrors": 0,
+    "routesWithConsoleErrors": 0,
+    "routesWithHttp4xx5xx": 0,
+    "totalPageErrors": 0,
+    "totalConsoleErrors": 6,
+    "totalConsoleWarnings": 0,
+    "totalFailedRequests": 3,
+    "total4xx5xxResponses": 2,
+    "optional404Count": 2,
+    "nonOptional404Count": 0,
+    "actionFailures": 0
+  },
+  "routeResults": [
+    {
+      "name": "dashboard",
+      "path": "/dashboard",
+      "finalUrl": "http://localhost/dashboard",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T21:22:15.220Z",
+          "url": "http://localhost/dashboard",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T21:22:15.240Z",
+          "url": "http://localhost/dashboard",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T21:22:16.237Z",
+          "url": "http://localhost/dashboard",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "chatflows",
+      "path": "/chatflows",
+      "finalUrl": "http://localhost/chatflows",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T21:22:18.683Z",
+          "url": "http://localhost/chatflows",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T21:22:18.720Z",
+          "url": "http://localhost/chatflows",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T21:22:19.822Z",
+          "url": "http://localhost/chatflows",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "agentflows",
+      "path": "/agentflows",
+      "finalUrl": "http://localhost/agentflows",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T21:22:22.309Z",
+          "url": "http://localhost/agentflows",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T21:22:22.330Z",
+          "url": "http://localhost/agentflows",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T21:22:23.149Z",
+          "url": "http://localhost/agentflows",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "marketplaces",
+      "path": "/marketplaces",
+      "finalUrl": "http://localhost/marketplaces",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T21:22:25.690Z",
+          "url": "http://localhost/marketplaces",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T21:22:25.716Z",
+          "url": "http://localhost/marketplaces",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T21:22:26.553Z",
+          "url": "http://localhost/marketplaces",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "datasets",
+      "path": "/datasets",
+      "finalUrl": "http://localhost/datasets",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T21:22:29.971Z",
+          "url": "http://localhost/datasets",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T21:22:30.018Z",
+          "url": "http://localhost/datasets",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T21:22:31.020Z",
+          "url": "http://localhost/datasets",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "evaluators",
+      "path": "/evaluators",
+      "finalUrl": "http://localhost/evaluators",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T21:22:34.860Z",
+          "url": "http://localhost/evaluators",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T21:22:34.902Z",
+          "url": "http://localhost/evaluators",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T21:22:35.680Z",
+          "url": "http://localhost/evaluators",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "evaluations",
+      "path": "/evaluations",
+      "finalUrl": "http://localhost/evaluations",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T21:22:38.202Z",
+          "url": "http://localhost/evaluations",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T21:22:38.231Z",
+          "url": "http://localhost/evaluations",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T21:22:39.008Z",
+          "url": "http://localhost/evaluations",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "assistants",
+      "path": "/assistants",
+      "finalUrl": "http://localhost/assistants",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T21:22:41.522Z",
+          "url": "http://localhost/assistants",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T21:22:41.542Z",
+          "url": "http://localhost/assistants",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T21:22:42.510Z",
+          "url": "http://localhost/assistants",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "document_stores",
+      "path": "/document-stores",
+      "finalUrl": "http://localhost/document-stores",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T21:22:45.208Z",
+          "url": "http://localhost/document-stores",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T21:22:45.260Z",
+          "url": "http://localhost/document-stores",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T21:22:46.113Z",
+          "url": "http://localhost/document-stores",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "chatflow_canvas",
+      "path": "/canvas/a14b99b7-5de3-4234-8cba-e2c798a55d9d",
+      "finalUrl": "http://localhost/canvas/a14b99b7-5de3-4234-8cba-e2c798a55d9d",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T21:22:48.639Z",
+          "url": "http://localhost/canvas/a14b99b7-5de3-4234-8cba-e2c798a55d9d",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T21:22:48.665Z",
+          "url": "http://localhost/canvas/a14b99b7-5de3-4234-8cba-e2c798a55d9d",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T21:22:49.690Z",
+          "url": "http://localhost/canvas/a14b99b7-5de3-4234-8cba-e2c798a55d9d",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "agentflow_v2_canvas",
+      "path": "/v2/agentcanvas/f36410ae-a1f7-4fbe-92e8-b80f2544bc27",
+      "finalUrl": "http://localhost/v2/agentcanvas/f36410ae-a1f7-4fbe-92e8-b80f2544bc27",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T21:22:52.123Z",
+          "url": "http://localhost/v2/agentcanvas/f36410ae-a1f7-4fbe-92e8-b80f2544bc27",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T21:22:52.142Z",
+          "url": "http://localhost/v2/agentcanvas/f36410ae-a1f7-4fbe-92e8-b80f2544bc27",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T21:22:53.019Z",
+          "url": "http://localhost/v2/agentcanvas/f36410ae-a1f7-4fbe-92e8-b80f2544bc27",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "marketplace_chat_canvas",
+      "path": "/marketplace/64efb5af-6be2-4a95-a7e2-d003cd424d05",
+      "finalUrl": "http://localhost/marketplace/64efb5af-6be2-4a95-a7e2-d003cd424d05",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T21:22:55.530Z",
+          "url": "http://localhost/marketplace/64efb5af-6be2-4a95-a7e2-d003cd424d05",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T21:22:55.561Z",
+          "url": "http://localhost/marketplace/64efb5af-6be2-4a95-a7e2-d003cd424d05",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T21:22:56.878Z",
+          "url": "http://localhost/marketplace/64efb5af-6be2-4a95-a7e2-d003cd424d05",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "marketplace_agent_canvas",
+      "path": "/v2/marketplace/8add6524-84a6-4350-9afe-e6027857d597",
+      "finalUrl": "http://localhost/v2/marketplace/8add6524-84a6-4350-9afe-e6027857d597",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T21:22:59.556Z",
+          "url": "http://localhost/v2/marketplace/8add6524-84a6-4350-9afe-e6027857d597",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T21:22:59.588Z",
+          "url": "http://localhost/v2/marketplace/8add6524-84a6-4350-9afe-e6027857d597",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T21:23:00.582Z",
+          "url": "http://localhost/v2/marketplace/8add6524-84a6-4350-9afe-e6027857d597",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    }
+  ],
+  "actions": [
+    {
+      "name": "chatflows_add_new",
+      "status": "passed",
+      "details": {
+        "clicked": true,
+        "finalUrl": "http://localhost/chatflows",
+        "landedOnCanvas": true,
+        "created": true,
+        "createdFlowName": "smoke_chatflow_1772832187772",
+        "createdFlowId": "05dcbc03-c4bc-4965-9a91-f36b8545c713",
+        "canvasHealth": {
+          "canvasSurfaceVisible": true,
+          "saveVisible": true,
+          "addNodeVisible": true,
+          "chatButtonVisible": true
+        },
+        "persistedCheckStatus": 200,
+        "listedInApi": true,
+        "visibleInUiList": false,
+        "cleanupDeleteStatus": 200,
+        "cleanedUp": true
+      }
+    },
+    {
+      "name": "chatflow_open_api_dialog",
+      "status": "passed",
+      "details": {
+        "opened": true
+      }
+    },
+    {
+      "name": "chatflow_chat_popup",
+      "status": "passed",
+      "details": {
+        "clicked": true,
+        "popupVisible": false
+      }
+    },
+    {
+      "name": "agentflows_add_new_v2",
+      "status": "passed",
+      "details": {
+        "clicked": true,
+        "finalUrl": "http://localhost/agentflows",
+        "landedOnAgentCanvas": true,
+        "created": true,
+        "createdFlowName": "smoke_agentflow_1772832201201",
+        "createdFlowId": "c87b5861-4a11-4cef-b762-bc8f412adc28",
+        "canvasHealth": {
+          "canvasSurfaceVisible": true,
+          "saveVisible": true,
+          "addNodeVisible": true,
+          "generateButtonVisible": true
+        },
+        "persistedCheckStatus": 200,
+        "listedInApi": true,
+        "visibleInUiList": false,
+        "cleanupDeleteStatus": 200,
+        "cleanedUp": true
+      }
+    },
+    {
+      "name": "agentflow_prompt_based_generate",
+      "status": "passed",
+      "details": {
+        "opened": true,
+        "generated": true,
+        "outcome": "instruction_generated_applied",
+        "reason": null
+      }
+    },
+    {
+      "name": "marketplace_use_template_create_cycle",
+      "status": "passed",
+      "details": {
+        "usedTemplate": true,
+        "templateKind": "chatflow",
+        "templateRoute": "/marketplace/64efb5af-6be2-4a95-a7e2-d003cd424d05",
+        "openedUrl": "http://localhost/canvas",
+        "createdFlowName": "smoke_template_1772832211420",
+        "createdFlowId": "3161b8ce-0ad2-4737-8473-d7e0b2637517",
+        "canvasHealth": {
+          "canvasSurfaceVisible": true,
+          "saveVisible": true,
+          "addNodeVisible": true
+        },
+        "persistedCheckStatus": 200,
+        "persistedNodeCount": 0,
+        "cleanupDeleteStatus": 200,
+        "cleanedUp": true
+      }
+    },
+    {
+      "name": "marketplace_import_navigation",
+      "status": "passed",
+      "details": {
+        "imported": true,
+        "finalUrl": "http://localhost/marketplace/64efb5af-6be2-4a95-a7e2-d003cd424d05"
+      }
+    },
+    {
+      "name": "assistants_custom_open",
+      "status": "passed",
+      "details": {
+        "opened": false,
+        "reason": "card_not_found"
+      }
+    },
+    {
+      "name": "assistants_custom_create_realworld",
+      "status": "passed",
+      "details": {
+        "created": true,
+        "creationMode": "api_fallback",
+        "assistantName": "smoke_custom_assistant_1772832222572",
+        "assistantId": "de76b7a6-b1b9-43be-b5b6-dd13543c5e3a",
+        "fetchStatus": 200,
+        "profileId": "customer_support_copilot",
+        "profileLabel": "Customer Support Copilot",
+        "instructionLength": 861,
+        "qualityReady": true,
+        "cleanupDeleteStatus": 200,
+        "cleanedUp": true
+      }
+    },
+    {
+      "name": "document_stores_add_dialog",
+      "status": "passed",
+      "details": {
+        "clicked": true,
+        "opened": true
+      }
+    },
+    {
+      "name": "datasets_add_dialog",
+      "status": "passed",
+      "details": {
+        "clicked": true,
+        "opened": true
+      }
+    },
+    {
+      "name": "evaluators_new_dialog",
+      "status": "passed",
+      "details": {
+        "clicked": true,
+        "opened": true
+      }
+    },
+    {
+      "name": "evaluations_new_dialog",
+      "status": "passed",
+      "details": {
+        "clicked": true,
+        "opened": true
+      }
+    }
+  ],
+  "failures": {
+    "pageErrors": [],
+    "consoleErrors": [
+      {
+        "at": "2026-03-06T21:23:16.834Z",
+        "url": "http://localhost/canvas/a14b99b7-5de3-4234-8cba-e2c798a55d9d",
+        "type": "error",
+        "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      },
+      {
+        "at": "2026-03-06T21:23:16.835Z",
+        "url": "http://localhost/canvas/a14b99b7-5de3-4234-8cba-e2c798a55d9d",
+        "type": "error",
+        "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      },
+      {
+        "at": "2026-03-06T21:23:55.548Z",
+        "url": "http://localhost/evaluations",
+        "type": "error",
+        "message": "Warning: Failed %s type: %s%s prop Invalid prop `value` of type `array` supplied to `MultiDropdown`, expected `string`. \n    at MultiDropdown (http://localhost/src/ui-component/dropdown/MultiDropdown.jsx:35:33)\n    at CreateEvaluationDialog (http://localhost/src/views/evaluations/CreateEvaluationDialog.jsx:59:35)\n    at EvalsEvaluation (http://localhost/src/views/evaluations/index.jsx:72:17)\n    at Suspense\n    at WithLoader\n    at RequireAuth (http://localhost/src/routes/RequireAuth.jsx:46:31)\n    at Outlet (http://localhost/node_modules/.vite/deps/chunk-ZD5PXKS2.js?v=03b87bdd:1108:26)\n    at main\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Box3 (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:2160:19)\n    at MainLayout (http://localhost/src/layout/MainLayout/index.jsx:92:17)\n    at ThemeRoutes (http://localhost/src/routes/index.jsx:26:10)\n    at NavigationScroll (http://localhost/src/layout/NavigationScroll.jsx:20:29)\n    at DefaultPropsProvider (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:2718:3)\n    at RtlProvider (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:2692:5)\n    at ThemeProvider (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:2623:5)\n    at ThemeProvider2 (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:2836:5)\n    at ThemeProvider (http://localhost/node_modules/.vite/deps/chunk-PHRPW53Z.js?v=03b87bdd:303:12)\n    at StyledEngineProvider (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:89:5)\n    at App (http://localhost/src/App.jsx:26:25)\n    at ReactFlowContext (http://localhost/src/store/context/ReactFlowContext.jsx:38:36)\n    at ConfirmContextProvider (http://localhost/src/store/context/ConfirmContextProvider.jsx:22:35)\n    at ErrorProvider (http://localhost/src/store/context/ErrorContext.jsx:26:33)\n    at ConfigProvider (http://localhost/src/store/context/ConfigContext.jsx:22:34)\n    at SnackbarProvider2 (http://localhost/node_modules/.vite/deps/notistack.js?v=ba1d79ff:636:24)\n    at Router (http://localhost/node_modules/.vite/deps/chunk-ZD5PXKS2.js?v=03b87bdd:1115:15)\n    at BrowserRouter (http://localhost/node_modules/.vite/deps/react-router-dom.js?v=7a2905ca:83:5)\n    at Provider (http://localhost/node_modules/.vite/deps/react-redux.js?v=5b638a20:839:3)"
+      },
+      {
+        "at": "2026-03-06T21:23:55.568Z",
+        "url": "http://localhost/evaluations",
+        "type": "error",
+        "message": "Warning: validateDOMNesting(...): %s cannot appear as a descendant of <%s>.%s <h4> p \n    at h4\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Typography2 (http://localhost/node_modules/.vite/deps/chunk-7A73GYVR.js?v=03b87bdd:136:22)\n    at p\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Typography2 (http://localhost/node_modules/.vite/deps/chunk-7A73GYVR.js?v=03b87bdd:136:22)\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at DialogContentText2 (http://localhost/node_modules/.vite/deps/@mui_material.js?v=99afccdd:2746:17)\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Grid2 (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:4628:24)\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at DialogContent2 (http://localhost/node_modules/.vite/deps/@mui_material.js?v=99afccdd:2660:17)\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Paper2 (http://localhost/node_modules/.vite/deps/chunk-QMPDNCYH.js?v=03b87bdd:115:17)\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Transition2 (http://localhost/node_modules/.vite/deps/chunk-J2CYIB7V.js?v=03b87bdd:83:30)\n    at Fade2 (http://localhost/node_modules/.vite/deps/chunk-YWYTWLQH.js?v=03b87bdd:80:17)\n    at FocusTrap (http://localhost/node_modules/.vite/deps/chunk-KPAMVT33.js?v=03b87bdd:129:5)\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Portal2 (http://localhost/node_modules/.vite/deps/chunk-KPAMVT33.js?v=03b87bdd:354:5)\n    at Modal2 (http://localhost/node_modules/.vite/deps/chunk-YWYTWLQH.js?v=03b87bdd:515:17)\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Dialog2 (http://localhost/node_modules/.vite/deps/chunk-IELXHFU7.js?v=03b87bdd:216:17)\n    at CreateEvaluationDialog (http://localhost/src/views/evaluations/CreateEvaluationDialog.jsx:59:35)\n    at EvalsEvaluation (http://localhost/src/views/evaluations/index.jsx:72:17)\n    at Suspense\n    at WithLoader\n    at RequireAuth (http://localhost/src/routes/RequireAuth.jsx:46:31)\n    at Outlet (http://localhost/node_modules/.vite/deps/chunk-ZD5PXKS2.js?v=03b87bdd:1108:26)\n    at main\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Box3 (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:2160:19)\n    at MainLayout (http://localhost/src/layout/MainLayout/index.jsx:92:17)\n    at ThemeRoutes (http://localhost/src/routes/index.jsx:26:10)\n    at NavigationScroll (http://localhost/src/layout/NavigationScroll.jsx:20:29)\n    at DefaultPropsProvider (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:2718:3)\n    at RtlProvider (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:2692:5)\n    at ThemeProvider (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:2623:5)\n    at ThemeProvider2 (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:2836:5)\n    at ThemeProvider (http://localhost/node_modules/.vite/deps/chunk-PHRPW53Z.js?v=03b87bdd:303:12)\n    at StyledEngineProvider (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:89:5)\n    at App (http://localhost/src/App.jsx:26:25)\n    at ReactFlowContext (http://localhost/src/store/context/ReactFlowContext.jsx:38:36)\n    at ConfirmContextProvider (http://localhost/src/store/context/ConfirmContextProvider.jsx:22:35)\n    at ErrorProvider (http://localhost/src/store/context/ErrorContext.jsx:26:33)\n    at ConfigProvider (http://localhost/src/store/context/ConfigContext.jsx:22:34)\n    at SnackbarProvider2 (http://localhost/node_modules/.vite/deps/notistack.js?v=ba1d79ff:636:24)\n    at Router (http://localhost/node_modules/.vite/deps/chunk-ZD5PXKS2.js?v=03b87bdd:1115:15)\n    at BrowserRouter (http://localhost/node_modules/.vite/deps/react-router-dom.js?v=7a2905ca:83:5)\n    at Provider (http://localhost/node_modules/.vite/deps/react-redux.js?v=5b638a20:839:3)"
+      },
+      {
+        "at": "2026-03-06T21:23:55.569Z",
+        "url": "http://localhost/evaluations",
+        "type": "error",
+        "message": "Warning: validateDOMNesting(...): %s cannot appear as a descendant of <%s>.%s <p> p \n    at p\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Typography2 (http://localhost/node_modules/.vite/deps/chunk-7A73GYVR.js?v=03b87bdd:136:22)\n    at p\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Typography2 (http://localhost/node_modules/.vite/deps/chunk-7A73GYVR.js?v=03b87bdd:136:22)\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at DialogContentText2 (http://localhost/node_modules/.vite/deps/@mui_material.js?v=99afccdd:2746:17)\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Grid2 (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:4628:24)\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at DialogContent2 (http://localhost/node_modules/.vite/deps/@mui_material.js?v=99afccdd:2660:17)\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Paper2 (http://localhost/node_modules/.vite/deps/chunk-QMPDNCYH.js?v=03b87bdd:115:17)\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Transition2 (http://localhost/node_modules/.vite/deps/chunk-J2CYIB7V.js?v=03b87bdd:83:30)\n    at Fade2 (http://localhost/node_modules/.vite/deps/chunk-YWYTWLQH.js?v=03b87bdd:80:17)\n    at FocusTrap (http://localhost/node_modules/.vite/deps/chunk-KPAMVT33.js?v=03b87bdd:129:5)\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Portal2 (http://localhost/node_modules/.vite/deps/chunk-KPAMVT33.js?v=03b87bdd:354:5)\n    at Modal2 (http://localhost/node_modules/.vite/deps/chunk-YWYTWLQH.js?v=03b87bdd:515:17)\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Dialog2 (http://localhost/node_modules/.vite/deps/chunk-IELXHFU7.js?v=03b87bdd:216:17)\n    at CreateEvaluationDialog (http://localhost/src/views/evaluations/CreateEvaluationDialog.jsx:59:35)\n    at EvalsEvaluation (http://localhost/src/views/evaluations/index.jsx:72:17)\n    at Suspense\n    at WithLoader\n    at RequireAuth (http://localhost/src/routes/RequireAuth.jsx:46:31)\n    at Outlet (http://localhost/node_modules/.vite/deps/chunk-ZD5PXKS2.js?v=03b87bdd:1108:26)\n    at main\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Box3 (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:2160:19)\n    at MainLayout (http://localhost/src/layout/MainLayout/index.jsx:92:17)\n    at ThemeRoutes (http://localhost/src/routes/index.jsx:26:10)\n    at NavigationScroll (http://localhost/src/layout/NavigationScroll.jsx:20:29)\n    at DefaultPropsProvider (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:2718:3)\n    at RtlProvider (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:2692:5)\n    at ThemeProvider (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:2623:5)\n    at ThemeProvider2 (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:2836:5)\n    at ThemeProvider (http://localhost/node_modules/.vite/deps/chunk-PHRPW53Z.js?v=03b87bdd:303:12)\n    at StyledEngineProvider (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:89:5)\n    at App (http://localhost/src/App.jsx:26:25)\n    at ReactFlowContext (http://localhost/src/store/context/ReactFlowContext.jsx:38:36)\n    at ConfirmContextProvider (http://localhost/src/store/context/ConfirmContextProvider.jsx:22:35)\n    at ErrorProvider (http://localhost/src/store/context/ErrorContext.jsx:26:33)\n    at ConfigProvider (http://localhost/src/store/context/ConfigContext.jsx:22:34)\n    at SnackbarProvider2 (http://localhost/node_modules/.vite/deps/notistack.js?v=ba1d79ff:636:24)\n    at Router (http://localhost/node_modules/.vite/deps/chunk-ZD5PXKS2.js?v=03b87bdd:1115:15)\n    at BrowserRouter (http://localhost/node_modules/.vite/deps/react-router-dom.js?v=7a2905ca:83:5)\n    at Provider (http://localhost/node_modules/.vite/deps/react-redux.js?v=5b638a20:839:3)"
+      },
+      {
+        "at": "2026-03-06T21:23:55.571Z",
+        "url": "http://localhost/evaluations",
+        "type": "error",
+        "message": "Warning: validateDOMNesting(...): %s cannot appear as a descendant of <%s>.%s <div> p \n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Chip2 (http://localhost/node_modules/.vite/deps/chunk-NIX75NWG.js?v=03b87bdd:356:17)\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Grid2 (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:4628:24)\n    at p\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Typography2 (http://localhost/node_modules/.vite/deps/chunk-7A73GYVR.js?v=03b87bdd:136:22)\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at DialogContentText2 (http://localhost/node_modules/.vite/deps/@mui_material.js?v=99afccdd:2746:17)\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Grid2 (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:4628:24)\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at DialogContent2 (http://localhost/node_modules/.vite/deps/@mui_material.js?v=99afccdd:2660:17)\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Paper2 (http://localhost/node_modules/.vite/deps/chunk-QMPDNCYH.js?v=03b87bdd:115:17)\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Transition2 (http://localhost/node_modules/.vite/deps/chunk-J2CYIB7V.js?v=03b87bdd:83:30)\n    at Fade2 (http://localhost/node_modules/.vite/deps/chunk-YWYTWLQH.js?v=03b87bdd:80:17)\n    at FocusTrap (http://localhost/node_modules/.vite/deps/chunk-KPAMVT33.js?v=03b87bdd:129:5)\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Portal2 (http://localhost/node_modules/.vite/deps/chunk-KPAMVT33.js?v=03b87bdd:354:5)\n    at Modal2 (http://localhost/node_modules/.vite/deps/chunk-YWYTWLQH.js?v=03b87bdd:515:17)\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Dialog2 (http://localhost/node_modules/.vite/deps/chunk-IELXHFU7.js?v=03b87bdd:216:17)\n    at CreateEvaluationDialog (http://localhost/src/views/evaluations/CreateEvaluationDialog.jsx:59:35)\n    at EvalsEvaluation (http://localhost/src/views/evaluations/index.jsx:72:17)\n    at Suspense\n    at WithLoader\n    at RequireAuth (http://localhost/src/routes/RequireAuth.jsx:46:31)\n    at Outlet (http://localhost/node_modules/.vite/deps/chunk-ZD5PXKS2.js?v=03b87bdd:1108:26)\n    at main\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=03b87bdd:1333:49\n    at Box3 (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:2160:19)\n    at MainLayout (http://localhost/src/layout/MainLayout/index.jsx:92:17)\n    at ThemeRoutes (http://localhost/src/routes/index.jsx:26:10)\n    at NavigationScroll (http://localhost/src/layout/NavigationScroll.jsx:20:29)\n    at DefaultPropsProvider (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:2718:3)\n    at RtlProvider (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:2692:5)\n    at ThemeProvider (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:2623:5)\n    at ThemeProvider2 (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:2836:5)\n    at ThemeProvider (http://localhost/node_modules/.vite/deps/chunk-PHRPW53Z.js?v=03b87bdd:303:12)\n    at StyledEngineProvider (http://localhost/node_modules/.vite/deps/chunk-2F43D7RM.js?v=03b87bdd:89:5)\n    at App (http://localhost/src/App.jsx:26:25)\n    at ReactFlowContext (http://localhost/src/store/context/ReactFlowContext.jsx:38:36)\n    at ConfirmContextProvider (http://localhost/src/store/context/ConfirmContextProvider.jsx:22:35)\n    at ErrorProvider (http://localhost/src/store/context/ErrorContext.jsx:26:33)\n    at ConfigProvider (http://localhost/src/store/context/ConfigContext.jsx:22:34)\n    at SnackbarProvider2 (http://localhost/node_modules/.vite/deps/notistack.js?v=ba1d79ff:636:24)\n    at Router (http://localhost/node_modules/.vite/deps/chunk-ZD5PXKS2.js?v=03b87bdd:1115:15)\n    at BrowserRouter (http://localhost/node_modules/.vite/deps/react-router-dom.js?v=7a2905ca:83:5)\n    at Provider (http://localhost/node_modules/.vite/deps/react-redux.js?v=5b638a20:839:3)"
+      }
+    ],
+    "consoleWarnings": [],
+    "failedRequests": [
+      {
+        "at": "2026-03-06T21:23:08.136Z",
+        "pageUrl": "http://localhost/canvas/05dcbc03-c4bc-4965-9a91-f36b8545c713",
+        "requestUrl": "https://fonts.gstatic.com/s/roboto/v51/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3yUBA.woff2",
+        "method": "GET",
+        "errorText": "net::ERR_ABORTED"
+      },
+      {
+        "at": "2026-03-06T21:23:42.607Z",
+        "pageUrl": "http://localhost/assistants/custom",
+        "requestUrl": "http://localhost/src/views/assistants/custom/AddCustomAssistantDialog.jsx",
+        "method": "GET",
+        "errorText": "net::ERR_ABORTED"
+      },
+      {
+        "at": "2026-03-06T21:23:42.607Z",
+        "pageUrl": "http://localhost/assistants/custom",
+        "requestUrl": "http://localhost/src/assets/images/assistant_empty.svg?import",
+        "method": "GET",
+        "errorText": "net::ERR_ABORTED"
+      }
+    ],
+    "responses": [
+      {
+        "at": "2026-03-06T21:23:16.834Z",
+        "pageUrl": "http://localhost/canvas/a14b99b7-5de3-4234-8cba-e2c798a55d9d",
+        "requestUrl": "http://localhost/api/internal-chatmessage/a14b99b7-5de3-4234-8cba-e2c798a55d9d?feedback=true",
+        "method": "GET",
+        "status": 404
+      },
+      {
+        "at": "2026-03-06T21:23:16.835Z",
+        "pageUrl": "http://localhost/canvas/a14b99b7-5de3-4234-8cba-e2c798a55d9d",
+        "requestUrl": "http://localhost/api/internal-chatmessage/a14b99b7-5de3-4234-8cba-e2c798a55d9d?feedback=true",
+        "method": "GET",
+        "status": 404
+      }
+    ],
+    "optional404": [
+      {
+        "at": "2026-03-06T21:23:16.834Z",
+        "pageUrl": "http://localhost/canvas/a14b99b7-5de3-4234-8cba-e2c798a55d9d",
+        "requestUrl": "http://localhost/api/internal-chatmessage/a14b99b7-5de3-4234-8cba-e2c798a55d9d?feedback=true",
+        "method": "GET",
+        "status": 404
+      },
+      {
+        "at": "2026-03-06T21:23:16.835Z",
+        "pageUrl": "http://localhost/canvas/a14b99b7-5de3-4234-8cba-e2c798a55d9d",
+        "requestUrl": "http://localhost/api/internal-chatmessage/a14b99b7-5de3-4234-8cba-e2c798a55d9d?feedback=true",
+        "method": "GET",
+        "status": 404
+      }
+    ],
+    "nonOptional404": []
+  },
+  "classifications": {
+    "crash": [],
+    "blocking": [],
+    "nonBlockingWarning": [
+      {
+        "at": "2026-03-06T21:23:16.834Z",
+        "pageUrl": "http://localhost/canvas/a14b99b7-5de3-4234-8cba-e2c798a55d9d",
+        "requestUrl": "http://localhost/api/internal-chatmessage/a14b99b7-5de3-4234-8cba-e2c798a55d9d?feedback=true",
+        "method": "GET",
+        "status": 404
+      },
+      {
+        "at": "2026-03-06T21:23:16.835Z",
+        "pageUrl": "http://localhost/canvas/a14b99b7-5de3-4234-8cba-e2c798a55d9d",
+        "requestUrl": "http://localhost/api/internal-chatmessage/a14b99b7-5de3-4234-8cba-e2c798a55d9d?feedback=true",
+        "method": "GET",
+        "status": 404
+      }
+    ]
+  },
+  "notes": [
+    "404 responses under optional OSS compatibility endpoints are classified as non-blocking unless paired with runtime crashes.",
+    "Action failures can be due to UI label drift; route-level stability and runtime crash status remain primary gates."
+  ],
+  "artifacts": {
+    "screenshotDir": "tmp/test-artifacts/screens"
+  }
+}

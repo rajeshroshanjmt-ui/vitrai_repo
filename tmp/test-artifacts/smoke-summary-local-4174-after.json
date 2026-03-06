@@ -1,0 +1,87 @@
+{
+  "baseUrl": "http://localhost",
+  "loginFinalUrl": "http://localhost/dashboard",
+  "totalRoutes": 8,
+  "routesWithPageErrors": 0,
+  "routesWithConsoleErrors": 1,
+  "routesWithFailedRequests": 0,
+  "results": [
+    {
+      "path": "/dashboard",
+      "finalUrl": "http://localhost/dashboard",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [],
+      "failedRequests": []
+    },
+    {
+      "path": "/chatflows",
+      "finalUrl": "http://localhost/chatflows",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [],
+      "failedRequests": []
+    },
+    {
+      "path": "/agentflows",
+      "finalUrl": "http://localhost/agentflows",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [],
+      "failedRequests": []
+    },
+    {
+      "path": "/marketplaces",
+      "finalUrl": "http://localhost/marketplaces",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [],
+      "failedRequests": []
+    },
+    {
+      "path": "/datasets",
+      "finalUrl": "http://localhost/datasets",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [
+        {
+          "url": "http://localhost/datasets",
+          "message": "Warning: validateDOMNesting(...): %s cannot appear as a child of <%s>.%s%s%s <span> tr   \n    at span\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=25026898:1333:49\n    at Skeleton2 (http://localhost/node_modules/.vite/deps/chunk-GF4GUC6L.js?v=25026898:194:17)\n    at Available (http://localhost/src/ui-component/rbac/available.jsx:19:29)\n    at tr\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=25026898:1333:49\n    at TableRow2 (http://localhost/node_modules/.vite/deps/@mui_material.js?v=68b82e64:11281:17)\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=25026898:1333:49\n    at tbody\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=25026898:1333:49\n    at TableBody2 (http://localhost/node_modules/.vite/deps/@mui_material.js?v=68b82e64:10886:17)\n    at table\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=25026898:1333:49\n    at Table2 (http://localhost/node_modules/.vite/deps/@mui_material.js?v=68b82e64:10763:17)\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=25026898:1333:49\n    at Paper2 (http://localhost/node_modules/.vite/deps/chunk-KFDTM7N7.js?v=25026898:115:17)\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=25026898:1333:49\n    at TableContainer2 (http://localhost/node_modules/.vite/deps/@mui_material.js?v=68b82e64:10978:17)\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=25026898:1333:49\n    at Grid2 (http://localhost/node_modules/.vite/deps/chunk-NCPK4HSY.js?v=25026898:4628:24)\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=25026898:1333:49\n    at CardContent2 (http://localhost/node_modules/.vite/deps/chunk-V2KP4GRB.js?v=25026898:84:17)\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=25026898:1333:49\n    at Paper2 (http://localhost/node_modules/.vite/deps/chunk-KFDTM7N7.js?v=25026898:115:17)\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=25026898:1333:49\n    at Card2 (http://localhost/node_modules/.vite/deps/chunk-W5U7NVEI.js?v=25026898:86:17)\n    at MainCard2 (http://localhost/src/ui-component/cards/MainCard.jsx:24:3)\n    at EvalDatasets (http://localhost/src/views/datasets/index.jsx:57:20)\n    at Suspense\n    at WithLoader\n    at RequireAuth (http://localhost/src/routes/RequireAuth.jsx:46:31)\n    at Outlet (http://localhost/node_modules/.vite/deps/chunk-ZD5PXKS2.js?v=25026898:1108:26)\n    at main\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=25026898:1333:49\n    at div\n    at http://localhost/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=25026898:1333:49\n    at Box3 (http://localhost/node_modules/.vite/deps/chunk-NCPK4HSY.js?v=25026898:2160:19)\n    at MainLayout (http://localhost/src/layout/MainLayout/index.jsx:70:17)\n    at ThemeRoutes (http://localhost/src/routes/index.jsx:26:10)\n    at NavigationScroll (http://localhost/src/layout/NavigationScroll.jsx:20:29)\n    at DefaultPropsProvider (http://localhost/node_modules/.vite/deps/chunk-NCPK4HSY.js?v=25026898:2718:3)\n    at RtlProvider (http://localhost/node_modules/.vite/deps/chunk-NCPK4HSY.js?v=25026898:2692:5)\n    at ThemeProvider (http://localhost/node_modules/.vite/deps/chunk-NCPK4HSY.js?v=25026898:2623:5)\n    at ThemeProvider2 (http://localhost/node_modules/.vite/deps/chunk-NCPK4HSY.js?v=25026898:2836:5)\n    at ThemeProvider (http://localhost/node_modules/.vite/deps/chunk-7E3KE5DL.js?v=25026898:303:12)\n    at StyledEngineProvider (http://localhost/node_modules/.vite/deps/chunk-NCPK4HSY.js?v=25026898:89:5)\n    at App (http://localhost/src/App.jsx:26:25)\n    at ReactFlowContext (http://localhost/src/store/context/ReactFlowContext.jsx:38:36)\n    at ConfirmContextProvider (http://localhost/src/store/context/ConfirmContextProvider.jsx:22:35)\n    at ErrorProvider (http://localhost/src/store/context/ErrorContext.jsx:26:33)\n    at ConfigProvider (http://localhost/src/store/context/ConfigContext.jsx:22:34)\n    at SnackbarProvider2 (http://localhost/node_modules/.vite/deps/notistack.js?v=1682fc20:636:24)\n    at Router (http://localhost/node_modules/.vite/deps/chunk-ZD5PXKS2.js?v=25026898:1115:15)\n    at BrowserRouter (http://localhost/node_modules/.vite/deps/react-router-dom.js?v=4809c9a0:83:5)\n    at Provider (http://localhost/node_modules/.vite/deps/react-redux.js?v=b13ac21d:839:3)"
+        }
+      ],
+      "failedRequests": []
+    },
+    {
+      "path": "/evaluators",
+      "finalUrl": "http://localhost/evaluators",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [],
+      "failedRequests": []
+    },
+    {
+      "path": "/evaluations",
+      "finalUrl": "http://localhost/evaluations",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [],
+      "failedRequests": []
+    },
+    {
+      "path": "/canvas",
+      "finalUrl": "http://localhost/canvas",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [],
+      "failedRequests": []
+    }
+  ]
+}

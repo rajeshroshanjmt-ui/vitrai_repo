@@ -37,9 +37,14 @@ const MainCard = forwardRef(function MainCard(
             ref={ref}
             {...otherProps}
             sx={{
-                background: 'transparent',
+                background: (theme) => theme.palette.surface?.raised || theme.palette.background.paper,
+                border: (theme) => `1px solid ${theme.palette.outline?.subtle || theme.palette.divider}`,
+                boxShadow: (theme) => `0 10px 28px ${theme.palette.glow?.soft || 'rgba(0,0,0,0.08)'}`,
+                transition: 'transform 170ms ease, box-shadow 170ms ease, border-color 170ms ease',
                 ':hover': {
-                    boxShadow: boxShadow ? shadow || '0 2px 14px 0 rgb(32 40 45 / 8%)' : 'inherit'
+                    transform: boxShadow ? 'translateY(-1px)' : 'none',
+                    borderColor: (theme) => theme.palette.outline?.strong || theme.palette.divider,
+                    boxShadow: boxShadow ? shadow || '0 16px 32px 0 rgb(10 22 37 / 20%)' : 'inherit'
                 },
                 maxWidth: maxWidth === 'sm' ? '800px' : maxWidth === 'md' ? '960px' : '1280px',
                 mx: 'auto',

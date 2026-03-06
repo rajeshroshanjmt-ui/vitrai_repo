@@ -29,7 +29,7 @@ import { baseURL, AGENTFLOW_ICONS } from '@/store/constant'
 import { useError } from '@/store/context/ErrorContext'
 
 // icons
-import { IconPlus, IconLayoutGrid, IconList, IconX, IconAlertTriangle } from '@tabler/icons-react'
+import { IconPlus, IconLayoutGrid, IconList } from '@tabler/icons-react'
 
 // ==============================|| AGENTS ||============================== //
 
@@ -47,7 +47,6 @@ const Agentflows = () => {
     const getAllAgentflows = useApi(chatflowsApi.getAllAgentflows)
     const [view, setView] = useState(localStorage.getItem('flowDisplayStyle') || 'card')
     const [agentflowVersion, setAgentflowVersion] = useState(localStorage.getItem('agentFlowVersion') || 'v2')
-    const [showDeprecationNotice, setShowDeprecationNotice] = useState(true)
 
     /* Table Pagination */
     const [currentPage, setCurrentPage] = useState(1)
@@ -86,10 +85,14 @@ const Agentflows = () => {
     }
 
     function filterFlows(data) {
+        const name = String(data?.name || '').toLowerCase()
+        const category = String(data?.category || '').toLowerCase()
+        const id = String(data?.id || '').toLowerCase()
+        const query = search.toLowerCase()
         return (
-            data.name.toLowerCase().indexOf(search.toLowerCase()) > -1 ||
-            (data.category && data.category.toLowerCase().indexOf(search.toLowerCase()) > -1) ||
-            data.id.toLowerCase().indexOf(search.toLowerCase()) > -1
+            name.indexOf(query) > -1 ||
+            category.indexOf(query) > -1 ||
+            id.indexOf(query) > -1
         )
     }
 
@@ -107,10 +110,6 @@ const Agentflows = () => {
         } else {
             navigate(`/agentcanvas/${selectedAgentflow.id}`)
         }
-    }
-
-    const handleDismissDeprecationNotice = () => {
-        setShowDeprecationNotice(false)
     }
 
     useEffect(() => {
@@ -134,27 +133,30 @@ const Agentflows = () => {
     useEffect(() => {
         if (getAllAgentflows.data) {
             try {
-                const agentflows = getAllAgentflows.data?.data
-                setTotal(getAllAgentflows.data?.total)
+                const agentflows = Array.isArray(getAllAgentflows.data?.data) ? getAllAgentflows.data.data : []
+                setTotal(Number(getAllAgentflows.data?.total ?? agentflows.length))
                 const images = {}
                 const icons = {}
                 for (let i = 0; i < agentflows.length; i += 1) {
                     const flowDataStr = agentflows[i].flowData
-                    const flowData = JSON.parse(flowDataStr)
-                    const nodes = flowData.nodes || []
+                    const flowData = typeof flowDataStr === 'string' ? JSON.parse(flowDataStr) : flowDataStr || {}
+                    const nodes = Array.isArray(flowData?.nodes) ? flowData.nodes : []
                     images[agentflows[i].id] = []
                     icons[agentflows[i].id] = []
                     for (let j = 0; j < nodes.length; j += 1) {
-                        if (nodes[j].data.name === 'stickyNote' || nodes[j].data.name === 'stickyNoteAgentflow') continue
-                        const foundIcon = AGENTFLOW_ICONS.find((icon) => icon.name === nodes[j].data.name)
+                        const nodeName = nodes[j]?.data?.name
+                        const nodeLabel = nodes[j]?.data?.label
+                        if (!nodeName) continue
+                        if (nodeName === 'stickyNote' || nodeName === 'stickyNoteAgentflow') continue
+                        const foundIcon = AGENTFLOW_ICONS.find((icon) => icon.name === nodeName)
                         if (foundIcon) {
                             icons[agentflows[i].id].push(foundIcon)
                         } else {
-                            const imageSrc = `${baseURL}/api/v1/node-icon/${nodes[j].data.name}`
+                            const imageSrc = `${baseURL}/api/v1/node-icon/${nodeName}`
                             if (!images[agentflows[i].id].some((img) => img.imageSrc === imageSrc)) {
                                 images[agentflows[i].id].push({
                                     imageSrc,
-                                    label: nodes[j].data.label
+                                    label: nodeLabel
                                 })
                             }
                         }
@@ -258,48 +260,6 @@ const Agentflows = () => {
                         </StyledPermissionButton>
                     </ViewHeader>
 
-                    {/* Deprecation Notice For V1 */}
-                    {agentflowVersion === 'v1' && showDeprecationNotice && (
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                padding: 2,
-                                background: customization.isDarkMode
-                                    ? 'linear-gradient(135deg,rgba(165, 128, 6, 0.31) 0%, #ffcc802f 100%)'
-                                    : 'linear-gradient(135deg, #fff8e17a 0%, #ffcc804a 100%)',
-                                color: customization.isDarkMode ? 'white' : '#333333',
-                                fontWeight: 400,
-                                borderRadius: 2,
-                                gap: 1.5
-                            }}
-                        >
-                            <IconAlertTriangle
-                                size={20}
-                                style={{
-                                    color: customization.isDarkMode ? '#ffcc80' : '#f57c00',
-                                    flexShrink: 0
-                                }}
-                            />
-                            <Box sx={{ flex: 1 }}>
-                                <strong>V1 Agentflows are deprecated.</strong> We recommend migrating to V2 for improved performance and
-                                continued support.
-                            </Box>
-                            <IconButton
-                                aria-label='dismiss'
-                                size='small'
-                                onClick={handleDismissDeprecationNotice}
-                                sx={{
-                                    color: customization.isDarkMode ? '#ffcc80' : '#f57c00',
-                                    '&:hover': {
-                                        backgroundColor: 'rgba(255, 204, 128, 0.1)'
-                                    }
-                                }}
-                            >
-                                <IconX size={16} />
-                            </IconButton>
-                        </Box>
-                    )}
                     {!isLoading && total > 0 && (
                         <>
                             {!view || view === 'card' ? (

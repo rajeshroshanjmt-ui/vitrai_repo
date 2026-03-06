@@ -53,7 +53,7 @@ const MarketplaceCanvasHeader = ({ flowName, flowData, onChatflowCopy }) => {
                     </Typography>
                 </Stack>
             </Box>
-            <Available permission={'chatflows:create,agentflows.create'}>
+            <Available permission={'chatflows:create,agentflows:create'}>
                 <Box>
                     <StyledButton
                         color='secondary'

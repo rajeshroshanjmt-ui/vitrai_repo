@@ -293,9 +293,17 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
     // Ref to prevent auto-scroll during TTS actions (using ref to avoid re-renders)
     const isTTSActionRef = useRef(false)
     const ttsTimeoutRef = useRef(null)
+    const toList = (payload) => {
+        if (Array.isArray(payload)) return payload
+        if (Array.isArray(payload?.data)) return payload.data
+        return []
+    }
+    const chatMessageRecords = toList(getChatmessageApi.data)
+    const executionRecords = toList(getAllExecutionsApi.data)
+    const uploadConfig = getAllowChatFlowUploads.data || {}
 
     const isFileAllowedForUpload = (file) => {
-        const constraints = getAllowChatFlowUploads.data
+        const constraints = uploadConfig
         /**
          * {isImageUploadAllowed: boolean, imgUploadSizeAndTypes: Array<{ fileTypes: string[], maxUploadSize: number }>}
          */
@@ -1069,7 +1077,12 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                 }
             }
         } catch (error) {
-            handleError(error.response.data.message)
+            const errorMessage =
+                error?.response?.data?.message ||
+                error?.response?.data?.detail ||
+                error?.message ||
+                'Failed to get prediction response.'
+            handleError(errorMessage)
             return
         }
     }
@@ -1232,6 +1245,22 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
         return fileUploadAllowedTypes.includes('*') ? '*' : fileUploadAllowedTypes || '*'
     }
 
+    const normalizeUploadConstraints = (constraints) => {
+        const imageConstraints = Array.isArray(constraints?.imgUploadSizeAndTypes) ? constraints.imgUploadSizeAndTypes : []
+        const fileConstraints = Array.isArray(constraints?.fileUploadSizeAndTypes) ? constraints.fileUploadSizeAndTypes : []
+        return { imageConstraints, fileConstraints }
+    }
+
+    const getAllowedTypesString = (constraintsList) => {
+        return constraintsList
+            .flatMap((allowed) => {
+                if (Array.isArray(allowed?.fileTypes)) return allowed.fileTypes
+                if (typeof allowed?.fileTypes === 'string') return [allowed.fileTypes]
+                return []
+            })
+            .join(',')
+    }
+
     const downloadFile = async (fileAnnotation) => {
         try {
             const response = await axios.post(
@@ -1264,10 +1293,10 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
 
     // Get chatmessages successful
     useEffect(() => {
-        if (getChatmessageApi.data?.length) {
-            const chatId = getChatmessageApi.data[0]?.chatId
+        if (chatMessageRecords.length) {
+            const chatId = chatMessageRecords[0]?.chatId
             setChatId(chatId)
-            const loadedMessages = getChatmessageApi.data.map((message) => {
+            const loadedMessages = chatMessageRecords.map((message) => {
                 const obj = {
                     id: message.id,
                     message: message.content,
@@ -1299,9 +1328,24 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                         }
                     })
                 }
-                if (message.followUpPrompts) obj.followUpPrompts = JSON.parse(message.followUpPrompts)
+                if (message.followUpPrompts) {
+                    try {
+                        obj.followUpPrompts =
+                            typeof message.followUpPrompts === 'string' ? JSON.parse(message.followUpPrompts) : message.followUpPrompts
+                    } catch {
+                        obj.followUpPrompts = []
+                    }
+                }
                 if (message.role === 'apiMessage' && message.execution && message.execution.executionData)
-                    obj.agentFlowExecutedData = JSON.parse(message.execution.executionData)
+                    obj.agentFlowExecutedData = (() => {
+                        try {
+                            return typeof message.execution.executionData === 'string'
+                                ? JSON.parse(message.execution.executionData)
+                                : message.execution.executionData
+                        } catch {
+                            return null
+                        }
+                    })()
                 return obj
             })
             setMessages((prevMessages) => [...prevMessages, ...loadedMessages])
@@ -1309,15 +1353,21 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
         }
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [getChatmessageApi.data])
+    }, [chatMessageRecords])
 
     useEffect(() => {
-        if (getAllExecutionsApi.data?.length) {
-            const chatId = getAllExecutionsApi.data[0]?.sessionId
+        if (executionRecords.length) {
+            const chatId = executionRecords[0]?.sessionId
             setChatId(chatId)
-            const loadedMessages = getAllExecutionsApi.data.map((execution) => {
-                const executionData =
-                    typeof execution.executionData === 'string' ? JSON.parse(execution.executionData) : execution.executionData
+            const loadedMessages = executionRecords.map((execution) => {
+                let executionData = execution.executionData
+                if (typeof execution.executionData === 'string') {
+                    try {
+                        executionData = JSON.parse(execution.executionData)
+                    } catch {
+                        executionData = execution.executionData
+                    }
+                }
                 const obj = {
                     id: execution.id,
                     agentFlow: executionData
@@ -1328,7 +1378,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
             setLocalStorageChatflow(chatflowid, chatId)
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [getAllExecutionsApi.data])
+    }, [executionRecords])
 
     // Get chatflow streaming capability
     useEffect(() => {
@@ -1341,11 +1391,13 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
     // Get chatflow uploads capability
     useEffect(() => {
         if (getAllowChatFlowUploads.data) {
-            setIsChatFlowAvailableForImageUploads(getAllowChatFlowUploads.data?.isImageUploadAllowed ?? false)
-            setIsChatFlowAvailableForRAGFileUploads(getAllowChatFlowUploads.data?.isRAGFileUploadAllowed ?? false)
-            setIsChatFlowAvailableForSpeech(getAllowChatFlowUploads.data?.isSpeechToTextEnabled ?? false)
-            setImageUploadAllowedTypes(getAllowChatFlowUploads.data?.imgUploadSizeAndTypes.map((allowed) => allowed.fileTypes).join(','))
-            setFileUploadAllowedTypes(getAllowChatFlowUploads.data?.fileUploadSizeAndTypes.map((allowed) => allowed.fileTypes).join(','))
+            const uploadConstraints = getAllowChatFlowUploads.data || {}
+            const { imageConstraints, fileConstraints } = normalizeUploadConstraints(uploadConstraints)
+            setIsChatFlowAvailableForImageUploads(uploadConstraints?.isImageUploadAllowed ?? false)
+            setIsChatFlowAvailableForRAGFileUploads(uploadConstraints?.isRAGFileUploadAllowed ?? false)
+            setIsChatFlowAvailableForSpeech(uploadConstraints?.isSpeechToTextEnabled ?? false)
+            setImageUploadAllowedTypes(getAllowedTypesString(imageConstraints))
+            setFileUploadAllowedTypes(getAllowedTypesString(fileConstraints))
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [getAllowChatFlowUploads.data])
@@ -1354,8 +1406,14 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
         if (getChatflowConfig.data) {
             setIsConfigLoading(false)
             if (getChatflowConfig.data?.flowData) {
-                let nodes = JSON.parse(getChatflowConfig.data?.flowData).nodes ?? []
-                const startNode = nodes.find((node) => node.data.name === 'startAgentflow')
+                let nodes = []
+                try {
+                    nodes = JSON.parse(getChatflowConfig.data?.flowData)?.nodes ?? []
+                } catch {
+                    nodes = []
+                }
+                if (!Array.isArray(nodes)) nodes = []
+                const startNode = nodes.find((node) => node?.data?.name === 'startAgentflow')
                 if (startNode) {
                     const startInputType = startNode.data.inputs?.startInputType
                     setStartInputType(startInputType)
@@ -1364,7 +1422,8 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                     if (startInputType === 'formInput' && formInputTypes && formInputTypes.length > 0) {
                         for (const formInputType of formInputTypes) {
                             if (formInputType.type === 'options') {
-                                formInputType.options = formInputType.addOptions.map((option) => ({
+                                const addOptions = Array.isArray(formInputType.addOptions) ? formInputType.addOptions : []
+                                formInputType.options = addOptions.map((option) => ({
                                     label: option.option,
                                     name: option.option
                                 }))
@@ -1384,8 +1443,17 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                 }
             }
 
-            if (getChatflowConfig.data?.chatbotConfig && JSON.parse(getChatflowConfig.data?.chatbotConfig)) {
-                let config = JSON.parse(getChatflowConfig.data?.chatbotConfig)
+            const chatbotConfigRaw = getChatflowConfig.data?.chatbotConfig
+            let config = null
+            if (chatbotConfigRaw) {
+                try {
+                    config = typeof chatbotConfigRaw === 'string' ? JSON.parse(chatbotConfigRaw) : chatbotConfigRaw
+                } catch {
+                    config = null
+                }
+            }
+
+            if (config && typeof config === 'object') {
                 if (config.starterPrompts) {
                     let inputFields = []
                     Object.getOwnPropertyNames(config.starterPrompts).forEach((key) => {
@@ -1486,8 +1554,10 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
 
     useEffect(() => {
         if (open && chatflowid) {
-            // API request
-            getChatmessageApi.request(chatflowid)
+            // Agentflow chat history is sourced from executions, not chatmessage endpoints.
+            if (!isAgentCanvas) {
+                getChatmessageApi.request(chatflowid)
+            }
             getIsChatflowStreamingApi.request(chatflowid)
             getAllowChatFlowUploads.request(chatflowid)
             getChatflowConfig.request(chatflowid)
@@ -2385,34 +2455,44 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
 
     return (
         <div onDragEnter={handleDrag}>
-            {isDragActive && (
-                <div
-                    className='image-dropzone'
-                    onDragEnter={handleDrag}
-                    onDragLeave={handleDrag}
-                    onDragEnd={handleDrag}
-                    onDrop={handleDrop}
-                />
-            )}
-            {isDragActive &&
-                (getAllowChatFlowUploads.data?.isImageUploadAllowed || getAllowChatFlowUploads.data?.isRAGFileUploadAllowed) && (
-                    <Box className='drop-overlay'>
-                        <Typography variant='h2'>Drop here to upload</Typography>
-                        {[
-                            ...getAllowChatFlowUploads.data.imgUploadSizeAndTypes,
-                            ...getAllowChatFlowUploads.data.fileUploadSizeAndTypes
-                        ].map((allowed) => {
-                            return (
-                                <>
-                                    <Typography variant='subtitle1'>{allowed.fileTypes?.join(', ')}</Typography>
-                                    {allowed.maxUploadSize && (
-                                        <Typography variant='subtitle1'>Max Allowed Size: {allowed.maxUploadSize} MB</Typography>
-                                    )}
-                                </>
-                            )
-                        })}
-                    </Box>
-                )}
+            {(() => {
+                const { imageConstraints, fileConstraints } = normalizeUploadConstraints(uploadConfig)
+                const allowedConstraints = [...imageConstraints, ...fileConstraints]
+
+                return (
+                    <>
+                        {isDragActive && (
+                            <div
+                                className='image-dropzone'
+                                onDragEnter={handleDrag}
+                                onDragLeave={handleDrag}
+                                onDragEnd={handleDrag}
+                                onDrop={handleDrop}
+                            />
+                        )}
+                        {isDragActive &&
+                            (uploadConfig?.isImageUploadAllowed || uploadConfig?.isRAGFileUploadAllowed) && (
+                                <Box className='drop-overlay'>
+                                    <Typography variant='h2'>Drop here to upload</Typography>
+                                    {allowedConstraints.map((allowed, idx) => {
+                                        const fileTypes = Array.isArray(allowed?.fileTypes)
+                                            ? allowed.fileTypes.join(', ')
+                                            : allowed?.fileTypes || ''
+                                        if (!fileTypes && !allowed?.maxUploadSize) return null
+                                        return (
+                                            <Fragment key={`allowed-${idx}`}>
+                                                {fileTypes && <Typography variant='subtitle1'>{fileTypes}</Typography>}
+                                                {allowed.maxUploadSize && (
+                                                    <Typography variant='subtitle1'>Max Allowed Size: {allowed.maxUploadSize} MB</Typography>
+                                                )}
+                                            </Fragment>
+                                        )
+                                    })}
+                                </Box>
+                            )}
+                    </>
+                )
+            })()}
             <div ref={ps} className={`${isDialog ? 'cloud-dialog' : 'cloud'}`}>
                 <div id='messagelist' className={'messagelist'}>
                     {messages &&

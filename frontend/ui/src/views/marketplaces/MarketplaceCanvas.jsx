@@ -3,17 +3,23 @@ import ReactFlow, { Controls, Background, useNodesState, useEdgesState } from 'r
 import 'reactflow/dist/style.css'
 import '@/views/canvas/index.css'
 
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 
 // material-ui
-import { Toolbar, Box, AppBar } from '@mui/material'
+import { Toolbar, Box, AppBar, Typography } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 
 // project imports
 import MarketplaceCanvasNode from './MarketplaceCanvasNode'
 import MarketplaceCanvasHeader from './MarketplaceCanvasHeader'
 import StickyNote from '../canvas/StickyNote'
+
+// API
+import marketplacesApi from '@/api/marketplaces'
+
+// Hooks
+import useApi from '@/hooks/useApi'
 
 // icons
 import { IconMagnetFilled, IconMagnetOff, IconArtboard, IconArtboardOff } from '@tabler/icons-react'
@@ -26,10 +32,14 @@ const edgeTypes = { buttonedge: '' }
 const MarketplaceCanvas = () => {
     const theme = useTheme()
     const navigate = useNavigate()
+    const { id } = useParams()
     const customization = useSelector((state) => state.customization)
 
     const { state } = useLocation()
-    const { flowData, name } = state
+    const [flowData, setFlowData] = useState(state?.flowData ?? null)
+    const [flowName, setFlowName] = useState(state?.templateName ?? state?.name ?? 'Marketplace Template')
+    const [templateUnavailable, setTemplateUnavailable] = useState(false)
+    const getAllTemplatesMarketplacesApi = useApi(marketplacesApi.getAllTemplatesFromMarketplaces)
 
     // ==============================|| ReactFlow ||============================== //
 
@@ -43,10 +53,34 @@ const MarketplaceCanvas = () => {
     // ==============================|| useEffect ||============================== //
 
     useEffect(() => {
+        if (!flowData && id) {
+            getAllTemplatesMarketplacesApi.request()
+        }
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [flowData, id])
+
+    useEffect(() => {
+        if (!getAllTemplatesMarketplacesApi.data || flowData) return
+
+        const templates = Array.isArray(getAllTemplatesMarketplacesApi.data) ? getAllTemplatesMarketplacesApi.data : []
+        const selectedTemplate = templates.find((template) => template?.id === id)
+        if (!selectedTemplate) {
+            setTemplateUnavailable(true)
+            return
+        }
+        setFlowData(selectedTemplate.flowData || null)
+        setFlowName(selectedTemplate.templateName || selectedTemplate.name || 'Marketplace Template')
+    }, [getAllTemplatesMarketplacesApi.data, flowData, id])
+
+    useEffect(() => {
         if (flowData) {
             const initialFlow = JSON.parse(flowData)
             setNodes(initialFlow.nodes || [])
             setEdges(initialFlow.edges || [])
+        } else {
+            setNodes([])
+            setEdges([])
         }
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -74,13 +108,18 @@ const MarketplaceCanvas = () => {
                 >
                     <Toolbar>
                         <MarketplaceCanvasHeader
-                            flowName={name}
-                            flowData={JSON.parse(flowData)}
+                            flowName={flowName}
+                            flowData={flowData ? JSON.parse(flowData) : { nodes: [], edges: [] }}
                             onChatflowCopy={(flowData) => onChatflowCopy(flowData)}
                         />
                     </Toolbar>
                 </AppBar>
                 <Box sx={{ pt: '70px', height: '100vh', width: '100%' }}>
+                    {!flowData && templateUnavailable && (
+                        <Box sx={{ p: 2 }}>
+                            <Typography color='text.secondary'>Template unavailable. Please open it from Marketplace list.</Typography>
+                        </Box>
+                    )}
                     <div className='reactflow-parent-wrapper'>
                         <div className='reactflow-wrapper' ref={reactFlowWrapper}>
                             <ReactFlow

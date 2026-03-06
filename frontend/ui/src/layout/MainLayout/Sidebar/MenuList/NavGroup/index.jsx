@@ -9,6 +9,7 @@ import NavItem from '../NavItem'
 import NavCollapse from '../NavCollapse'
 import { useAuth } from '@/hooks/useAuth'
 import { Available } from '@/ui-component/rbac/available'
+import { getMenuChildren } from '../menuUtils'
 
 // ==============================|| SIDEBAR MENU LIST GROUP ||============================== //
 
@@ -17,6 +18,8 @@ const NavGroup = ({ item }) => {
     const { hasPermission, hasDisplay } = useAuth()
 
     const listItems = (menu, level = 1) => {
+        if (!menu) return null
+
         // Filter based on display and permission
         if (!shouldDisplayMenu(menu)) return null
 
@@ -26,6 +29,8 @@ const NavGroup = ({ item }) => {
                 return <NavCollapse key={menu.id} menu={menu} level={level} />
             case 'item':
                 return <NavItem key={menu.id} item={menu} level={level} navType='MENU' />
+            case 'group':
+                return getMenuChildren(menu).map((child) => listItems(child, level + 1))
             default:
                 return (
                     <Typography key={menu.id} variant='h6' color='error' align='center'>
@@ -36,6 +41,8 @@ const NavGroup = ({ item }) => {
     }
 
     const shouldDisplayMenu = (menu) => {
+        if (!menu) return false
+
         // Handle permission check
         if (menu.permission && !hasPermission(menu.permission)) {
             return false // Do not render if permission is lacking
@@ -52,16 +59,24 @@ const NavGroup = ({ item }) => {
     }
 
     const renderPrimaryItems = () => {
-        const primaryGroup = item.children.find((child) => child.id === 'primary')
-        return primaryGroup.children
+        const children = getMenuChildren(item)
+        const primaryGroup = children.find((child) => child?.id === 'primary')
+
+        if (primaryGroup) return getMenuChildren(primaryGroup)
+
+        // Backward-compatible fallback: render standalone primary items if menu
+        // schema does not provide a dedicated `primary` group.
+        return children.filter((child) => child?.type === 'item' || child?.type === 'collapse')
     }
 
     const renderNonPrimaryGroups = () => {
-        let nonprimaryGroups = item.children.filter((child) => child.id !== 'primary')
+        const children = getMenuChildren(item)
+        const hasPrimaryGroup = children.some((child) => child?.id === 'primary')
+        let nonprimaryGroups = children.filter((child) => child?.type === 'group' && (!hasPrimaryGroup || child.id !== 'primary'))
         // Display children based on permission and display
         nonprimaryGroups = nonprimaryGroups.map((group) => {
-            const children = group.children.filter((menu) => shouldDisplayMenu(menu))
-            return { ...group, children }
+            const groupChildren = getMenuChildren(group).filter((menu) => shouldDisplayMenu(menu))
+            return { ...group, children: groupChildren }
         })
         // Get rid of group with empty children
         nonprimaryGroups = nonprimaryGroups.filter((group) => group.children.length > 0)
@@ -93,7 +108,7 @@ const NavGroup = ({ item }) => {
                 return (
                     <Available key={group.id} permission={groupPermissions}>
                         <>
-                            <Divider sx={{ height: '1px', borderColor: theme.palette.grey[900] + 25, my: 0 }} />
+                            <Divider sx={{ height: '1px', borderColor: theme.palette.outline?.subtle || theme.palette.divider, my: 0 }} />
                             <List
                                 subheader={
                                     <Typography variant='caption' sx={{ ...theme.typography.subMenuCaption }} display='block' gutterBottom>

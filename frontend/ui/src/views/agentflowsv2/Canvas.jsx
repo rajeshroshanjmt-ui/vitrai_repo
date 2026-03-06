@@ -62,6 +62,75 @@ import { FLOWISE_CREDENTIAL_ID, AGENTFLOW_ICONS } from '@/store/constant'
 const nodeTypes = { agentFlow: CanvasNode, stickyNote: StickyNote, iteration: IterationNode }
 const edgeTypes = { agentFlow: AgentFlowEdge }
 
+const toNumber = (value, fallback = 0) => {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : fallback
+}
+
+const normalizeFlowNodes = (rawNodes) => {
+    if (!Array.isArray(rawNodes)) return []
+
+    return rawNodes
+        .filter((node) => node && typeof node === 'object')
+        .map((node, index) => {
+            const nodeId = node.id || `node_${index}`
+            const rawData = node.data && typeof node.data === 'object' ? node.data : {}
+
+            const position =
+                node.position && typeof node.position === 'object'
+                    ? {
+                          x: toNumber(node.position.x, toNumber(node.x, 0)),
+                          y: toNumber(node.position.y, toNumber(node.y, 0))
+                      }
+                    : node.positionAbsolute && typeof node.positionAbsolute === 'object'
+                      ? {
+                            x: toNumber(node.positionAbsolute.x, toNumber(node.x, 0)),
+                            y: toNumber(node.positionAbsolute.y, toNumber(node.y, 0))
+                        }
+                      : {
+                            x: toNumber(node.x, 0),
+                            y: toNumber(node.y, 0)
+                        }
+
+            const nodeName = rawData.name || 'unknownNode'
+            const nodeType =
+                node.type || (nodeName === 'iterationAgentflow' ? 'iteration' : nodeName === 'stickyNoteAgentflow' ? 'stickyNote' : 'agentFlow')
+
+            return {
+                ...node,
+                id: nodeId,
+                type: nodeType,
+                position,
+                data: {
+                    id: rawData.id || nodeId,
+                    label: rawData.label || nodeName,
+                    name: nodeName,
+                    inputParams: Array.isArray(rawData.inputParams) ? rawData.inputParams : [],
+                    inputAnchors: Array.isArray(rawData.inputAnchors) ? rawData.inputAnchors : [],
+                    outputAnchors: Array.isArray(rawData.outputAnchors) ? rawData.outputAnchors : [],
+                    inputs: rawData.inputs && typeof rawData.inputs === 'object' ? rawData.inputs : {},
+                    outputs: rawData.outputs && typeof rawData.outputs === 'object' ? rawData.outputs : {},
+                    ...rawData
+                }
+            }
+        })
+}
+
+const normalizeFlowEdges = (rawEdges, validNodeIds) => {
+    if (!Array.isArray(rawEdges)) return []
+    const allowed = new Set(validNodeIds)
+
+    return rawEdges.filter(
+        (edge) => edge && typeof edge === 'object' && edge.source && edge.target && allowed.has(edge.source) && allowed.has(edge.target)
+    )
+}
+
+const normalizeFlowDefinition = (flow) => {
+    const nodes = normalizeFlowNodes(flow?.nodes)
+    const edges = normalizeFlowEdges(flow?.edges, nodes.map((node) => node.id))
+    return { nodes, edges }
+}
+
 // ==============================|| CANVAS ||============================== //
 
 const AgentflowCanvas = () => {
@@ -160,10 +229,10 @@ const AgentflowCanvas = () => {
     const handleLoadFlow = (file) => {
         try {
             const flowData = JSON.parse(file)
-            const nodes = flowData.nodes || []
+            const normalizedFlow = normalizeFlowDefinition(flowData)
 
-            setNodes(nodes)
-            setEdges(flowData.edges || [])
+            setNodes(normalizedFlow.nodes)
+            setEdges(normalizedFlow.edges)
             setTimeout(() => setDirty(), 0)
         } catch (e) {
             console.error(e)
@@ -269,9 +338,10 @@ const AgentflowCanvas = () => {
         if (node.data.name === 'stickyNoteAgentflow') {
             // dont show dialog
         } else {
+            const inputParams = Array.isArray(node.data.inputParams) ? node.data.inputParams : []
             const dialogProps = {
                 data: node.data,
-                inputParams: node.data.inputParams.filter((inputParam) => !inputParam.hidden)
+                inputParams: inputParams.filter((inputParam) => !inputParam?.hidden)
             }
 
             setEditNodeDialogProps(dialogProps)
@@ -432,7 +502,7 @@ const AgentflowCanvas = () => {
     )
 
     const syncNodes = () => {
-        const componentNodes = canvas.componentNodes
+        const componentNodes = Array.isArray(canvas.componentNodes) ? canvas.componentNodes : []
 
         const cloneNodes = cloneDeep(nodes)
         const cloneEdges = cloneDeep(edges)
@@ -507,7 +577,12 @@ const AgentflowCanvas = () => {
     }
 
     const checkIfSyncNodesAvailable = (nodes) => {
-        const componentNodes = canvas.componentNodes
+        if (!Array.isArray(nodes) || nodes.length === 0) {
+            setIsSyncNodesButtonEnabled(false)
+            return
+        }
+
+        const componentNodes = Array.isArray(canvas.componentNodes) ? canvas.componentNodes : []
 
         for (let i = 0; i < nodes.length; i++) {
             const node = nodes[i]
@@ -527,12 +602,13 @@ const AgentflowCanvas = () => {
     useEffect(() => {
         if (getSpecificChatflowApi.data) {
             const chatflow = getSpecificChatflowApi.data
-            const initialFlow = chatflow.flowData ? JSON.parse(chatflow.flowData) : []
-            setNodes(initialFlow.nodes || [])
-            setEdges(initialFlow.edges || [])
+            const parsedFlow = chatflow.flowData ? JSON.parse(chatflow.flowData) : {}
+            const initialFlow = normalizeFlowDefinition(parsedFlow)
+            setNodes(initialFlow.nodes)
+            setEdges(initialFlow.edges)
             dispatch({ type: SET_CHATFLOW, chatflow })
         } else if (getSpecificChatflowApi.error) {
-            errorFailed(`Failed to retrieve ${canvasTitle}: ${getSpecificChatflowApi.error.response.data.message}`)
+            errorFailed(`Failed to retrieve ${canvasTitle}: ${getSpecificChatflowApi.error?.response?.data?.message || getSpecificChatflowApi.error.message}`)
         }
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -546,7 +622,7 @@ const AgentflowCanvas = () => {
             saveChatflowSuccess()
             window.history.replaceState(state, null, `/v2/agentcanvas/${chatflow.id}`)
         } else if (createNewChatflowApi.error) {
-            errorFailed(`Failed to save ${canvasTitle}: ${createNewChatflowApi.error.response.data.message}`)
+            errorFailed(`Failed to save ${canvasTitle}: ${createNewChatflowApi.error?.response?.data?.message || createNewChatflowApi.error.message}`)
         }
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -558,7 +634,7 @@ const AgentflowCanvas = () => {
             dispatch({ type: SET_CHATFLOW, chatflow: updateChatflowApi.data })
             saveChatflowSuccess()
         } else if (updateChatflowApi.error) {
-            errorFailed(`Failed to save ${canvasTitle}: ${updateChatflowApi.error.response.data.message}`)
+            errorFailed(`Failed to save ${canvasTitle}: ${updateChatflowApi.error?.response?.data?.message || updateChatflowApi.error.message}`)
         }
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -567,8 +643,9 @@ const AgentflowCanvas = () => {
     useEffect(() => {
         setChatflow(canvasDataStore.chatflow)
         if (canvasDataStore.chatflow) {
-            const flowData = canvasDataStore.chatflow.flowData ? JSON.parse(canvasDataStore.chatflow.flowData) : []
-            checkIfSyncNodesAvailable(flowData.nodes || [])
+            const flowData = canvasDataStore.chatflow.flowData ? JSON.parse(canvasDataStore.chatflow.flowData) : {}
+            const normalizedFlow = normalizeFlowDefinition(flowData)
+            checkIfSyncNodesAvailable(normalizedFlow.nodes)
         }
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -641,7 +718,8 @@ const AgentflowCanvas = () => {
 
     useEffect(() => {
         if (!chatflowId && !localStorage.getItem('duplicatedFlowData') && getNodesApi.data && nodes.length === 0) {
-            const startNodeData = getNodesApi.data.find((node) => node.name === 'startAgentflow')
+            const sourceNodes = Array.isArray(getNodesApi.data) ? getNodesApi.data : []
+            const startNodeData = sourceNodes.find((node) => node?.name === 'startAgentflow')
             if (startNodeData) {
                 const clonedStartNodeData = cloneDeep(startNodeData)
                 clonedStartNodeData.position = { x: 100, y: 100 }

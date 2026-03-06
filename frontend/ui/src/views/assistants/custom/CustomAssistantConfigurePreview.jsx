@@ -57,6 +57,7 @@ import { SET_CHATFLOW, closeSnackbar as closeSnackbarAction, enqueueSnackbar as 
 import { initNode, showHideInputParams } from '@/utils/genericHelper'
 import useNotifier from '@/utils/useNotifier'
 import { toolAgentFlow } from './toolAgentFlow'
+import { DEFAULT_REAL_WORLD_INSTRUCTION } from './assistantProfiles'
 
 // ===========================|| CustomAssistantConfigurePreview ||=========================== //
 
@@ -94,7 +95,7 @@ const CustomAssistantConfigurePreview = () => {
     const [chatModelsOptions, setChatModelsOptions] = useState([])
     const [selectedChatModel, setSelectedChatModel] = useState({})
     const [selectedCustomAssistant, setSelectedCustomAssistant] = useState({})
-    const [customAssistantInstruction, setCustomAssistantInstruction] = useState('You are helpful assistant')
+    const [customAssistantInstruction, setCustomAssistantInstruction] = useState(DEFAULT_REAL_WORLD_INSTRUCTION)
     const [customAssistantFlowId, setCustomAssistantFlowId] = useState()
     const [documentStoreOptions, setDocumentStoreOptions] = useState([])
     const [selectedDocumentStores, setSelectedDocumentStores] = useState([])

@@ -178,14 +178,36 @@ const AgentFlowNode = ({ data }) => {
     }, [data, ref, updateNodeInternals])
 
     useEffect(() => {
-        const nodeOutdatedMessage = (oldVersion, newVersion) =>
-            `Node version ${oldVersion} outdated\nUpdate to latest version ${newVersion}`
-        const nodeVersionEmptyMessage = (newVersion) => `Node outdated\nUpdate to latest version ${newVersion}`
+        const normalizeVersionLabel = (version) => {
+            if (version === undefined || version === null) {
+                return null
+            }
+            const normalized = `${version}`.trim()
+            if (!normalized) return null
+            if (['undefined', 'null', 'nan'].includes(normalized.toLowerCase())) return null
+            return normalized
+        }
 
-        const componentNode = canvas.componentNodes.find((nd) => nd.name === data.name)
+        const nodeOutdatedMessage = (oldVersion, newVersion) => {
+            const currentVersion = normalizeVersionLabel(oldVersion)
+            const latestVersion = normalizeVersionLabel(newVersion)
+            if (!currentVersion && !latestVersion) {
+                return 'Node outdated\nUpdate to latest available node version'
+            }
+            if (!latestVersion) {
+                return `Node version ${currentVersion} outdated\nUpdate to latest available node version`
+            }
+            if (!currentVersion) {
+                return `Node outdated\nUpdate to latest version ${latestVersion}`
+            }
+            return `Node version ${currentVersion} outdated\nUpdate to latest version ${latestVersion}`
+        }
+
+        const componentNodes = Array.isArray(canvas.componentNodes) ? canvas.componentNodes : []
+        const componentNode = componentNodes.find((nd) => nd.name === data.name)
         if (componentNode) {
             if (!data.version) {
-                setWarningMessage(nodeVersionEmptyMessage(componentNode.version))
+                setWarningMessage('')
             } else if (data.version && componentNode.version > data.version) {
                 setWarningMessage(nodeOutdatedMessage(data.version, componentNode.version))
             } else if (componentNode.badge === 'DEPRECATING') {
@@ -353,7 +375,7 @@ const AgentFlowNode = ({ data }) => {
                     )}
 
                     <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-                        <Box item style={{ width: 50 }}>
+                        <Box sx={{ width: 50 }}>
                             {data.color && !data.icon ? (
                                 <div
                                     style={{

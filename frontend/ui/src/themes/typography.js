@@ -6,64 +6,79 @@
 export default function themeTypography(theme) {
     return {
         fontFamily: theme?.customization?.fontFamily,
+        fontWeightLight: 400,
+        fontWeightRegular: 500,
+        fontWeightMedium: 600,
+        fontWeightBold: 700,
         h6: {
-            fontWeight: 500,
+            fontWeight: 600,
             color: theme.heading,
-            fontSize: '0.75rem'
+            fontSize: '0.8rem',
+            letterSpacing: '0.01em'
         },
         h5: {
-            fontSize: '0.875rem',
+            fontSize: '0.95rem',
             color: theme.heading,
-            fontWeight: 500
+            fontWeight: 600,
+            letterSpacing: '0.01em'
         },
         h4: {
-            fontSize: '1rem',
+            fontSize: '1.06rem',
             color: theme.heading,
-            fontWeight: 600
+            fontWeight: 650,
+            letterSpacing: '0.01em'
         },
         h3: {
-            fontSize: '1.25rem',
+            fontSize: '1.32rem',
             color: theme.heading,
-            fontWeight: 600
+            fontWeight: 700,
+            letterSpacing: '0.005em'
         },
         h2: {
-            fontSize: '1.5rem',
+            fontSize: '1.72rem',
             color: theme.heading,
-            fontWeight: 700
+            fontWeight: 700,
+            letterSpacing: '-0.01em'
         },
         h1: {
-            fontSize: '2.125rem',
+            fontSize: '2.22rem',
             color: theme.heading,
-            fontWeight: 700
+            fontWeight: 700,
+            letterSpacing: '-0.018em',
+            lineHeight: 1.15
         },
         subtitle1: {
             fontSize: '0.875rem',
-            fontWeight: 500,
+            fontWeight: 600,
             color: theme.textDark
         },
         subtitle2: {
-            fontSize: '0.75rem',
-            fontWeight: 400,
+            fontSize: '0.78rem',
+            fontWeight: 500,
             color: theme.darkTextSecondary
         },
         caption: {
-            fontSize: '0.75rem',
+            fontSize: '0.76rem',
             color: theme.darkTextSecondary,
-            fontWeight: 400
+            fontWeight: 500
         },
         body1: {
-            fontSize: '0.875rem',
-            fontWeight: 400,
-            lineHeight: '1.334em'
+            fontSize: '0.94rem',
+            fontWeight: 500,
+            lineHeight: 1.5,
+            color: theme.darkTextPrimary
         },
         body2: {
-            letterSpacing: '0em',
-            fontWeight: 400,
-            lineHeight: '1.5em',
+            fontSize: '0.86rem',
+            letterSpacing: '0.005em',
+            fontWeight: 500,
+            lineHeight: 1.5,
             color: theme.darkTextPrimary
         },
         button: {
-            textTransform: 'capitalize'
+            textTransform: 'none',
+            fontWeight: 650,
+            letterSpacing: '0.01em'
         },
         customInput: {
             marginTop: 1,
@@ -87,28 +102,30 @@ export default function themeTypography(theme) {
             }
         },
         mainContent: {
-            backgroundColor: theme.background,
+            backgroundColor: 'transparent',
             width: '100%',
-            minHeight: 'calc(100vh - 75px)',
+            minHeight: 'calc(100vh - 74px)',
             flexGrow: 1,
-            padding: '20px',
-            marginTop: '75px',
-            marginRight: '20px',
+            padding: '24px',
+            marginTop: '74px',
+            marginRight: '16px',
             borderRadius: `${theme?.customization?.borderRadius}px`
         },
         menuCaption: {
-            fontSize: '0.875rem',
-            fontWeight: 500,
+            fontSize: '0.78rem',
+            fontWeight: 700,
             color: theme.heading,
-            padding: '6px',
-            textTransform: 'capitalize',
-            marginTop: '10px'
+            padding: '4px 6px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            marginTop: '6px'
         },
         subMenuCaption: {
-            fontSize: '0.6875rem',
-            fontWeight: 500,
+            fontSize: '0.72rem',
+            fontWeight: 600,
             color: theme.darkTextSecondary,
-            textTransform: 'capitalize'
+            textTransform: 'uppercase',
+            letterSpacing: '0.06em'
         },
         commonAvatar: {
             cursor: 'pointer',

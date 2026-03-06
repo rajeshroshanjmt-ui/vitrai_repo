@@ -1,8 +1,9 @@
 // color variants
-@import 'themes-vars.module.scss';
+@use 'themes-vars.module' as *;
 
 // third-party
 @import 'react-perfect-scrollbar/dist/css/styles.css';
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&family=Sora:wght@500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 
 // ==============================|| LIGHT BOX ||============================== //
 .fullscreen .react-images__blanket {

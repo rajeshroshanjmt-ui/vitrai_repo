@@ -1,0 +1,595 @@
+{
+  "generatedAt": "2026-03-06T17:21:35.699Z",
+  "baseUrl": "http://localhost",
+  "executablePath": null,
+  "login": {
+    "resolverRouteFinalUrl": "http://localhost/login",
+    "postLoginUrl": "http://localhost/",
+    "resolverReachedSignIn": true,
+    "localStorage": {
+      "hasAccessToken": true,
+      "hasTenantId": true,
+      "hasRole": true
+    },
+    "authChain": {
+      "tokenStatus": 200,
+      "meStatus": 200
+    }
+  },
+  "dataSetup": {
+    "detectedChatflowId": "fbc986d3-49fe-4f35-9124-7dea5c4bdc65",
+    "detectedAgentflowId": "f36410ae-a1f7-4fbe-92e8-b80f2544bc27",
+    "detectedMarketplaceChatTemplate": "64efb5af-6be2-4a95-a7e2-d003cd424d05",
+    "detectedMarketplaceAgentTemplate": "8add6524-84a6-4350-9afe-e6027857d597"
+  },
+  "metrics": {
+    "totalRoutes": 13,
+    "routesWithNavErrors": 0,
+    "routesWithPageErrors": 0,
+    "routesWithConsoleErrors": 0,
+    "routesWithHttp4xx5xx": 0,
+    "totalPageErrors": 0,
+    "totalConsoleErrors": 2,
+    "totalConsoleWarnings": 0,
+    "totalFailedRequests": 0,
+    "total4xx5xxResponses": 2,
+    "optional404Count": 2,
+    "nonOptional404Count": 0,
+    "actionFailures": 0
+  },
+  "routeResults": [
+    {
+      "name": "dashboard",
+      "path": "/dashboard",
+      "finalUrl": "http://localhost/dashboard",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T17:20:10.342Z",
+          "url": "http://localhost/dashboard",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T17:20:10.367Z",
+          "url": "http://localhost/dashboard",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T17:20:11.388Z",
+          "url": "http://localhost/dashboard",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "chatflows",
+      "path": "/chatflows",
+      "finalUrl": "http://localhost/chatflows",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T17:20:13.988Z",
+          "url": "http://localhost/chatflows",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T17:20:14.027Z",
+          "url": "http://localhost/chatflows",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T17:20:14.904Z",
+          "url": "http://localhost/chatflows",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "agentflows",
+      "path": "/agentflows",
+      "finalUrl": "http://localhost/agentflows",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T17:20:17.454Z",
+          "url": "http://localhost/agentflows",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T17:20:17.493Z",
+          "url": "http://localhost/agentflows",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T17:20:18.726Z",
+          "url": "http://localhost/agentflows",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "marketplaces",
+      "path": "/marketplaces",
+      "finalUrl": "http://localhost/marketplaces",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T17:20:21.490Z",
+          "url": "http://localhost/marketplaces",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T17:20:21.534Z",
+          "url": "http://localhost/marketplaces",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T17:20:22.470Z",
+          "url": "http://localhost/marketplaces",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "datasets",
+      "path": "/datasets",
+      "finalUrl": "http://localhost/datasets",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T17:20:26.064Z",
+          "url": "http://localhost/datasets",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T17:20:26.108Z",
+          "url": "http://localhost/datasets",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T17:20:27.728Z",
+          "url": "http://localhost/datasets",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "evaluators",
+      "path": "/evaluators",
+      "finalUrl": "http://localhost/evaluators",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T17:20:30.350Z",
+          "url": "http://localhost/evaluators",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T17:20:30.387Z",
+          "url": "http://localhost/evaluators",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T17:20:31.217Z",
+          "url": "http://localhost/evaluators",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "evaluations",
+      "path": "/evaluations",
+      "finalUrl": "http://localhost/evaluations",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T17:20:33.759Z",
+          "url": "http://localhost/evaluations",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T17:20:33.790Z",
+          "url": "http://localhost/evaluations",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T17:20:34.713Z",
+          "url": "http://localhost/evaluations",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "assistants",
+      "path": "/assistants",
+      "finalUrl": "http://localhost/assistants",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T17:20:37.198Z",
+          "url": "http://localhost/assistants",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T17:20:37.240Z",
+          "url": "http://localhost/assistants",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T17:20:38.103Z",
+          "url": "http://localhost/assistants",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "document_stores",
+      "path": "/document-stores",
+      "finalUrl": "http://localhost/document-stores",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T17:20:40.752Z",
+          "url": "http://localhost/document-stores",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T17:20:40.790Z",
+          "url": "http://localhost/document-stores",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T17:20:41.755Z",
+          "url": "http://localhost/document-stores",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "chatflow_canvas",
+      "path": "/canvas/fbc986d3-49fe-4f35-9124-7dea5c4bdc65",
+      "finalUrl": "http://localhost/canvas/fbc986d3-49fe-4f35-9124-7dea5c4bdc65",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T17:20:44.397Z",
+          "url": "http://localhost/canvas/fbc986d3-49fe-4f35-9124-7dea5c4bdc65",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T17:20:44.443Z",
+          "url": "http://localhost/canvas/fbc986d3-49fe-4f35-9124-7dea5c4bdc65",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T17:20:45.479Z",
+          "url": "http://localhost/canvas/fbc986d3-49fe-4f35-9124-7dea5c4bdc65",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "agentflow_v2_canvas",
+      "path": "/v2/agentcanvas/f36410ae-a1f7-4fbe-92e8-b80f2544bc27",
+      "finalUrl": "http://localhost/v2/agentcanvas/f36410ae-a1f7-4fbe-92e8-b80f2544bc27",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T17:20:48.192Z",
+          "url": "http://localhost/v2/agentcanvas/f36410ae-a1f7-4fbe-92e8-b80f2544bc27",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T17:20:48.236Z",
+          "url": "http://localhost/v2/agentcanvas/f36410ae-a1f7-4fbe-92e8-b80f2544bc27",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T17:20:49.617Z",
+          "url": "http://localhost/v2/agentcanvas/f36410ae-a1f7-4fbe-92e8-b80f2544bc27",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "marketplace_chat_canvas",
+      "path": "/marketplace/64efb5af-6be2-4a95-a7e2-d003cd424d05",
+      "finalUrl": "http://localhost/marketplace/64efb5af-6be2-4a95-a7e2-d003cd424d05",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T17:20:52.319Z",
+          "url": "http://localhost/marketplace/64efb5af-6be2-4a95-a7e2-d003cd424d05",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T17:20:52.340Z",
+          "url": "http://localhost/marketplace/64efb5af-6be2-4a95-a7e2-d003cd424d05",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T17:20:53.284Z",
+          "url": "http://localhost/marketplace/64efb5af-6be2-4a95-a7e2-d003cd424d05",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    },
+    {
+      "name": "marketplace_agent_canvas",
+      "path": "/v2/marketplace/8add6524-84a6-4350-9afe-e6027857d597",
+      "finalUrl": "http://localhost/v2/marketplace/8add6524-84a6-4350-9afe-e6027857d597",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleEntries": [
+        {
+          "at": "2026-03-06T17:20:55.817Z",
+          "url": "http://localhost/v2/marketplace/8add6524-84a6-4350-9afe-e6027857d597",
+          "type": "debug",
+          "message": "[vite] connecting..."
+        },
+        {
+          "at": "2026-03-06T17:20:55.852Z",
+          "url": "http://localhost/v2/marketplace/8add6524-84a6-4350-9afe-e6027857d597",
+          "type": "debug",
+          "message": "[vite] connected."
+        },
+        {
+          "at": "2026-03-06T17:20:57.777Z",
+          "url": "http://localhost/v2/marketplace/8add6524-84a6-4350-9afe-e6027857d597",
+          "type": "info",
+          "message": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold"
+        }
+      ],
+      "failedRequests": [],
+      "responses": []
+    }
+  ],
+  "actions": [
+    {
+      "name": "chatflows_add_new",
+      "status": "passed",
+      "details": {
+        "clicked": false,
+        "finalUrl": "http://localhost/chatflows",
+        "landedOnCanvas": false
+      }
+    },
+    {
+      "name": "chatflow_open_api_dialog",
+      "status": "passed",
+      "details": {
+        "opened": false,
+        "reason": "trigger_not_found"
+      }
+    },
+    {
+      "name": "chatflow_chat_popup",
+      "status": "passed",
+      "details": {
+        "clicked": true,
+        "popupVisible": false
+      }
+    },
+    {
+      "name": "agentflows_add_new_v2",
+      "status": "passed",
+      "details": {
+        "clicked": false,
+        "finalUrl": "http://localhost/agentflows",
+        "landedOnAgentCanvas": false
+      }
+    },
+    {
+      "name": "marketplace_import_navigation",
+      "status": "passed",
+      "details": {
+        "imported": true,
+        "finalUrl": "http://localhost/marketplace/64efb5af-6be2-4a95-a7e2-d003cd424d05"
+      }
+    },
+    {
+      "name": "assistants_custom_open",
+      "status": "passed",
+      "details": {
+        "opened": false,
+        "reason": "card_not_found"
+      }
+    },
+    {
+      "name": "document_stores_add_dialog",
+      "status": "passed",
+      "details": {
+        "clicked": false,
+        "opened": false
+      }
+    },
+    {
+      "name": "datasets_add_dialog",
+      "status": "passed",
+      "details": {
+        "clicked": false,
+        "opened": true
+      }
+    },
+    {
+      "name": "evaluators_new_dialog",
+      "status": "passed",
+      "details": {
+        "clicked": false,
+        "opened": true
+      }
+    },
+    {
+      "name": "evaluations_new_dialog",
+      "status": "passed",
+      "details": {
+        "clicked": false,
+        "opened": false
+      }
+    }
+  ],
+  "failures": {
+    "pageErrors": [],
+    "consoleErrors": [
+      {
+        "at": "2026-03-06T17:21:10.399Z",
+        "url": "http://localhost/canvas/fbc986d3-49fe-4f35-9124-7dea5c4bdc65",
+        "type": "error",
+        "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      },
+      {
+        "at": "2026-03-06T17:21:10.401Z",
+        "url": "http://localhost/canvas/fbc986d3-49fe-4f35-9124-7dea5c4bdc65",
+        "type": "error",
+        "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      }
+    ],
+    "consoleWarnings": [],
+    "failedRequests": [],
+    "responses": [
+      {
+        "at": "2026-03-06T17:21:10.399Z",
+        "pageUrl": "http://localhost/canvas/fbc986d3-49fe-4f35-9124-7dea5c4bdc65",
+        "requestUrl": "http://localhost/api/internal-chatmessage/fbc986d3-49fe-4f35-9124-7dea5c4bdc65?feedback=true",
+        "method": "GET",
+        "status": 404
+      },
+      {
+        "at": "2026-03-06T17:21:10.401Z",
+        "pageUrl": "http://localhost/canvas/fbc986d3-49fe-4f35-9124-7dea5c4bdc65",
+        "requestUrl": "http://localhost/api/internal-chatmessage/fbc986d3-49fe-4f35-9124-7dea5c4bdc65?feedback=true",
+        "method": "GET",
+        "status": 404
+      }
+    ],
+    "optional404": [
+      {
+        "at": "2026-03-06T17:21:10.399Z",
+        "pageUrl": "http://localhost/canvas/fbc986d3-49fe-4f35-9124-7dea5c4bdc65",
+        "requestUrl": "http://localhost/api/internal-chatmessage/fbc986d3-49fe-4f35-9124-7dea5c4bdc65?feedback=true",
+        "method": "GET",
+        "status": 404
+      },
+      {
+        "at": "2026-03-06T17:21:10.401Z",
+        "pageUrl": "http://localhost/canvas/fbc986d3-49fe-4f35-9124-7dea5c4bdc65",
+        "requestUrl": "http://localhost/api/internal-chatmessage/fbc986d3-49fe-4f35-9124-7dea5c4bdc65?feedback=true",
+        "method": "GET",
+        "status": 404
+      }
+    ],
+    "nonOptional404": []
+  },
+  "classifications": {
+    "crash": [],
+    "blocking": [],
+    "nonBlockingWarning": [
+      {
+        "at": "2026-03-06T17:21:10.399Z",
+        "pageUrl": "http://localhost/canvas/fbc986d3-49fe-4f35-9124-7dea5c4bdc65",
+        "requestUrl": "http://localhost/api/internal-chatmessage/fbc986d3-49fe-4f35-9124-7dea5c4bdc65?feedback=true",
+        "method": "GET",
+        "status": 404
+      },
+      {
+        "at": "2026-03-06T17:21:10.401Z",
+        "pageUrl": "http://localhost/canvas/fbc986d3-49fe-4f35-9124-7dea5c4bdc65",
+        "requestUrl": "http://localhost/api/internal-chatmessage/fbc986d3-49fe-4f35-9124-7dea5c4bdc65?feedback=true",
+        "method": "GET",
+        "status": 404
+      }
+    ]
+  },
+  "notes": [
+    "404 responses under optional OSS compatibility endpoints are classified as non-blocking unless paired with runtime crashes.",
+    "Action failures can be due to UI label drift; route-level stability and runtime crash status remain primary gates."
+  ],
+  "artifacts": {
+    "screenshotDir": "tmp/test-artifacts/screens"
+  }
+}

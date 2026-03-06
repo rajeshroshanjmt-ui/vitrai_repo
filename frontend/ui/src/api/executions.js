@@ -69,6 +69,10 @@ const getAllExecutions = async (params = {}) => {
 
     let rows = (response?.data || []).map(toExecutionRow)
 
+    if (params?.agentflowId) {
+        rows = rows.filter((row) => row?.agentflow?.id === params.agentflowId)
+    }
+
     if (params?.state) {
         rows = rows.filter((row) => row.state === params.state)
     }
@@ -91,6 +95,11 @@ const getAllExecutions = async (params = {}) => {
     if (params?.sessionId) {
         const q = String(params.sessionId).toLowerCase()
         rows = rows.filter((row) => String(row.sessionId || '').toLowerCase().includes(q))
+    }
+
+    const hasPaginationParams = Object.prototype.hasOwnProperty.call(params, 'page') || Object.prototype.hasOwnProperty.call(params, 'limit')
+    if (params?.agentflowId && !hasPaginationParams) {
+        return { data: rows }
     }
 
     const start = (page - 1) * limit

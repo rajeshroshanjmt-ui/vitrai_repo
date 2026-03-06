@@ -49,14 +49,36 @@ const CanvasNode = ({ data }) => {
         else return !canvas.canvasDialogShow && open
     }
 
-    const nodeOutdatedMessage = (oldVersion, newVersion) => `Node version ${oldVersion} outdated\nUpdate to latest version ${newVersion}`
+    const normalizeVersionLabel = (version) => {
+        if (version === undefined || version === null) {
+            return null
+        }
+        const normalized = `${version}`.trim()
+        if (!normalized) return null
+        if (['undefined', 'null', 'nan'].includes(normalized.toLowerCase())) return null
+        return normalized
+    }
 
-    const nodeVersionEmptyMessage = (newVersion) => `Node outdated\nUpdate to latest version ${newVersion}`
+    const nodeOutdatedMessage = (oldVersion, newVersion) => {
+        const currentVersion = normalizeVersionLabel(oldVersion)
+        const latestVersion = normalizeVersionLabel(newVersion)
+        if (!currentVersion && !latestVersion) {
+            return 'Node outdated\nUpdate to latest available node version'
+        }
+        if (!latestVersion) {
+            return `Node version ${currentVersion} outdated\nUpdate to latest available node version`
+        }
+        if (!currentVersion) {
+            return `Node outdated\nUpdate to latest version ${latestVersion}`
+        }
+        return `Node version ${currentVersion} outdated\nUpdate to latest version ${latestVersion}`
+    }
 
     const onDialogClicked = () => {
+        const inputParams = Array.isArray(data?.inputParams) ? data.inputParams : []
         const dialogProps = {
             data,
-            inputParams: data.inputParams.filter((inputParam) => !inputParam.hidden).filter((param) => param.additionalParams),
+            inputParams: inputParams.filter((inputParam) => !inputParam?.hidden).filter((param) => param?.additionalParams),
             confirmButtonName: 'Save',
             cancelButtonName: 'Cancel'
         }
@@ -71,10 +93,11 @@ const CanvasNode = ({ data }) => {
     }
 
     useEffect(() => {
-        const componentNode = canvas.componentNodes.find((nd) => nd.name === data.name)
+        const componentNodes = Array.isArray(canvas.componentNodes) ? canvas.componentNodes : []
+        const componentNode = componentNodes.find((nd) => nd.name === data.name)
         if (componentNode) {
             if (!data.version) {
-                setWarningMessage(nodeVersionEmptyMessage(componentNode.version))
+                setWarningMessage('')
             } else if (data.version && componentNode.version > data.version) {
                 setWarningMessage(nodeOutdatedMessage(data.version, componentNode.version))
             } else if (componentNode.badge === 'DEPRECATING') {

@@ -74,10 +74,14 @@ const Chatflows = () => {
     }
 
     function filterFlows(data) {
+        const name = String(data?.name || '').toLowerCase()
+        const category = String(data?.category || '').toLowerCase()
+        const id = String(data?.id || '').toLowerCase()
+        const query = search.toLowerCase()
         return (
-            data?.name.toLowerCase().indexOf(search.toLowerCase()) > -1 ||
-            (data.category && data.category.toLowerCase().indexOf(search.toLowerCase()) > -1) ||
-            data?.id.toLowerCase().indexOf(search.toLowerCase()) > -1
+            name.indexOf(query) > -1 ||
+            category.indexOf(query) > -1 ||
+            id.indexOf(query) > -1
         )
     }
 
@@ -101,22 +105,25 @@ const Chatflows = () => {
     useEffect(() => {
         if (getAllChatflowsApi.data) {
             try {
-                const chatflows = getAllChatflowsApi.data?.data
-                const total = getAllChatflowsApi.data?.total
+                const chatflows = Array.isArray(getAllChatflowsApi.data?.data) ? getAllChatflowsApi.data.data : []
+                const total = Number(getAllChatflowsApi.data?.total ?? chatflows.length)
                 setTotal(total)
                 const images = {}
                 for (let i = 0; i < chatflows.length; i += 1) {
                     const flowDataStr = chatflows[i].flowData
-                    const flowData = JSON.parse(flowDataStr)
-                    const nodes = flowData.nodes || []
+                    const flowData = typeof flowDataStr === 'string' ? JSON.parse(flowDataStr) : flowDataStr || {}
+                    const nodes = Array.isArray(flowData?.nodes) ? flowData.nodes : []
                     images[chatflows[i].id] = []
                     for (let j = 0; j < nodes.length; j += 1) {
-                        if (nodes[j].data.name === 'stickyNote' || nodes[j].data.name === 'stickyNoteAgentflow') continue
-                        const imageSrc = `${baseURL}/api/v1/node-icon/${nodes[j].data.name}`
+                        const nodeName = nodes[j]?.data?.name
+                        const nodeLabel = nodes[j]?.data?.label
+                        if (!nodeName) continue
+                        if (nodeName === 'stickyNote' || nodeName === 'stickyNoteAgentflow') continue
+                        const imageSrc = `${baseURL}/api/v1/node-icon/${nodeName}`
                         if (!images[chatflows[i].id].some((img) => img.imageSrc === imageSrc)) {
                             images[chatflows[i].id].push({
                                 imageSrc,
-                                label: nodes[j].data.label
+                                label: nodeLabel
                             })
                         }
                     }

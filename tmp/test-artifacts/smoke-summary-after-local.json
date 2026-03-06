@@ -1,0 +1,274 @@
+{
+  "baseUrl": "http://localhost:4173",
+  "loginFinalUrl": "http://localhost:4173/dashboard",
+  "totalRoutes": 8,
+  "routesWithPageErrors": 2,
+  "routesWithConsoleErrors": 7,
+  "routesWithFailedRequests": 7,
+  "results": [
+    {
+      "path": "/dashboard",
+      "finalUrl": "http://localhost:4173/dashboard",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [
+        {
+          "url": "http://localhost:4173/dashboard",
+          "message": "TypeError: Cannot read properties of undefined (reading 'status')"
+        },
+        {
+          "url": "http://localhost:4173/dashboard",
+          "message": "TypeError: Cannot read properties of undefined (reading 'status')"
+        },
+        {
+          "url": "http://localhost:4173/dashboard",
+          "message": "TypeError: Cannot read properties of undefined (reading 'status')"
+        },
+        {
+          "url": "http://localhost:4173/dashboard",
+          "message": "TypeError: Cannot read properties of undefined (reading 'status')"
+        },
+        {
+          "url": "http://localhost:4173/dashboard",
+          "message": "TypeError: Cannot read properties of undefined (reading 'status')"
+        },
+        {
+          "url": "http://localhost:4173/dashboard",
+          "message": "TypeError: Cannot read properties of undefined (reading 'status')"
+        }
+      ],
+      "consoleErrors": [
+        {
+          "url": "http://localhost:4173/dashboard",
+          "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        },
+        {
+          "url": "http://localhost:4173/dashboard",
+          "message": "The above error occurred in the <ErrorBoundary> component:\n\n    at ErrorBoundary (http://localhost:4173/src/ErrorBoundary.jsx:21:26)\n    at div\n    at http://localhost:4173/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=5260c756:1333:49\n    at CardContent2 (http://localhost:4173/node_modules/.vite/deps/chunk-UQ3JXZLD.js?v=5260c756:84:17)\n    at div\n    at http://localhost:4173/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=5260c756:1333:49\n    at Paper2 (http://localhost:4173/node_modules/.vite/deps/chunk-QMPDNCYH.js?v=5260c756:115:17)\n    at http://localhost:4173/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=5260c756:1333:49\n    at Card2 (http://localhost:4173/node_modules/.vite/deps/chunk-CFNTVPSJ.js?v=5260c756:86:17)\n    at MainCard2 (http://localhost:4173/src/ui-component/cards/MainCard.jsx:24:3)\n    at Dashboard (http://localhost:4173/src/views/dashboard/index.jsx:74:29)\n    at Suspense\n    at WithLoader\n    at Outlet (http://localhost:4173/node_modules/.vite/deps/chunk-ZD5PXKS2.js?v=5260c756:1108:26)\n    at main\n    at http://localhost:4173/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=5260c756:1333:49\n    at div\n    at http://localhost:4173/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=5260c756:1333:49\n    at Box3 (http://localhost:4173/node_modules/.vite/deps/chunk-2F43D7RM.js?v=5260c756:2160:19)\n    at MainLayout (http://localhost:4173/src/layout/MainLayout/index.jsx:70:17)\n    at ThemeRoutes (http://localhost:4173/src/routes/index.jsx:26:10)\n    at NavigationScroll (http://localhost:4173/src/layout/NavigationScroll.jsx:20:29)\n    at DefaultPropsProvider (http://localhost:4173/node_modules/.vite/deps/chunk-2F43D7RM.js?v=5260c756:2718:3)\n    at RtlProvider (http://localhost:4173/node_modules/.vite/deps/chunk-2F43D7RM.js?v=5260c756:2692:5)\n    at ThemeProvider (http://localhost:4173/node_modules/.vite/deps/chunk-2F43D7RM.js?v=5260c756:2623:5)\n    at ThemeProvider2 (http://localhost:4173/node_modules/.vite/deps/chunk-2F43D7RM.js?v=5260c756:2836:5)\n    at ThemeProvider (http://localhost:4173/node_modules/.vite/deps/chunk-PHRPW53Z.js?v=5260c756:303:12)\n    at StyledEngineProvider (http://localhost:4173/node_modules/.vite/deps/chunk-2F43D7RM.js?v=5260c756:89:5)\n    at App (http://localhost:4173/src/App.jsx:26:25)\n    at ReactFlowContext (http://localhost:4173/src/store/context/ReactFlowContext.jsx:38:36)\n    at ConfirmContextProvider (http://localhost:4173/src/store/context/ConfirmContextProvider.jsx:22:35)\n    at ErrorProvider (http://localhost:4173/src/store/context/ErrorContext.jsx:26:33)\n    at ConfigProvider (http://localhost:4173/src/store/context/ConfigContext.jsx:22:34)\n    at SnackbarProvider2 (http://localhost:4173/node_modules/.vite/deps/notistack.js?v=b8c57814:636:24)\n    at Router (http://localhost:4173/node_modules/.vite/deps/chunk-ZD5PXKS2.js?v=5260c756:1115:15)\n    at BrowserRouter (http://localhost:4173/node_modules/.vite/deps/react-router-dom.js?v=22093f37:83:5)\n    at Provider (http://localhost:4173/node_modules/.vite/deps/react-redux.js?v=79bbcf35:839:3)\n\nConsider adding an error boundary to your tree to customize error handling behavior.\nVisit https://reactjs.org/link/error-boundaries to learn more about error boundaries."
+        },
+        {
+          "url": "http://localhost:4173/dashboard",
+          "message": "WebSocket connection to 'ws://localhost/vite-hmr?token=mf3V5ywXw0Tt' failed: Error during WebSocket handshake: Unexpected response code: 400"
+        },
+        {
+          "url": "http://localhost:4173/dashboard",
+          "message": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        },
+        {
+          "url": "http://localhost:4173/dashboard",
+          "message": "The above error occurred in the <ErrorBoundary> component:\n\n    at ErrorBoundary (http://localhost:4173/src/ErrorBoundary.jsx:21:26)\n    at div\n    at http://localhost:4173/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=5260c756:1333:49\n    at CardContent2 (http://localhost:4173/node_modules/.vite/deps/chunk-UQ3JXZLD.js?v=5260c756:84:17)\n    at div\n    at http://localhost:4173/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=5260c756:1333:49\n    at Paper2 (http://localhost:4173/node_modules/.vite/deps/chunk-QMPDNCYH.js?v=5260c756:115:17)\n    at http://localhost:4173/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=5260c756:1333:49\n    at Card2 (http://localhost:4173/node_modules/.vite/deps/chunk-CFNTVPSJ.js?v=5260c756:86:17)\n    at MainCard2 (http://localhost:4173/src/ui-component/cards/MainCard.jsx:24:3)\n    at Dashboard (http://localhost:4173/src/views/dashboard/index.jsx:74:29)\n    at Suspense\n    at WithLoader\n    at Outlet (http://localhost:4173/node_modules/.vite/deps/chunk-ZD5PXKS2.js?v=5260c756:1108:26)\n    at main\n    at http://localhost:4173/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=5260c756:1333:49\n    at div\n    at http://localhost:4173/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=5260c756:1333:49\n    at Box3 (http://localhost:4173/node_modules/.vite/deps/chunk-2F43D7RM.js?v=5260c756:2160:19)\n    at MainLayout (http://localhost:4173/src/layout/MainLayout/index.jsx:70:17)\n    at ThemeRoutes (http://localhost:4173/src/routes/index.jsx:26:10)\n    at NavigationScroll (http://localhost:4173/src/layout/NavigationScroll.jsx:20:29)\n    at DefaultPropsProvider (http://localhost:4173/node_modules/.vite/deps/chunk-2F43D7RM.js?v=5260c756:2718:3)\n    at RtlProvider (http://localhost:4173/node_modules/.vite/deps/chunk-2F43D7RM.js?v=5260c756:2692:5)\n    at ThemeProvider (http://localhost:4173/node_modules/.vite/deps/chunk-2F43D7RM.js?v=5260c756:2623:5)\n    at ThemeProvider2 (http://localhost:4173/node_modules/.vite/deps/chunk-2F43D7RM.js?v=5260c756:2836:5)\n    at ThemeProvider (http://localhost:4173/node_modules/.vite/deps/chunk-PHRPW53Z.js?v=5260c756:303:12)\n    at StyledEngineProvider (http://localhost:4173/node_modules/.vite/deps/chunk-2F43D7RM.js?v=5260c756:89:5)\n    at App (http://localhost:4173/src/App.jsx:26:25)\n    at ReactFlowContext (http://localhost:4173/src/store/context/ReactFlowContext.jsx:38:36)\n    at ConfirmContextProvider (http://localhost:4173/src/store/context/ConfirmContextProvider.jsx:22:35)\n    at ErrorProvider (http://localhost:4173/src/store/context/ErrorContext.jsx:26:33)\n    at ConfigProvider (http://localhost:4173/src/store/context/ConfigContext.jsx:22:34)\n    at SnackbarProvider2 (http://localhost:4173/node_modules/.vite/deps/notistack.js?v=b8c57814:636:24)\n    at Router (http://localhost:4173/node_modules/.vite/deps/chunk-ZD5PXKS2.js?v=5260c756:1115:15)\n    at BrowserRouter (http://localhost:4173/node_modules/.vite/deps/react-router-dom.js?v=22093f37:83:5)\n    at Provider (http://localhost:4173/node_modules/.vite/deps/react-redux.js?v=79bbcf35:839:3)\n\nConsider adding an error boundary to your tree to customize error handling behavior.\nVisit https://reactjs.org/link/error-boundaries to learn more about error boundaries."
+        },
+        {
+          "url": "http://localhost:4173/dashboard",
+          "message": "WebSocket connection to 'ws://localhost/vite-hmr?token=mf3V5ywXw0Tt' failed: Error during WebSocket handshake: Unexpected response code: 400"
+        }
+      ],
+      "failedRequests": [
+        {
+          "url": "http://localhost:4173/dashboard",
+          "requestUrl": "http://localhost/vite-hmr",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://localhost:4173/dashboard",
+          "requestUrl": "http://localhost/vite-hmr",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        }
+      ]
+    },
+    {
+      "path": "/chatflows",
+      "finalUrl": "http://localhost:4173/login",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [
+        {
+          "url": "http://localhost:4173/dashboard",
+          "message": "TypeError: Cannot read properties of undefined (reading 'status')"
+        },
+        {
+          "url": "http://localhost:4173/dashboard",
+          "message": "TypeError: Cannot read properties of undefined (reading 'status')"
+        },
+        {
+          "url": "http://localhost:4173/dashboard",
+          "message": "TypeError: Cannot read properties of undefined (reading 'status')"
+        }
+      ],
+      "consoleErrors": [
+        {
+          "url": "http://localhost:4173/dashboard",
+          "message": "The above error occurred in the <ErrorBoundary> component:\n\n    at ErrorBoundary (http://localhost:4173/src/ErrorBoundary.jsx:21:26)\n    at div\n    at http://localhost:4173/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=5260c756:1333:49\n    at CardContent2 (http://localhost:4173/node_modules/.vite/deps/chunk-UQ3JXZLD.js?v=5260c756:84:17)\n    at div\n    at http://localhost:4173/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=5260c756:1333:49\n    at Paper2 (http://localhost:4173/node_modules/.vite/deps/chunk-QMPDNCYH.js?v=5260c756:115:17)\n    at http://localhost:4173/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=5260c756:1333:49\n    at Card2 (http://localhost:4173/node_modules/.vite/deps/chunk-CFNTVPSJ.js?v=5260c756:86:17)\n    at MainCard2 (http://localhost:4173/src/ui-component/cards/MainCard.jsx:24:3)\n    at Dashboard (http://localhost:4173/src/views/dashboard/index.jsx:74:29)\n    at Suspense\n    at WithLoader\n    at Outlet (http://localhost:4173/node_modules/.vite/deps/chunk-ZD5PXKS2.js?v=5260c756:1108:26)\n    at main\n    at http://localhost:4173/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=5260c756:1333:49\n    at div\n    at http://localhost:4173/node_modules/.vite/deps/chunk-RG7AM7E2.js?v=5260c756:1333:49\n    at Box3 (http://localhost:4173/node_modules/.vite/deps/chunk-2F43D7RM.js?v=5260c756:2160:19)\n    at MainLayout (http://localhost:4173/src/layout/MainLayout/index.jsx:70:17)\n    at ThemeRoutes (http://localhost:4173/src/routes/index.jsx:26:10)\n    at NavigationScroll (http://localhost:4173/src/layout/NavigationScroll.jsx:20:29)\n    at DefaultPropsProvider (http://localhost:4173/node_modules/.vite/deps/chunk-2F43D7RM.js?v=5260c756:2718:3)\n    at RtlProvider (http://localhost:4173/node_modules/.vite/deps/chunk-2F43D7RM.js?v=5260c756:2692:5)\n    at ThemeProvider (http://localhost:4173/node_modules/.vite/deps/chunk-2F43D7RM.js?v=5260c756:2623:5)\n    at ThemeProvider2 (http://localhost:4173/node_modules/.vite/deps/chunk-2F43D7RM.js?v=5260c756:2836:5)\n    at ThemeProvider (http://localhost:4173/node_modules/.vite/deps/chunk-PHRPW53Z.js?v=5260c756:303:12)\n    at StyledEngineProvider (http://localhost:4173/node_modules/.vite/deps/chunk-2F43D7RM.js?v=5260c756:89:5)\n    at App (http://localhost:4173/src/App.jsx:26:25)\n    at ReactFlowContext (http://localhost:4173/src/store/context/ReactFlowContext.jsx:38:36)\n    at ConfirmContextProvider (http://localhost:4173/src/store/context/ConfirmContextProvider.jsx:22:35)\n    at ErrorProvider (http://localhost:4173/src/store/context/ErrorContext.jsx:26:33)\n    at ConfigProvider (http://localhost:4173/src/store/context/ConfigContext.jsx:22:34)\n    at SnackbarProvider2 (http://localhost:4173/node_modules/.vite/deps/notistack.js?v=b8c57814:636:24)\n    at Router (http://localhost:4173/node_modules/.vite/deps/chunk-ZD5PXKS2.js?v=5260c756:1115:15)\n    at BrowserRouter (http://localhost:4173/node_modules/.vite/deps/react-router-dom.js?v=22093f37:83:5)\n    at Provider (http://localhost:4173/node_modules/.vite/deps/react-redux.js?v=79bbcf35:839:3)\n\nConsider adding an error boundary to your tree to customize error handling behavior.\nVisit https://reactjs.org/link/error-boundaries to learn more about error boundaries."
+        },
+        {
+          "url": "http://localhost:4173/login",
+          "message": "WebSocket connection to 'ws://localhost/vite-hmr?token=mf3V5ywXw0Tt' failed: Error during WebSocket handshake: Unexpected response code: 400"
+        },
+        {
+          "url": "http://localhost:4173/login",
+          "message": "WebSocket connection to 'ws://localhost/vite-hmr?token=mf3V5ywXw0Tt' failed: Error during WebSocket handshake: Unexpected response code: 400"
+        }
+      ],
+      "failedRequests": [
+        {
+          "url": "http://localhost:4173/dashboard",
+          "requestUrl": "http://localhost:4173/api/flows/usage?days=7",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://localhost:4173/dashboard",
+          "requestUrl": "http://localhost:4173/api/assistants?type=CUSTOM",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://localhost:4173/dashboard",
+          "requestUrl": "http://localhost:4173/api/flows/logs?limit=200",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://localhost:4173/dashboard",
+          "requestUrl": "http://localhost:4173/api/health/ready",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://localhost:4173/dashboard",
+          "requestUrl": "http://localhost:4173/api/flows/list?limit=200",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://localhost:4173/login",
+          "requestUrl": "http://localhost/vite-hmr",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        },
+        {
+          "url": "http://localhost:4173/login",
+          "requestUrl": "http://localhost/vite-hmr",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        }
+      ]
+    },
+    {
+      "path": "/agentflows",
+      "finalUrl": "http://localhost:4173/login",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [
+        {
+          "url": "http://localhost:4173/login",
+          "message": "WebSocket connection to 'ws://localhost/vite-hmr?token=mf3V5ywXw0Tt' failed: Error during WebSocket handshake: Unexpected response code: 400"
+        }
+      ],
+      "failedRequests": [
+        {
+          "url": "http://localhost:4173/login",
+          "requestUrl": "http://localhost/vite-hmr",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        }
+      ]
+    },
+    {
+      "path": "/marketplaces",
+      "finalUrl": "http://localhost:4173/login",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [],
+      "failedRequests": []
+    },
+    {
+      "path": "/datasets",
+      "finalUrl": "http://localhost:4173/login",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [
+        {
+          "url": "http://localhost:4173/login",
+          "message": "WebSocket connection to 'ws://localhost/vite-hmr?token=mf3V5ywXw0Tt' failed: Error during WebSocket handshake: Unexpected response code: 400"
+        }
+      ],
+      "failedRequests": [
+        {
+          "url": "http://localhost:4173/login",
+          "requestUrl": "http://localhost/vite-hmr",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        }
+      ]
+    },
+    {
+      "path": "/evaluators",
+      "finalUrl": "http://localhost:4173/login",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [
+        {
+          "url": "http://localhost:4173/login",
+          "message": "WebSocket connection to 'ws://localhost/vite-hmr?token=mf3V5ywXw0Tt' failed: Error during WebSocket handshake: Unexpected response code: 400"
+        }
+      ],
+      "failedRequests": [
+        {
+          "url": "http://localhost:4173/login",
+          "requestUrl": "http://localhost/vite-hmr",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        }
+      ]
+    },
+    {
+      "path": "/evaluations",
+      "finalUrl": "http://localhost:4173/login",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [
+        {
+          "url": "http://localhost:4173/login",
+          "message": "WebSocket connection to 'ws://localhost/vite-hmr?token=mf3V5ywXw0Tt' failed: Error during WebSocket handshake: Unexpected response code: 400"
+        }
+      ],
+      "failedRequests": [
+        {
+          "url": "http://localhost:4173/login",
+          "requestUrl": "http://localhost/vite-hmr",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        }
+      ]
+    },
+    {
+      "path": "/canvas",
+      "finalUrl": "http://localhost:4173/login",
+      "status": "ok",
+      "navError": null,
+      "pageErrors": [],
+      "consoleErrors": [
+        {
+          "url": "http://localhost:4173/login",
+          "message": "WebSocket connection to 'ws://localhost/vite-hmr?token=mf3V5ywXw0Tt' failed: Error during WebSocket handshake: Unexpected response code: 400"
+        }
+      ],
+      "failedRequests": [
+        {
+          "url": "http://localhost:4173/login",
+          "requestUrl": "http://localhost/vite-hmr",
+          "method": "GET",
+          "errorText": "net::ERR_ABORTED"
+        }
+      ]
+    }
+  ]
+}

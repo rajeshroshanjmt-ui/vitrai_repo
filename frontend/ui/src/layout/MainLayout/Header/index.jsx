@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 
 // material-ui
 import { Button, Avatar, Box, ButtonBase, Switch, Typography } from '@mui/material'
-import { useTheme, styled, darken } from '@mui/material/styles'
+import { useTheme, styled, darken, alpha } from '@mui/material/styles'
 
 // project imports
 import LogoSection from '../LogoSection'
@@ -51,12 +51,13 @@ const MaterialUISwitch = styled(Switch)(({ theme }) => ({
             },
             '& + .MuiSwitch-track': {
                 opacity: 1,
-                backgroundColor: theme.palette.mode === 'dark' ? '#8796A5' : '#aab4be'
+                backgroundColor:
+                    theme.palette.mode === 'dark' ? alpha(theme.palette.brand.main, 0.42) : alpha(theme.palette.brand.main, 0.34)
             }
         }
     },
     '& .MuiSwitch-thumb': {
-        backgroundColor: theme.palette.mode === 'dark' ? '#003892' : '#001e3c',
+        backgroundColor: theme.palette.mode === 'dark' ? theme.palette.brand.dark : theme.palette.brand.main,
         width: 32,
         height: 32,
         '&:before': {
@@ -75,7 +76,7 @@ const MaterialUISwitch = styled(Switch)(({ theme }) => ({
     },
     '& .MuiSwitch-track': {
         opacity: 1,
-        backgroundColor: theme.palette.mode === 'dark' ? '#8796A5' : '#aab4be',
+        backgroundColor: theme.palette.mode === 'dark' ? alpha(theme.palette.brand.main, 0.3) : alpha(theme.palette.brand.main, 0.26),
         borderRadius: 20 / 2
     }
 }))
@@ -177,7 +178,16 @@ const Header = ({ handleLeftDrawerToggle }) => {
                     alignItems: 'center'
                 }}
             >
-                <Typography variant='subtitle2' color='text.secondary' sx={{ display: { xs: 'none', md: 'block' } }}>
+                <Typography
+                    variant='subtitle2'
+                    color='text.secondary'
+                    sx={{
+                        display: { xs: 'none', md: 'block' },
+                        letterSpacing: '0.03em',
+                        textTransform: 'uppercase',
+                        fontWeight: 600
+                    }}
+                >
                     Vetrai AI Orchestration Platform
                 </Typography>
             </Box>
@@ -189,19 +199,19 @@ const Header = ({ handleLeftDrawerToggle }) => {
                     sx={{
                         mr: 1,
                         ml: 2,
-                        borderRadius: 15,
+                        borderRadius: 14,
                         background: (theme) =>
-                            `linear-gradient(90deg, ${theme.palette.primary.main} 10%, ${theme.palette.secondary.main} 100%)`,
+                            `linear-gradient(110deg, ${theme.palette.brand.main} 5%, ${theme.palette.secondary.main} 100%)`,
                         color: (theme) => theme.palette.secondary.contrastText,
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                        boxShadow: (theme) => `0 10px 20px ${theme.palette.glow?.soft || 'rgba(0,0,0,0.16)'}`,
                         transition: 'all 0.3s ease',
                         '&:hover': {
                             background: (theme) =>
-                                `linear-gradient(90deg, ${darken(theme.palette.primary.main, 0.1)} 10%, ${darken(
+                                `linear-gradient(110deg, ${darken(theme.palette.brand.main, 0.1)} 5%, ${darken(
                                     theme.palette.secondary.main,
                                     0.1
                                 )} 100%)`,
-                            boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
+                            boxShadow: (theme) => `0 14px 26px ${theme.palette.glow?.elevated || 'rgba(0,0,0,0.22)'}`
                         }
                     }}
                     onClick={() => setIsPricingOpen(true)}

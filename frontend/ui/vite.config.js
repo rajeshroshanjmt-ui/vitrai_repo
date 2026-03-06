@@ -4,6 +4,14 @@ import path from 'node:path'
 
 export default defineConfig({
   plugins: [react()],
+  css: {
+    preprocessorOptions: {
+      scss: {
+        // Keep build logs clean while upstream ecosystem completes Sass API migration.
+        silenceDeprecations: ['legacy-js-api']
+      }
+    }
+  },
   define: {
     // KaTeX ESM bundle expects this compile-time replacement symbol.
     __VERSION__: JSON.stringify('0.16.34'),

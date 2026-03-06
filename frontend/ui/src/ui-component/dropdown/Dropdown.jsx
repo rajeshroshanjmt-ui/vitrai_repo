@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
 
 import { Popper, FormControl, TextField, Box, Typography } from '@mui/material'
 import Autocomplete, { autocompleteClasses } from '@mui/material/Autocomplete'
 import { useTheme, styled } from '@mui/material/styles'
 import PropTypes from 'prop-types'
+import { findMatchingOption } from './utils'
 
 const StyledPopper = styled(Popper)({
     boxShadow: '0px 8px 10px -5px rgb(0 0 0 / 20%), 0px 16px 24px 2px rgb(0 0 0 / 14%), 0px 6px 30px 5px rgb(0 0 0 / 12%)',
@@ -20,10 +21,14 @@ const StyledPopper = styled(Popper)({
 
 export const Dropdown = ({ name, value, loading, options, onSelect, disabled = false, freeSolo = false, disableClearable = false }) => {
     const customization = useSelector((state) => state.customization)
-    const findMatchingOptions = (options = [], value) => options.find((option) => option.name === value)
-    const getDefaultOptionValue = () => ''
-    let [internalValue, setInternalValue] = useState(value ?? 'choose an option')
+    const [internalValue, setInternalValue] = useState(value ?? '')
     const theme = useTheme()
+    const normalizedOptions = Array.isArray(options) ? options : []
+    const matchingOption = findMatchingOption(normalizedOptions, internalValue)
+
+    useEffect(() => {
+        setInternalValue(value ?? '')
+    }, [value])
 
     return (
         <FormControl sx={{ mt: 1, width: '100%' }} size='small'>
@@ -34,20 +39,28 @@ export const Dropdown = ({ name, value, loading, options, onSelect, disabled = f
                 disableClearable={disableClearable}
                 size='small'
                 loading={loading}
-                options={options || []}
-                value={findMatchingOptions(options, internalValue) || getDefaultOptionValue()}
+                options={normalizedOptions}
+                value={freeSolo ? internalValue : matchingOption}
+                isOptionEqualToValue={(option, selected) => {
+                    if (!option || !selected) return false
+                    if (typeof selected === 'string') return option.name === selected || option.label === selected
+                    return option.name === selected.name
+                }}
                 onChange={(e, selection) => {
-                    const value = selection ? selection.name : ''
-                    setInternalValue(value)
-                    onSelect(value)
+                    let nextValue = ''
+                    if (typeof selection === 'string') {
+                        nextValue = selection
+                    } else if (selection && typeof selection === 'object') {
+                        nextValue = selection.name || selection.label || ''
+                    }
+                    setInternalValue(nextValue)
+                    onSelect(nextValue)
                 }}
                 PopperComponent={StyledPopper}
                 renderInput={(params) => {
-                    const matchingOption = findMatchingOptions(options, internalValue)
                     return (
                         <TextField
                             {...params}
-                            value={internalValue}
                             sx={{
                                 height: '100%',
                                 '& .MuiInputBase-root': {
@@ -75,28 +88,31 @@ export const Dropdown = ({ name, value, loading, options, onSelect, disabled = f
                         />
                     )
                 }}
-                renderOption={(props, option) => (
-                    <Box component='li' {...props} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        {option.imageSrc && (
-                            <img
-                                src={option.imageSrc}
-                                alt={option.description}
-                                style={{
-                                    width: 30,
-                                    height: 30,
-                                    padding: 1,
-                                    borderRadius: '50%'
-                                }}
-                            />
-                        )}
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <Typography variant='h5'>{option.label}</Typography>
-                            {option.description && (
-                                <Typography sx={{ color: customization.isDarkMode ? '#9e9e9e' : '' }}>{option.description}</Typography>
+                renderOption={(props, option) => {
+                    const { key, ...optionProps } = props
+                    return (
+                        <Box component='li' key={key} {...optionProps} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {option.imageSrc && (
+                                <img
+                                    src={option.imageSrc}
+                                    alt={option.description}
+                                    style={{
+                                        width: 30,
+                                        height: 30,
+                                        padding: 1,
+                                        borderRadius: '50%'
+                                    }}
+                                />
                             )}
-                        </div>
-                    </Box>
-                )}
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <Typography variant='h5'>{option.label}</Typography>
+                                {option.description && (
+                                    <Typography sx={{ color: customization.isDarkMode ? '#9e9e9e' : '' }}>{option.description}</Typography>
+                                )}
+                            </div>
+                        </Box>
+                    )
+                }}
                 sx={{ height: '100%' }}
             />
         </FormControl>

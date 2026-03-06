@@ -18,7 +18,6 @@ import {
     Stack,
     Card
 } from '@mui/material'
-import { CopyBlock, atomOneDark } from 'react-code-blocks'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import { useTheme } from '@mui/material/styles'
 import { useAuth } from '@/hooks/useAuth'
@@ -28,6 +27,7 @@ import { Dropdown } from '@/ui-component/dropdown/Dropdown'
 import ShareChatbot from './ShareChatbot'
 import EmbedChat from './EmbedChat'
 import { Available } from '@/ui-component/rbac/available'
+import { CodeBlock } from '@/ui-component/markdown/CodeBlock'
 
 // Const
 import { baseURL } from '@/store/constant'
@@ -112,10 +112,29 @@ const APICodeDialog = ({ show, dialogProps, onCancel }) => {
     const isGlobal = useSelector((state) => state.auth.isGlobal)
     const { hasPermission } = useAuth()
 
+    const normalizedApiKeys = useMemo(() => {
+        const payload = getAllAPIKeysApi.data
+        if (Array.isArray(payload)) return payload
+        if (Array.isArray(payload?.data)) return payload.data
+        return []
+    }, [getAllAPIKeysApi.data])
+
+    const normalizedNodeConfig = useMemo(() => {
+        const payload = getConfigApi.data
+        if (Array.isArray(payload)) return payload
+        if (Array.isArray(payload?.data)) return payload.data
+        return []
+    }, [getConfigApi.data])
+
+    const normalizedVariables = useMemo(() => {
+        const payload = getAllVariablesApi.data
+        if (Array.isArray(payload)) return payload
+        if (Array.isArray(payload?.data)) return payload.data
+        return []
+    }, [getAllVariablesApi.data])
+
     // Memoize keyOptions to prevent recreation on hover
     const keyOptions = useMemo(() => {
-        if (!getAllAPIKeysApi.data) return []
-
         const options = [
             {
                 label: 'No Authorization',
@@ -123,7 +142,7 @@ const APICodeDialog = ({ show, dialogProps, onCancel }) => {
             }
         ]
 
-        for (const key of getAllAPIKeysApi.data) {
+        for (const key of normalizedApiKeys) {
             options.push({
                 label: key.keyName,
                 name: key.id
@@ -138,7 +157,7 @@ const APICodeDialog = ({ show, dialogProps, onCancel }) => {
         }
 
         return options
-    }, [getAllAPIKeysApi.data, isGlobal, hasPermission])
+    }, [normalizedApiKeys, isGlobal, hasPermission])
 
     const onCheckBoxChanged = (newVal) => {
         setCheckbox(newVal)
@@ -163,6 +182,12 @@ const APICodeDialog = ({ show, dialogProps, onCancel }) => {
     }
 
     const groupByNodeLabel = (nodes) => {
+        if (!Array.isArray(nodes) || nodes.length === 0) {
+            setNodeConfig({})
+            setNodeOverrides({})
+            return
+        }
+
         const result = {}
         const newNodeOverrides = {}
         const seenNodes = new Set()
@@ -180,7 +205,7 @@ const APICodeDialog = ({ show, dialogProps, onCancel }) => {
 
             if (!newNodeOverrides[node]) {
                 // If overrideConfigStatus is true, copy existing config for this node
-                newNodeOverrides[node] = overrideConfigStatus ? [...(nodeOverrides[node] || [])] : []
+                newNodeOverrides[node] = overrideConfigStatus ? [...(nodeOverrides?.[node] || [])] : []
             }
 
             if (!result[node].nodeIds.includes(nodeId)) result[node].nodeIds.push(nodeId)
@@ -207,6 +232,11 @@ const APICodeDialog = ({ show, dialogProps, onCancel }) => {
     }
 
     const groupByVariableLabel = (variables) => {
+        if (!Array.isArray(variables) || variables.length === 0) {
+            setVariableOverrides([])
+            return
+        }
+
         const newVariables = []
         const seenVariables = new Set()
 
@@ -265,18 +295,14 @@ const APICodeDialog = ({ show, dialogProps, onCancel }) => {
     }, [updateChatflowApi.data, dispatch])
 
     useEffect(() => {
-        if (getConfigApi.data) {
-            groupByNodeLabel(getConfigApi.data)
-        }
+        groupByNodeLabel(normalizedNodeConfig)
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [getConfigApi.data])
+    }, [normalizedNodeConfig])
 
     useEffect(() => {
-        if (getAllVariablesApi.data) {
-            groupByVariableLabel(getAllVariablesApi.data)
-        }
+        groupByVariableLabel(normalizedVariables)
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [getAllVariablesApi.data])
+    }, [normalizedVariables])
 
     const handleChange = (event, newValue) => {
         setValue(newValue)
@@ -678,15 +704,18 @@ formData.append("openAIApiKey[openAIEmbeddings_0]", "sk-my-openai-2nd-key")`
     }
 
     useEffect(() => {
-        if (getAllAPIKeysApi.data) {
-            setAPIKeys(getAllAPIKeysApi.data)
+        if (normalizedApiKeys.length) {
+            setAPIKeys(normalizedApiKeys)
 
             if (dialogProps.chatflowApiKeyId) {
                 setChatflowApiKeyId(dialogProps.chatflowApiKeyId)
-                setSelectedApiKey(getAllAPIKeysApi.data.find((key) => key.id === dialogProps.chatflowApiKeyId))
+                setSelectedApiKey(normalizedApiKeys.find((key) => key.id === dialogProps.chatflowApiKeyId))
             }
+        } else {
+            setAPIKeys([])
+            setSelectedApiKey({})
         }
-    }, [dialogProps, getAllAPIKeysApi.data])
+    }, [dialogProps, normalizedApiKeys])
 
     useEffect(() => {
         if (show) {
@@ -733,7 +762,7 @@ formData.append("openAIApiKey[openAIEmbeddings_0]", "sk-my-openai-2nd-key")`
                                 disableClearable={true}
                                 options={keyOptions}
                                 onSelect={(newValue) => onApiKeySelected(newValue)}
-                                value={dialogProps.chatflowApiKeyId ?? chatflowApiKeyId ?? 'Choose an API key'}
+                                value={dialogProps.chatflowApiKeyId ?? chatflowApiKeyId ?? ''}
                             />
                         </Available>
                     </div>
@@ -752,15 +781,14 @@ formData.append("openAIApiKey[openAIEmbeddings_0]", "sk-my-openai-2nd-key")`
                         {codeLang === 'Embed' && !chatflowApiKeyId && <EmbedChat chatflowid={dialogProps.chatflowid} />}
                         {codeLang !== 'Embed' && codeLang !== 'Share Chatbot' && codeLang !== 'Configuration' && (
                             <>
-                                <CopyBlock
-                                    theme={atomOneDark}
-                                    text={chatflowApiKeyId ? getCodeWithAuthorization(codeLang) : getCode(codeLang)}
+                                <CodeBlock
+                                    chatflowid={dialogProps.chatflowid}
+                                    isFullWidth={true}
+                                    value={chatflowApiKeyId ? getCodeWithAuthorization(codeLang) : getCode(codeLang)}
                                     language={getLang(codeLang)}
-                                    showLineNumbers={false}
-                                    wrapLines
                                 />
                                 <CheckboxInput label='Show Override Config' value={checkboxVal} onChange={onCheckBoxChanged} />
-                                {checkboxVal && getConfigApi.data && getConfigApi.data.length > 0 && (
+                                {checkboxVal && normalizedNodeConfig.length > 0 && (
                                     <>
                                         <Typography sx={{ mt: 2 }}>
                                             You can override existing input configuration of the chatflow with overrideConfig property.
@@ -825,8 +853,8 @@ formData.append("openAIApiKey[openAIEmbeddings_0]", "sk-my-openai-2nd-key")`
                                                                     sx={{ gap: 2, alignItems: 'center', flexWrap: 'wrap' }}
                                                                 >
                                                                     <Typography variant='h5'>{nodeLabel}</Typography>
-                                                                    {nodeConfig[nodeLabel].nodeIds.length > 0 &&
-                                                                        nodeConfig[nodeLabel].nodeIds.map((nodeId, index) => (
+                                                                    {(nodeConfig[nodeLabel]?.nodeIds || []).length > 0 &&
+                                                                        (nodeConfig[nodeLabel]?.nodeIds || []).map((nodeId, index) => (
                                                                             <div
                                                                                 key={index}
                                                                                 style={{
@@ -854,9 +882,9 @@ formData.append("openAIApiKey[openAIEmbeddings_0]", "sk-my-openai-2nd-key")`
                                                             </AccordionSummary>
                                                             <AccordionDetails>
                                                                 <TableViewOnly
-                                                                    rows={nodeOverrides[nodeLabel]}
+                                                                    rows={nodeOverrides[nodeLabel] || []}
                                                                     columns={
-                                                                        nodeOverrides[nodeLabel].length > 0
+                                                                        (nodeOverrides[nodeLabel] || []).length > 0
                                                                             ? Object.keys(nodeOverrides[nodeLabel][0]).filter(
                                                                                   (key) => key !== 'schema'
                                                                               )
@@ -875,20 +903,19 @@ formData.append("openAIApiKey[openAIEmbeddings_0]", "sk-my-openai-2nd-key")`
                                                 <TableViewOnly rows={variableOverrides} columns={['name', 'type', 'enabled']} />
                                             </Card>
                                         </Stack>
-                                        <CopyBlock
-                                            theme={atomOneDark}
-                                            text={
+                                        <CodeBlock
+                                            chatflowid={dialogProps.chatflowid}
+                                            isFullWidth={true}
+                                            value={
                                                 chatflowApiKeyId
                                                     ? dialogProps.isFormDataRequired
-                                                        ? getConfigCodeWithFormDataWithAuth(codeLang, getConfigApi.data)
-                                                        : getConfigCodeWithAuthorization(codeLang, getConfigApi.data)
+                                                        ? getConfigCodeWithFormDataWithAuth(codeLang, normalizedNodeConfig)
+                                                        : getConfigCodeWithAuthorization(codeLang, normalizedNodeConfig)
                                                     : dialogProps.isFormDataRequired
-                                                    ? getConfigCodeWithFormData(codeLang, getConfigApi.data)
-                                                    : getConfigCode(codeLang, getConfigApi.data)
+                                                    ? getConfigCodeWithFormData(codeLang, normalizedNodeConfig)
+                                                    : getConfigCode(codeLang, normalizedNodeConfig)
                                             }
                                             language={getLang(codeLang)}
-                                            showLineNumbers={false}
-                                            wrapLines
                                         />
                                         <div
                                             style={{
@@ -914,16 +941,15 @@ formData.append("openAIApiKey[openAIEmbeddings_0]", "sk-my-openai-2nd-key")`
                                                 </span>
                                             </div>
                                             <div style={{ padding: 10 }}>
-                                                <CopyBlock
-                                                    theme={atomOneDark}
-                                                    text={
+                                                <CodeBlock
+                                                    chatflowid={dialogProps.chatflowid}
+                                                    isFullWidth={true}
+                                                    value={
                                                         dialogProps.isFormDataRequired
                                                             ? getMultiConfigCodeWithFormData(codeLang)
                                                             : getMultiConfigCode()
                                                     }
                                                     language={getLang(codeLang)}
-                                                    showLineNumbers={false}
-                                                    wrapLines
                                                 />
                                             </div>
                                         </div>

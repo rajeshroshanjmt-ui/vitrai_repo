@@ -2,10 +2,10 @@ import { useState } from 'react'
 import PropTypes from 'prop-types'
 
 import { Tabs, Tab, Box } from '@mui/material'
-import { CopyBlock, atomOneDark } from 'react-code-blocks'
 
 // Project import
 import { CheckboxInput } from '@/ui-component/checkbox/Checkbox'
+import { CodeBlock } from '@/ui-component/markdown/CodeBlock'
 
 // Const
 import { baseURL } from '@/store/constant'
@@ -361,18 +361,12 @@ const EmbedChat = ({ chatflowid }) => {
                             <div style={{ height: 10 }}></div>
                         </>
                     )}
-                    <CopyBlock theme={atomOneDark} text={getCode(codeLang)} language='javascript' showLineNumbers={false} wrapLines />
+                    <CodeBlock chatflowid={chatflowid} isFullWidth={true} value={getCode(codeLang)} language='javascript' />
 
                     <CheckboxInput label='Show Embed Chat Config' value={embedChatCheckboxVal} onChange={onCheckBoxEmbedChatChanged} />
 
                     {embedChatCheckboxVal && (
-                        <CopyBlock
-                            theme={atomOneDark}
-                            text={getCodeCustomization(codeLang)}
-                            language='javascript'
-                            showLineNumbers={false}
-                            wrapLines
-                        />
+                        <CodeBlock chatflowid={chatflowid} isFullWidth={true} value={getCodeCustomization(codeLang)} language='javascript' />
                     )}
                 </TabPanel>
             ))}

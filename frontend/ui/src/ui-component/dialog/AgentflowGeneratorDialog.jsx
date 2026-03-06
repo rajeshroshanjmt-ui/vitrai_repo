@@ -38,6 +38,7 @@ const AgentflowGeneratorDialog = ({ show, dialogProps, onCancel, onConfirm }) =>
     const portalElement = document.getElementById('portal')
     const [customAssistantInstruction, setCustomAssistantInstruction] = useState('')
     const [generatedInstruction, setGeneratedInstruction] = useState('')
+    const [instructionOnlyResult, setInstructionOnlyResult] = useState(false)
     const [loading, setLoading] = useState(false)
     const [progress, setProgress] = useState(0)
     const [chatModelsComponents, setChatModelsComponents] = useState([])
@@ -203,16 +204,24 @@ const AgentflowGeneratorDialog = ({ show, dialogProps, onCancel, onConfirm }) =>
                 selectedChatModel: selectedChatModel
             })
 
-            if (response.data && response.data.nodes && response.data.edges) {
-                reactFlowInstance.setNodes(response.data.nodes)
-                reactFlowInstance.setEdges(response.data.edges)
+            const generatedNodes = Array.isArray(response?.data?.nodes) ? response.data.nodes : null
+            const generatedEdges = Array.isArray(response?.data?.edges) ? response.data.edges : null
+            if (generatedNodes && generatedEdges) {
+                reactFlowInstance.setNodes(generatedNodes)
+                reactFlowInstance.setEdges(generatedEdges)
                 onConfirm()
-            } else {
+                return
+            }
+
+            const generatedText = String(response?.data?.instruction || response?.data?.content || '').trim()
+            if (generatedText) {
+                setGeneratedInstruction(generatedText)
+                setInstructionOnlyResult(true)
                 enqueueSnackbar({
-                    message: response.error || 'Failed to generate agentflow',
+                    message: 'Prompt generated. Auto-graph generation is unavailable for this model/backend; review and apply manually.',
                     options: {
                         key: new Date().getTime() + Math.random(),
-                        variant: 'error',
+                        variant: 'warning',
                         persist: false,
                         action: (key) => (
                             <Button style={{ color: 'white' }} onClick={() => closeSnackbar(key)}>
@@ -221,7 +230,22 @@ const AgentflowGeneratorDialog = ({ show, dialogProps, onCancel, onConfirm }) =>
                         )
                     }
                 })
+                return
             }
+
+            enqueueSnackbar({
+                message: response.error || 'Failed to generate agentflow',
+                options: {
+                    key: new Date().getTime() + Math.random(),
+                    variant: 'error',
+                    persist: false,
+                    action: (key) => (
+                        <Button style={{ color: 'white' }} onClick={() => closeSnackbar(key)}>
+                            <IconX />
+                        </Button>
+                    )
+                }
+            })
         } catch (error) {
             enqueueSnackbar({
                 message: error.response?.data?.message || 'Failed to generate agentflow',
@@ -246,6 +270,7 @@ const AgentflowGeneratorDialog = ({ show, dialogProps, onCancel, onConfirm }) =>
         if (!show) {
             setCustomAssistantInstruction('')
             setGeneratedInstruction('')
+            setInstructionOnlyResult(false)
             setProgress(0)
         } else {
             getChatModelsApi.request()
@@ -441,9 +466,15 @@ const AgentflowGeneratorDialog = ({ show, dialogProps, onCancel, onConfirm }) =>
                                     startIcon={<IconArrowLeft size={20} />}
                                     onClick={() => {
                                         setGeneratedInstruction('')
+                                        setInstructionOnlyResult(false)
                                     }}
                                 >
                                     Back
+                                </Button>
+                            )}
+                            {generatedInstruction && instructionOnlyResult && (
+                                <Button variant='contained' onClick={onConfirm}>
+                                    Apply
                                 </Button>
                             )}
                         </>

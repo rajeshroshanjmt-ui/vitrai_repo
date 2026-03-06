@@ -506,9 +506,6 @@ const EvalsEvaluation = () => {
 }
 
 function EvaluationRunRow(props) {
-    const enqueueSnackbar = (...args) => dispatch(enqueueSnackbarAction(...args))
-    const closeSnackbar = (...args) => dispatch(closeSnackbarAction(...args))
-
     const [open, setOpen] = useState(false)
     const [childSelected, setChildSelected] = useState([])
 
@@ -516,6 +513,8 @@ function EvaluationRunRow(props) {
     const navigate = useNavigate()
     const { confirm } = useConfirm()
     const dispatch = useDispatch()
+    const enqueueSnackbar = (...args) => dispatch(enqueueSnackbarAction(...args))
+    const closeSnackbar = (...args) => dispatch(closeSnackbarAction(...args))
 
     const showResults = (item) => {
         navigate(`/evaluation_results/${item.id}`)

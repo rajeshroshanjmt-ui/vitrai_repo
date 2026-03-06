@@ -56,6 +56,7 @@ const EvalDatasets = () => {
     const theme = useTheme()
     const { confirm } = useConfirm()
     const { error } = useError()
+    const dispatch = useDispatch()
 
     const customization = useSelector((state) => state.customization)
 
@@ -64,7 +65,6 @@ const EvalDatasets = () => {
     const closeSnackbar = (...args) => dispatch(closeSnackbarAction(...args))
 
     const [search, setSearch] = useState('')
-    const dispatch = useDispatch()
     const [isLoading, setLoading] = useState(true)
     const [datasets, setDatasets] = useState([])
     const [showDatasetDialog, setShowDatasetDialog] = useState(false)
@@ -274,10 +274,14 @@ const EvalDatasets = () => {
                                                             <Skeleton variant='text' />
                                                         </StyledTableCell>
                                                         <Available permission={'datasets:update,datasets:create'}>
-                                                            <Skeleton variant='text' />
+                                                            <StyledTableCell>
+                                                                <Skeleton variant='text' />
+                                                            </StyledTableCell>
                                                         </Available>
                                                         <Available permission={'datasets:delete'}>
-                                                            <Skeleton variant='text' />
+                                                            <StyledTableCell>
+                                                                <Skeleton variant='text' />
+                                                            </StyledTableCell>
                                                         </Available>
                                                     </StyledTableRow>
                                                     <StyledTableRow>
@@ -294,10 +298,14 @@ const EvalDatasets = () => {
                                                             <Skeleton variant='text' />
                                                         </StyledTableCell>
                                                         <Available permission={'datasets:update,datasets:create'}>
-                                                            <Skeleton variant='text' />
+                                                            <StyledTableCell>
+                                                                <Skeleton variant='text' />
+                                                            </StyledTableCell>
                                                         </Available>
                                                         <Available permission={'datasets:delete'}>
-                                                            <Skeleton variant='text' />
+                                                            <StyledTableCell>
+                                                                <Skeleton variant='text' />
+                                                            </StyledTableCell>
                                                         </Available>
                                                     </StyledTableRow>
                                                 </>

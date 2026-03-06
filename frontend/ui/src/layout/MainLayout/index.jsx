@@ -15,8 +15,31 @@ import { SET_MENU } from '@/store/actions'
 // styles
 const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(({ theme, open }) => ({
     ...theme.typography.mainContent,
+    position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+    animation: 'main-shell-fade 220ms ease',
+    '@keyframes main-shell-fade': {
+        from: {
+            opacity: 0.72,
+            transform: 'translateY(4px)'
+        },
+        to: {
+            opacity: 1,
+            transform: 'translateY(0)'
+        }
+    },
+    '&::before': {
+        content: "''",
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: 18,
+        height: '100%',
+        pointerEvents: 'none',
+        background: `linear-gradient(90deg, ${theme.palette.glow?.soft || 'transparent'} 0%, transparent 100%)`
+    },
     ...(!open && {
-        backgroundColor: 'transparent',
         borderBottomLeftRadius: 0,
         borderBottomRightRadius: 0,
         transition: theme.transitions.create('all', {
@@ -41,7 +64,6 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(({
         }
     }),
     ...(open && {
-        backgroundColor: 'transparent',
         transition: theme.transitions.create('all', {
             easing: theme.transitions.easing.easeOut,
             duration: theme.transitions.duration.enteringScreen
@@ -73,7 +95,13 @@ const MainLayout = () => {
     }, [matchDownMd])
 
     return (
-        <Box sx={{ display: 'flex' }}>
+        <Box
+            sx={{
+                display: 'flex',
+                minHeight: '100vh',
+                backgroundColor: theme.palette.surface?.base || theme.palette.background.default
+            }}
+        >
             <CssBaseline />
             {/* header */}
             <AppBar
@@ -82,11 +110,18 @@ const MainLayout = () => {
                 color='inherit'
                 elevation={0}
                 sx={{
-                    bgcolor: theme.palette.background.default,
+                    bgcolor: theme.palette.surface?.base || theme.palette.background.default,
+                    backdropFilter: 'blur(10px)',
                     transition: leftDrawerOpened ? theme.transitions.create('width') : 'none'
                 }}
             >
-                <Toolbar sx={{ height: `${headerHeight}px`, borderBottom: '1px solid', borderColor: theme.palette.grey[900] + 25 }}>
+                <Toolbar
+                    sx={{
+                        height: `${headerHeight}px`,
+                        boxShadow: `0 8px 24px ${theme.palette.glow?.soft || 'rgba(0,0,0,0.08)'}`,
+                        borderBottom: 'none'
+                    }}
+                >
                     <Header handleLeftDrawerToggle={handleLeftDrawerToggle} />
                 </Toolbar>
             </AppBar>

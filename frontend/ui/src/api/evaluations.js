@@ -1,13 +1,23 @@
 import client from './client'
+import { unavailableResponse } from './responseAdapter'
+
+const isNotFound = (error) => error?.response?.status === 404
 
 const getAllEvaluations = async (params = {}) => {
-    const response = await client.get('/evaluations', {
-        params: {
-            page: params?.page || 1,
-            limit: params?.limit || 10
+    try {
+        const response = await client.get('/evaluations', {
+            params: {
+                page: params?.page || 1,
+                limit: params?.limit || 10
+            }
+        })
+        return { data: response.data }
+    } catch (error) {
+        if (isNotFound(error)) {
+            return unavailableResponse({ data: [], total: 0 }, 404)
         }
-    })
-    return { data: response.data }
+        throw error
+    }
 }
 
 const getIsOutdated = async (id) => {

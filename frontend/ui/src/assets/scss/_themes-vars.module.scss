@@ -1,136 +1,155 @@
-// paper & background
+// ==============================|| CORE SURFACES ||============================== //
+
 $paper: #ffffff;
+$canvasLight: #f4f8ff;
+$canvasDark: #020a16;
 
-// primary
-$primaryLight: #e3f2fd;
-$primaryMain: #2196f3;
-$primaryDark: #1e88e5;
-$primary200: #90caf9;
-$primary800: #1565c0;
+// ==============================|| BRAND (LIGHT) ||============================== //
 
-// secondary
-$secondaryLight: #ede7f6;
-$secondaryMain: #673ab7;
-$secondaryDark: #5e35b1;
-$secondary200: #b39ddb;
-$secondary800: #4527a0;
+$primaryLight: #dbe9ff;
+$primaryMain: #2a6fe8;
+$primaryDark: #1b4ea8;
+$primary200: #93b5f8;
+$primary800: #123f8a;
 
-// success Colors
-$successLight: #cdf5d8;
-$success200: #69f0ae;
-$successMain: #00e676;
-$successDark: #00c853;
+$secondaryLight: #d6f4ff;
+$secondaryMain: #129ccf;
+$secondaryDark: #0f6b91;
+$secondary200: #7ccfe8;
+$secondary800: #0b4e6b;
 
-// error
-$errorLight: #f3d2d2;
-$errorMain: #f44336;
-$errorDark: #c62828;
+$successLight: #d7f4e4;
+$success200: #6fe2a4;
+$successMain: #21b06f;
+$successDark: #12734a;
 
-// orange
-$orangeLight: #fbe9e7;
-$orangeMain: #ffab91;
-$orangeDark: #d84315;
+$errorLight: #f9d9dd;
+$errorMain: #d94a5d;
+$errorDark: #9f1f33;
 
-// brown
-$tealLight: #76c893;
-$tealMain: #52b69a;
-$tealDark: #34a0a4;
+$orangeLight: #ffe8cf;
+$orangeMain: #f6a24b;
+$orangeDark: #b56b1f;
 
-// warning
-$warningLight: #fff8e1;
-$warningMain: #ffe57f;
-$warningDark: #ffc107;
+$tealLight: #b8eef2;
+$tealMain: #35b7c2;
+$tealDark: #1c7f87;
 
-// grey
-$grey50: #fafafa;
-$grey100: #f5f5f5;
-$grey200: #eeeeee;
-$grey300: #e0e0e0;
-$grey400: #c4c4c4;
-$grey500: #9e9e9e;
-$grey600: #757575;
-$grey700: #616161;
-$grey900: #212121;
+$warningLight: #fff4cc;
+$warningMain: #f2bd44;
+$warningDark: #a06f11;
 
-// transparent
+$grey50: #f9fbff;
+$grey100: #edf3fb;
+$grey200: #dce6f4;
+$grey300: #c3d1e3;
+$grey400: #9eb2cc;
+$grey500: #7b8da8;
+$grey600: #5e6f89;
+$grey700: #44516a;
+$grey900: #1b2638;
+
 $transparent: #ffffff00;
 
-// ==============================|| DARK THEME VARIANTS ||============================== //
+// ==============================|| SEMANTIC (LIGHT) ||============================== //
 
-// paper & background
-$darkBackground: #191b1f;
-$darkPaper: #191b1f;
+$brandLight: #dbe9ff;
+$brandMain: #2a6fe8;
+$brandDark: #1b4ea8;
 
-// dark 800 & 900
-$darkLevel1: #252525; // level 1
-$darkLevel2: #242424; // level 2
+$surfaceBaseLight: #f4f8ff;
+$surfaceRaisedLight: #ffffff;
+$surfaceSunkenLight: #ecf2fb;
 
-// primary dark
-$darkPrimaryLight: #23262c;
-$darkPrimaryMain: #23262c;
-$darkPrimaryDark: #191b1f;
-$darkPrimary200: #c9d4e9;
-$darkPrimary800: #32353b;
+$outlineSubtleLight: rgba(35, 72, 127, 0.16);
+$outlineStrongLight: rgba(25, 57, 104, 0.3);
 
-// secondary dark
-$darkSecondaryLight: #454c59;
-$darkSecondaryMain: #7c4dff;
-$darkSecondaryDark: #ffffff;
-$darkSecondary200: #32353b;
-$darkSecondary800: #6200ea;
+$glowSoftLight: rgba(42, 111, 232, 0.15);
+$glowElevatedLight: rgba(25, 87, 174, 0.22);
 
-// text variants
-$darkTextTitle: #d7dcec;
-$darkTextPrimary: #bdc8f0;
-$darkTextSecondary: #8492c4;
+$focusRingLight: rgba(20, 108, 255, 0.5);
 
-// ==============================|| JAVASCRIPT ||============================== //
+// ==============================|| DARK THEME TOKENS ||============================== //
+
+$darkBackground: #020a16;
+$darkPaper: #071428;
+$darkLevel1: #0c1f35;
+$darkLevel2: #132b45;
+
+$darkPrimaryLight: #1a3c60;
+$darkPrimaryMain: #2363d4;
+$darkPrimaryDark: #103055;
+$darkPrimary200: #9bc0f5;
+$darkPrimary800: #1a4eaa;
+
+$darkSecondaryLight: #12394b;
+$darkSecondaryMain: #3aa9cd;
+$darkSecondaryDark: #d8f2fd;
+$darkSecondary200: #1f5f7d;
+$darkSecondary800: #0e4a63;
+
+$darkTextTitle: #e5efff;
+$darkTextPrimary: #d3e2f8;
+$darkTextSecondary: #98abc7;
+
+// ==============================|| SEMANTIC (DARK) ||============================== //
+
+$darkBrandLight: #4d8cf0;
+$darkBrandMain: #6aa5ff;
+$darkBrandDark: #2e67d4;
+
+$surfaceBaseDark: #020a16;
+$surfaceRaisedDark: #09192c;
+$surfaceSunkenDark: #061426;
+
+$outlineSubtleDark: rgba(126, 177, 255, 0.18);
+$outlineStrongDark: rgba(136, 188, 255, 0.33);
+
+$glowSoftDark: rgba(71, 138, 255, 0.26);
+$glowElevatedDark: rgba(96, 162, 255, 0.35);
+
+$focusRingDark: rgba(126, 183, 255, 0.65);
+
+// ==============================|| JAVASCRIPT EXPORTS ||============================== //
 
 :export {
-    // paper & background
     paper: $paper;
+    canvasLight: $canvasLight;
+    canvasDark: $canvasDark;
 
-    // primary
     primaryLight: $primaryLight;
     primary200: $primary200;
     primaryMain: $primaryMain;
     primaryDark: $primaryDark;
     primary800: $primary800;
 
-    // secondary
     secondaryLight: $secondaryLight;
     secondary200: $secondary200;
     secondaryMain: $secondaryMain;
     secondaryDark: $secondaryDark;
     secondary800: $secondary800;
 
-    // success
     successLight: $successLight;
     success200: $success200;
     successMain: $successMain;
     successDark: $successDark;
 
-    // error
     errorLight: $errorLight;
     errorMain: $errorMain;
     errorDark: $errorDark;
 
-    // orange
     orangeLight: $orangeLight;
     orangeMain: $orangeMain;
     orangeDark: $orangeDark;
 
-    // orange
     tealLight: $tealLight;
     tealMain: $tealMain;
     tealDark: $tealDark;
 
-    // warning
     warningLight: $warningLight;
     warningMain: $warningMain;
     warningDark: $warningDark;
 
-    // grey
     grey50: $grey50;
     grey100: $grey100;
     grey200: $grey200;
@@ -141,35 +160,53 @@ $darkTextSecondary: #8492c4;
     grey700: $grey700;
     grey900: $grey900;
 
-    // ==============================|| DARK THEME VARIANTS ||============================== //
-
-    // paper & background
     darkPaper: $darkPaper;
     darkBackground: $darkBackground;
-
-    // dark 800 & 900
     darkLevel1: $darkLevel1;
     darkLevel2: $darkLevel2;
 
-    // text variants
     darkTextTitle: $darkTextTitle;
     darkTextPrimary: $darkTextPrimary;
     darkTextSecondary: $darkTextSecondary;
 
-    // primary dark
     darkPrimaryLight: $darkPrimaryLight;
     darkPrimaryMain: $darkPrimaryMain;
     darkPrimaryDark: $darkPrimaryDark;
     darkPrimary200: $darkPrimary200;
     darkPrimary800: $darkPrimary800;
 
-    // secondary dark
     darkSecondaryLight: $darkSecondaryLight;
     darkSecondaryMain: $darkSecondaryMain;
     darkSecondaryDark: $darkSecondaryDark;
     darkSecondary200: $darkSecondary200;
     darkSecondary800: $darkSecondary800;
 
-    // transparent
+    brandLight: $brandLight;
+    brandMain: $brandMain;
+    brandDark: $brandDark;
+    darkBrandLight: $darkBrandLight;
+    darkBrandMain: $darkBrandMain;
+    darkBrandDark: $darkBrandDark;
+
+    surfaceBaseLight: $surfaceBaseLight;
+    surfaceRaisedLight: $surfaceRaisedLight;
+    surfaceSunkenLight: $surfaceSunkenLight;
+    surfaceBaseDark: $surfaceBaseDark;
+    surfaceRaisedDark: $surfaceRaisedDark;
+    surfaceSunkenDark: $surfaceSunkenDark;
+
+    outlineSubtleLight: $outlineSubtleLight;
+    outlineStrongLight: $outlineStrongLight;
+    outlineSubtleDark: $outlineSubtleDark;
+    outlineStrongDark: $outlineStrongDark;
+
+    glowSoftLight: $glowSoftLight;
+    glowElevatedLight: $glowElevatedLight;
+    glowSoftDark: $glowSoftDark;
+    glowElevatedDark: $glowElevatedDark;
+
+    focusRingLight: $focusRingLight;
+    focusRingDark: $focusRingDark;
+
     transparent: $transparent;
 }

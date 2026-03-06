@@ -1,9 +1,10 @@
 import json
+import hashlib
 from datetime import datetime, timezone
 from typing import Annotated, Any
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from sqlalchemy.orm import Session
 
 from auth import require_roles
@@ -57,8 +58,32 @@ EMBEDDING_PROVIDERS = [{"name": "ollamaEmbeddings", "label": "Ollama Embeddings"
 RECORD_MANAGER_PROVIDERS = [{"name": "sqliteRecordManager", "label": "SQLite Record Manager", "inputs": []}]
 
 
+def _node_icon_svg(node_name: str) -> str:
+    safe_name = (node_name or "node").strip()[:32]
+    parts = [part for part in safe_name.replace("_", " ").replace("-", " ").split() if part]
+    initials = "".join(part[0] for part in parts[:2]).upper() or "N"
+    digest = hashlib.md5(safe_name.encode("utf-8")).hexdigest()
+    bg = f"#{digest[:6]}"
+    fg = "#ffffff"
+
+    return (
+        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>"
+        f"<rect x='2' y='2' width='60' height='60' rx='30' fill='{bg}' />"
+        "<circle cx='32' cy='32' r='30' fill='none' stroke='rgba(255,255,255,0.28)' stroke-width='2' />"
+        f"<text x='32' y='39' text-anchor='middle' fill='{fg}' font-family='Arial, sans-serif' "
+        "font-size='22' font-weight='700'>"
+        f"{initials}</text></svg>"
+    )
+
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+@router.get("/v1/node-icon/{node_name}")
+def get_node_icon(node_name: str) -> Response:
+    svg = _node_icon_svg(node_name)
+    return Response(content=svg, media_type="image/svg+xml")
 
 
 def _ensure_tenant(db: Session, tenant_id: str) -> None:
@@ -329,8 +354,10 @@ def generate_instruction(
     body: dict[str, Any],
     user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
 ) -> dict[str, Any]:
-    prompt = str(body.get("prompt") or "")
-    return {"instruction": prompt or "You are a helpful assistant."}
+    prompt = str(body.get("prompt") or body.get("task") or body.get("question") or "").strip()
+    instruction = prompt or "You are a helpful assistant."
+    # Return both keys because different UI surfaces currently read either `instruction` or `content`.
+    return {"instruction": instruction, "content": instruction}
 
 
 @router.get("/openai-assistants")
