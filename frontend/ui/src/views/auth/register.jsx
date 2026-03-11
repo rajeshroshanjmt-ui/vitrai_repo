@@ -147,7 +147,12 @@ const RegisterPage = () => {
 
         setLoading(true)
         try {
-            const tenant_id = 'tenant-' + (username || 'user')
+            // Generate a proper UUID for tenant_id
+            const tenant_id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0
+                const v = c === 'x' ? r : (r & 0x3 | 0x8)
+                return v.toString(16)
+            })
             const registerResponse = await axios.post(`${baseURL}/api/auth/register`, {
                 email,
                 password,
