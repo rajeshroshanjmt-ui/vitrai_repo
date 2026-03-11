@@ -26,6 +26,7 @@ class User(Base):
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
     tenant_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
     email: Mapped[str] = mapped_column(Text, nullable=False)
+    password_hash: Mapped[str | None] = mapped_column(Text)
     role: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

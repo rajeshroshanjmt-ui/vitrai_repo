@@ -20,9 +20,16 @@ readiness_redis = redis.Redis(
     decode_responses=True,
 )
 
+# CORS configuration: restrict to specific origins
+APP_ENV = os.getenv("APP_ENV", "development").strip().lower()
+if APP_ENV in {"dev", "development", "local", "test", "testing"}:
+    allowed_origins = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost", "http://127.0.0.1"]
+else:
+    allowed_origins = [os.getenv("FRONTEND_ORIGIN", "https://app.vetrai.tech")]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

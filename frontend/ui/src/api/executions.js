@@ -1,4 +1,5 @@
 import client from './client'
+import { unavailableObjectResponse } from './responseAdapter'
 
 const VISIBILITY_STORAGE_KEY = 'vetrai_execution_visibility'
 
@@ -128,17 +129,17 @@ const getExecutionByIdPublic = async (executionId) => {
     const found = await fetchExecutionById(executionId)
     const visibilityMap = loadVisibilityMap()
     if (!found || !visibilityMap[executionId]) {
-        throw new Error('Execution not shared publicly')
+        return unavailableObjectResponse(404)
     }
-    return { data: found }
+    return { data: found, status: 200 }
 }
 
-const deleteExecutions = async () => {
-    return {
-        data: {
-            status: 'ok'
-        }
+const deleteExecutions = async (executionId) => {
+    if (!executionId) {
+        throw new Error('executionId is required')
     }
+    const response = await client.delete(`/flows/logs/${executionId}`)
+    return { data: response?.data || { status: 'deleted' } }
 }
 
 const updateExecution = async (executionId, body) => {

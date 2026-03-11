@@ -40,3 +40,8 @@ flowise_temp/
 
 # Docker local data
 postgres/data/
+
+# AWS / SSH keys (do NOT commit private keys)
+LightsailDefaultKey-us-east-1.pem
+*.pem
+!nginx/certs/

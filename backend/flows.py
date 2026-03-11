@@ -193,6 +193,14 @@ def _normalize_tool_states(states: dict[str, Any] | None) -> dict[str, bool]:
     return normalized
 
 
+def _success_payload(data: dict[str, Any]) -> dict[str, Any]:
+    payload = dict(data)
+    payload["success"] = True
+    payload["data"] = data
+    payload["error"] = None
+    return payload
+
+
 def _get_user_tool_states(db: Session, tenant_id: str, user_id: str) -> dict[str, Any]:
     preference = (
         db.query(UserPreference)
@@ -459,7 +467,7 @@ def create_flow(
     )
     db.add(version)
     db.commit()
-    return {"flow_id": flow.id, "draft_version_id": version.id, "version": 1}
+    return _success_payload({"flow_id": flow.id, "draft_version_id": version.id, "version": 1})
 
 
 @router.put("/{flow_id}/draft")
@@ -486,7 +494,7 @@ def save_draft(
     )
     db.add(version)
     db.commit()
-    return {"flow_id": flow.id, "draft_version_id": version.id, "version": next_version}
+    return _success_payload({"flow_id": flow.id, "draft_version_id": version.id, "version": next_version})
 
 
 @router.post("/{flow_id}/publish")
@@ -511,7 +519,7 @@ def publish_flow(
     target.is_published = True
     db.commit()
 
-    return {"flow_id": flow.id, "published_version": target.version, "flow_version_id": target.id}
+    return _success_payload({"flow_id": flow.id, "published_version": target.version, "flow_version_id": target.id})
 
 
 @router.post("/{flow_id}/execute")
@@ -565,19 +573,30 @@ def execute_flow(
     db.add(execution)
     db.commit()
 
+    tool_states = dict(DEFAULT_TOOL_STATES)
+    user_id = user.get("user_id")
+    if user_id:
+        try:
+            tool_states = _get_user_tool_states(db, user["tenant_id"], user_id).get("states") or tool_states
+        except Exception:
+            logger.exception("Failed to load user tool states; falling back to defaults", extra={"tenant_id": user["tenant_id"]})
+
     job = {
         "job_type": "execute_flow",
         "execution_log_id": execution.id,
         "flow_version_id": published.id,
+        "flow_id": flow.id,
+        "flow_definition": getattr(published, "json_definition", {}) or {},
         "tenant_id": user["tenant_id"],
         "input": body.input,
         "enable_tools": body.enable_tools,
+        "tool_states": tool_states,
         "llm_provider": body.llm_provider,
         "llm_model": body.llm_model,
     }
     redis_client.rpush(EXECUTION_QUEUE, json.dumps(job))
 
-    return {"execution_log_id": execution.id, "status": "queued"}
+    return _success_payload({"execution_log_id": execution.id, "status": "queued"})
 
 
 @router.post("/{flow_id}/documents")
@@ -612,11 +631,11 @@ def ingest_documents(
     }
     redis_client.rpush(INGEST_QUEUE, json.dumps(job))
 
-    return {
+    return _success_payload({
         "status": "queued",
         "documents": len(body.documents),
         "ingestion_job_id": ingestion.id,
-    }
+    })
 
 
 @router.get("/{flow_id}/ingestions")
@@ -682,6 +701,43 @@ def get_logs(
     ]
 
 
+@router.delete("/logs/{log_id}")
+def delete_log(
+    log_id: str,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
+) -> dict[str, str]:
+    """Delete an execution log (admin/editor only)."""
+    log = db.query(ExecutionLog).filter(ExecutionLog.id == log_id).one_or_none()
+    if log is None:
+        raise HTTPException(status_code=404, detail="Execution log not found")
+
+    # Verify user has permission to delete (owns the flow)
+    version = db.query(FlowVersion).filter(FlowVersion.id == log.flow_version_id).one()
+    flow = db.query(Flow).filter(Flow.id == version.flow_id).one()
+    if flow.tenant_id != user["tenant_id"]:
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    db.delete(log)
+    db.commit()
+
+    # Audit log
+    db.add(
+        AuditLog(
+            tenant_id=user["tenant_id"],
+            actor_user_id=user.get("user_id"),
+            actor_email=user.get("sub"),
+            actor_role=user.get("role"),
+            action="delete",
+            resource_type="execution_log",
+            resource_id=log_id,
+        )
+    )
+    db.commit()
+
+    return {"status": "deleted"}
+
+
 @router.get("/list")
 def list_flows(
     limit: int = 50,
@@ -722,7 +778,7 @@ def list_flows(
             }
         )
 
-    return {"items": items, "count": len(items)}
+    return _success_payload({"items": items, "count": len(items)})
 
 
 @router.get("/usage")
@@ -765,7 +821,7 @@ def get_usage(
         if PLAN_LIMIT > 0
         else 0
     )
-    return {
+    return _success_payload({
         "tenant_id": user["tenant_id"],
         "total_flows": usage["total_flows"],
         "published_flows": usage["published_flows"],
@@ -782,7 +838,7 @@ def get_usage(
         },
         "queue_depth": queue_depth,
         "generated_at": datetime.now(timezone.utc).isoformat(),
-    }
+    })
 
 
 @router.get("/tools/state")
@@ -791,12 +847,12 @@ def get_tool_state(
     user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
 ) -> dict[str, Any]:
     data = _get_user_tool_states(db, user["tenant_id"], user["user_id"])
-    return {
+    return _success_payload({
         "tenant_id": user["tenant_id"],
         "user_id": user["user_id"],
         "states": data["states"],
         "updated_at": data["updated_at"],
-    }
+    })
 
 
 @router.put("/tools/state")
@@ -808,12 +864,12 @@ def update_tool_state(
     _ensure_tenant(db, user["tenant_id"])
     _ensure_tenant_user(db, user)
     data = _persist_user_tool_states(db, user["tenant_id"], user["user_id"], body.states)
-    return {
+    return _success_payload({
         "tenant_id": user["tenant_id"],
         "user_id": user["user_id"],
         "states": data["states"],
         "updated_at": data["updated_at"],
-    }
+    })
 
 
 @router.get("/{flow_id}")
@@ -835,14 +891,14 @@ def get_flow(
         .order_by(FlowVersion.version.desc())
         .first()
     )
-    return {
+    return _success_payload({
         "flow_id": flow.id,
         "name": flow.name,
         "latest_version": latest_version.version if latest_version else None,
         "published_version": published.version if published else None,
         "json_definition": latest_version.json_definition if latest_version else {},
         "created_at": flow.created_at.isoformat() if flow.created_at else None,
-    }
+    })
 
 
 @router.delete("/{flow_id}")
@@ -863,7 +919,7 @@ def delete_flow(
     )
     db.delete(flow)
     db.commit()
-    return {"status": "deleted", "flow_id": flow_id}
+    return _success_payload({"status": "deleted", "flow_id": flow_id})
 
 
 @router.get("/dlq/{dlq_type}")

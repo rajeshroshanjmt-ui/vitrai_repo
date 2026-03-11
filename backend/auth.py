@@ -6,6 +6,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
+from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -15,6 +16,7 @@ from models import Tenant, User
 
 router = APIRouter()
 security = HTTPBearer(auto_error=False)
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 SECRET = os.getenv("JWT_SECRET", "change-me")
 APP_ENV = os.getenv("APP_ENV", os.getenv("ENVIRONMENT", os.getenv("ENV", "development"))).strip().lower()
@@ -47,10 +49,17 @@ TOKEN_TTL_MINUTES = _load_token_ttl_minutes()
 _ensure_secure_jwt_secret(SECRET, APP_ENV)
 
 
-class TokenRequest(BaseModel):
+class RegisterRequest(BaseModel):
     email: EmailStr
+    password: str
     tenant_id: str
     role: str = "viewer"
+
+
+class TokenRequest(BaseModel):
+    email: EmailStr
+    password: str
+    tenant_id: str
 
 
 class TokenResponse(BaseModel):
@@ -62,6 +71,14 @@ def create_token(payload: dict) -> str:
     body = payload.copy()
     body["exp"] = datetime.now(timezone.utc) + timedelta(minutes=TOKEN_TTL_MINUTES)
     return jwt.encode(body, SECRET, algorithm=ALGORITHM)
+
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
 
 
 def decode_token(token: str) -> dict:
@@ -94,8 +111,8 @@ def require_roles(*roles: str):
     return dependency
 
 
-@router.post("/token", response_model=TokenResponse)
-def issue_token(payload: TokenRequest, db: Session = Depends(get_db)) -> TokenResponse:
+@router.post("/register", response_model=TokenResponse)
+def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenResponse:
     if payload.role not in ALLOWED_ROLES:
         raise HTTPException(status_code=400, detail="Unsupported role")
     email = payload.email.lower()
@@ -110,12 +127,12 @@ def issue_token(payload: TokenRequest, db: Session = Depends(get_db)) -> TokenRe
         .filter(User.tenant_id == payload.tenant_id, func.lower(User.email) == email)
         .one_or_none()
     )
-    if user is None:
-        user = User(id=str(uuid4()), tenant_id=payload.tenant_id, email=email, role=payload.role)
-        db.add(user)
-    else:
-        user.role = payload.role
+    if user is not None:
+        raise HTTPException(status_code=400, detail="User already exists")
 
+    password_hash = hash_password(payload.password)
+    user = User(id=str(uuid4()), tenant_id=payload.tenant_id, email=email, password_hash=password_hash, role=payload.role)
+    db.add(user)
     db.commit()
 
     token = create_token(
@@ -123,6 +140,36 @@ def issue_token(payload: TokenRequest, db: Session = Depends(get_db)) -> TokenRe
             "sub": email,
             "tenant_id": payload.tenant_id,
             "role": payload.role,
+            "user_id": user.id,
+        }
+    )
+    return TokenResponse(access_token=token)
+
+
+@router.post("/token", response_model=TokenResponse)
+def issue_token(payload: TokenRequest, db: Session = Depends(get_db)) -> TokenResponse:
+    email = payload.email.lower()
+
+    tenant = db.get(Tenant, payload.tenant_id)
+    if tenant is None:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    user = (
+        db.query(User)
+        .filter(User.tenant_id == payload.tenant_id, func.lower(User.email) == email)
+        .one_or_none()
+    )
+    if user is None or user.password_hash is None:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    if not verify_password(payload.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    token = create_token(
+        {
+            "sub": email,
+            "tenant_id": payload.tenant_id,
+            "role": user.role,
             "user_id": user.id,
         }
     )
