@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY,
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     email TEXT NOT NULL,
+    password_hash TEXT,
     role TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
