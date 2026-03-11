@@ -117,6 +117,10 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenRe
         raise HTTPException(status_code=400, detail="Unsupported role")
     email = payload.email.lower()
 
+    # Validate password length (bcrypt has a 72-byte limit)
+    if len(payload.password.encode('utf-8')) > 72:
+        raise HTTPException(status_code=400, detail="Password is too long (max 72 bytes)")
+
     tenant = db.get(Tenant, payload.tenant_id)
     if tenant is None:
         tenant = Tenant(id=payload.tenant_id, name=f"tenant-{payload.tenant_id[:8]}")
@@ -149,6 +153,10 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenRe
 @router.post("/token", response_model=TokenResponse)
 def issue_token(payload: TokenRequest, db: Session = Depends(get_db)) -> TokenResponse:
     email = payload.email.lower()
+
+    # Validate password length (bcrypt has a 72-byte limit)
+    if len(payload.password.encode('utf-8')) > 72:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
 
     tenant = db.get(Tenant, payload.tenant_id)
     if tenant is None:
