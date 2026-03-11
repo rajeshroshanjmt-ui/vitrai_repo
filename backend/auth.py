@@ -74,7 +74,12 @@ def create_token(payload: dict) -> str:
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    if not password:
+        raise ValueError("Password cannot be empty")
+    hashed = pwd_context.hash(password)
+    if not hashed:
+        raise ValueError("Password hashing failed - no hash returned")
+    return hashed
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -134,7 +139,14 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenRe
     if user is not None:
         raise HTTPException(status_code=400, detail="User already exists")
 
-    password_hash = hash_password(payload.password)
+    try:
+        password_hash = hash_password(payload.password)
+    except Exception as hash_error:
+        raise HTTPException(status_code=500, detail=f"Password hashing failed: {str(hash_error)}")
+
+    if not password_hash:
+        raise HTTPException(status_code=500, detail="Password hash is empty")
+
     user = User(id=str(uuid4()), tenant_id=payload.tenant_id, email=email, password_hash=password_hash, role=payload.role)
     db.add(user)
     db.commit()
