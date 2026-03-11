@@ -45,6 +45,69 @@ CHAT_MODEL_COMPONENTS = [
             "optional": True,
         },
     },
+    {
+        "name": "anthropicChat",
+        "label": "Anthropic Chat",
+        "category": "Chat Models",
+        "description": "Run chat completions with Anthropic models.",
+        "baseClasses": ["ChatModel"],
+        "inputs": [
+            {
+                "label": "Model",
+                "name": "model",
+                "type": "string",
+                "default": "claude-3-5-sonnet-latest",
+                "optional": False,
+            },
+            {"label": "Temperature", "name": "temperature", "type": "number", "default": 0.7, "optional": True},
+        ],
+        "outputs": [{"label": "Chat Model", "name": "chatModel", "baseClasses": ["ChatModel"]}],
+        "credential": {
+            "label": "Anthropic Credential",
+            "name": "credential",
+            "type": "credential",
+            "credentialNames": ["anthropicApi"],
+            "optional": True,
+        },
+    },
+    {
+        "name": "perplexityChat",
+        "label": "Perplexity Chat",
+        "category": "Chat Models",
+        "description": "Run chat completions with Perplexity models.",
+        "baseClasses": ["ChatModel"],
+        "inputs": [
+            {"label": "Model", "name": "model", "type": "string", "default": "sonar-pro", "optional": False},
+            {"label": "Temperature", "name": "temperature", "type": "number", "default": 0.7, "optional": True},
+        ],
+        "outputs": [{"label": "Chat Model", "name": "chatModel", "baseClasses": ["ChatModel"]}],
+        "credential": {
+            "label": "Perplexity Credential",
+            "name": "credential",
+            "type": "credential",
+            "credentialNames": ["perplexityApi"],
+            "optional": True,
+        },
+    },
+    {
+        "name": "gemini",
+        "label": "Gemini Chat",
+        "category": "Chat Models",
+        "description": "Run chat completions with Google Gemini models.",
+        "baseClasses": ["ChatModel"],
+        "inputs": [
+            {"label": "Model", "name": "model", "type": "string", "default": "gemini-1.5-pro", "optional": False},
+            {"label": "Temperature", "name": "temperature", "type": "number", "default": 0.7, "optional": True},
+        ],
+        "outputs": [{"label": "Chat Model", "name": "chatModel", "baseClasses": ["ChatModel"]}],
+        "credential": {
+            "label": "Google Generative AI Credential",
+            "name": "credential",
+            "type": "credential",
+            "credentialNames": ["googleGenerativeAI"],
+            "optional": True,
+        },
+    },
 ]
 
 DOC_LOADERS = [
@@ -76,6 +139,23 @@ def _node_icon_svg(node_name: str) -> str:
     )
 
 
+def _credential_icon_svg(credential_name: str) -> str:
+    safe_name = (credential_name or "credential").strip()[:32]
+    parts = [part for part in safe_name.replace("_", " ").replace("-", " ").split() if part]
+    initials = "".join(part[0] for part in parts[:2]).upper() or "C"
+    digest = hashlib.md5(f"credential:{safe_name}".encode("utf-8")).hexdigest()
+    bg = f"#{digest[:6]}"
+    fg = "#ffffff"
+
+    return (
+        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>"
+        f"<rect x='2' y='2' width='60' height='60' rx='14' fill='{bg}' />"
+        "<path d='M24 32a8 8 0 1 1 12.7 6.4l-0.7 0.5V44h-6v-3.2l-0.7-0.5A8 8 0 0 1 24 32Z' fill='rgba(255,255,255,0.2)' />"
+        f"<text x='32' y='54' text-anchor='middle' fill='{fg}' font-family='Arial, sans-serif' font-size='12' font-weight='700'>{initials}</text>"
+        "</svg>"
+    )
+
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -84,6 +164,34 @@ def _now_iso() -> str:
 def get_node_icon(node_name: str) -> Response:
     svg = _node_icon_svg(node_name)
     return Response(content=svg, media_type="image/svg+xml")
+
+
+@router.get("/v1/components-credentials-icon/{credential_name}")
+def get_components_credentials_icon(credential_name: str) -> Response:
+    svg = _credential_icon_svg(credential_name)
+    return Response(content=svg, media_type="image/svg+xml")
+
+
+@router.get("/v1/chatflows-streaming/{chatflow_id}")
+def get_chatflow_streaming_compat(chatflow_id: str) -> dict[str, Any]:
+    return {
+        "chatflowId": chatflow_id,
+        "supported": False,
+        "isUnavailable": True,
+        "detail": "Public chatbot streaming is not available in this deployment."
+    }
+
+
+@router.get("/v1/public-chatbotConfig/{chatflow_id}")
+def get_public_chatbot_config_compat(chatflow_id: str) -> dict[str, Any]:
+    return {
+        "id": chatflow_id,
+        "isPublic": False,
+        "isUnavailable": True,
+        "chatbotConfig": "{}",
+        "apikeyid": "",
+        "detail": "Public chatbot configuration endpoint is unavailable in this deployment."
+    }
 
 
 def _ensure_tenant(db: Session, tenant_id: str) -> None:
@@ -366,11 +474,39 @@ def list_openai_assistants(
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
 ) -> list[dict[str, Any]]:
+    return _list_provider_assistants(
+        assistant_type="OPENAI",
+        default_model="gpt-4o-mini",
+        db=db,
+        user=user,
+    )
+
+
+@router.get("/azure-assistants")
+def list_azure_assistants(
+    credential: str | None = None,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
+) -> list[dict[str, Any]]:
+    return _list_provider_assistants(
+        assistant_type="AZURE",
+        default_model="gpt-4o-mini",
+        db=db,
+        user=user,
+    )
+
+
+def _list_provider_assistants(
+    assistant_type: str,
+    default_model: str,
+    db: Session,
+    user: dict[str, Any],
+) -> list[dict[str, Any]]:
     rows = _query_resources(db, user["tenant_id"], "assistant")
     assistants: list[dict[str, Any]] = []
     for row in rows:
         payload = row.payload or {}
-        if payload.get("type") != "OPENAI":
+        if payload.get("type") != assistant_type:
             continue
         details = _parse_json(payload.get("details"), {})
         assistant_obj_id = details.get("id") or row.id
@@ -379,7 +515,7 @@ def list_openai_assistants(
                 "id": assistant_obj_id,
                 "name": details.get("name") or _resource_display_name(row),
                 "description": details.get("description") or "",
-                "model": details.get("model") or "gpt-4o-mini",
+                "model": details.get("model") or default_model,
                 "instructions": details.get("instructions") or "",
                 "tools": details.get("tools") or [],
                 "tool_resources": details.get("tool_resources") or {},
@@ -399,11 +535,35 @@ def get_openai_assistant(
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
 ) -> dict[str, Any]:
-    assistants = list_openai_assistants(credential=credential, db=db, user=user)
+    assistants = _list_provider_assistants(
+        assistant_type="OPENAI",
+        default_model="gpt-4o-mini",
+        db=db,
+        user=user,
+    )
     for assistant in assistants:
         if assistant.get("id") == assistant_obj_id:
             return assistant
     raise HTTPException(status_code=404, detail="OpenAI assistant not found")
+
+
+@router.get("/azure-assistants/{assistant_obj_id}")
+def get_azure_assistant(
+    assistant_obj_id: str,
+    credential: str | None = None,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
+) -> dict[str, Any]:
+    assistants = _list_provider_assistants(
+        assistant_type="AZURE",
+        default_model="gpt-4o-mini",
+        db=db,
+        user=user,
+    )
+    for assistant in assistants:
+        if assistant.get("id") == assistant_obj_id:
+            return assistant
+    raise HTTPException(status_code=404, detail="Azure assistant not found")
 
 
 def _query_vector_stores(db: Session, tenant_id: str, credential: str | None = None) -> list[TenantResource]:
@@ -576,6 +736,87 @@ async def upload_files_to_openai_assistant(
             }
         )
     return uploaded
+
+
+@router.get("/azure-assistants-vector-store")
+def list_azure_vector_stores(
+    credential: str | None = None,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
+) -> list[dict[str, Any]]:
+    return list_vector_stores(credential=credential, db=db, user=user)
+
+
+@router.get("/azure-assistants-vector-store/{vector_store_id}")
+def get_azure_vector_store(
+    vector_store_id: str,
+    credential: str | None = None,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
+) -> dict[str, Any]:
+    return get_vector_store(vector_store_id=vector_store_id, credential=credential, db=db, user=user)
+
+
+@router.post("/azure-assistants-vector-store")
+def create_azure_vector_store(
+    body: dict[str, Any],
+    credential: str | None = None,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
+) -> dict[str, Any]:
+    return create_vector_store(body=body, credential=credential, db=db, user=user)
+
+
+@router.put("/azure-assistants-vector-store/{vector_store_id}")
+def update_azure_vector_store(
+    vector_store_id: str,
+    body: dict[str, Any],
+    credential: str | None = None,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
+) -> dict[str, Any]:
+    return update_vector_store(vector_store_id=vector_store_id, body=body, credential=credential, db=db, user=user)
+
+
+@router.delete("/azure-assistants-vector-store/{vector_store_id}")
+def delete_azure_vector_store(
+    vector_store_id: str,
+    credential: str | None = None,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
+) -> dict[str, Any]:
+    return delete_vector_store(vector_store_id=vector_store_id, credential=credential, db=db, user=user)
+
+
+@router.post("/azure-assistants-vector-store/{vector_store_id}")
+async def upload_files_to_azure_vector_store(
+    vector_store_id: str,
+    credential: str | None = None,
+    files: list[UploadFile] = File(default=[]),
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
+) -> list[dict[str, Any]]:
+    return await upload_files_to_vector_store(vector_store_id=vector_store_id, credential=credential, files=files, db=db, user=user)
+
+
+@router.patch("/azure-assistants-vector-store/{vector_store_id}")
+def delete_files_from_azure_vector_store(
+    vector_store_id: str,
+    body: dict[str, Any],
+    credential: str | None = None,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
+) -> dict[str, Any]:
+    return delete_files_from_vector_store(vector_store_id=vector_store_id, body=body, credential=credential, db=db, user=user)
+
+
+@router.post("/azure-assistants-file/upload")
+async def upload_files_to_azure_assistant(
+    credential: str | None = None,
+    files: list[UploadFile] = File(default=[]),
+    user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
+) -> list[dict[str, Any]]:
+    return await upload_files_to_openai_assistant(credential=credential, files=files, user=user)
 
 
 # Document Store
@@ -1648,3 +1889,9 @@ def delete_evaluations(
 
     db.commit()
     return {"deleted": deleted}
+
+
+@router.get("/loginmethod/default")
+def get_default_login_methods() -> dict:
+    """Return default login methods (empty list for self-hosted)."""
+    return {"providers": []}
