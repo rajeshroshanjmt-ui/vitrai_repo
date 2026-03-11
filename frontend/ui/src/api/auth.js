@@ -11,7 +11,7 @@ const DEFAULT_FEATURES = {
     'feat:sso-config': false,
     'feat:roles': false,
     'feat:users': false,
-    'feat:workspaces': false,
+    'feat:workspaces': true,
     'feat:login-activity': false
 }
 
@@ -35,6 +35,7 @@ const DEFAULT_PERMISSIONS = [
     'assistants:delete',
     'templates:marketplace',
     'templates:custom',
+    'templates:custom-share',
     'templates:flowexport',
     'tools:view',
     'tools:create',
@@ -43,6 +44,7 @@ const DEFAULT_PERMISSIONS = [
     'credentials:view',
     'credentials:create',
     'credentials:edit',
+    'credentials:share',
     'credentials:delete',
     'variables:view',
     'variables:create',
@@ -69,6 +71,15 @@ const DEFAULT_PERMISSIONS = [
     'evaluations:update',
     'evaluations:delete',
     'logs:view'
+    ,
+    'workspace:view',
+    'workspace:create',
+    'workspace:update',
+    'workspace:delete',
+    'workspace:add-user',
+    'workspace:unlink-user',
+    'workspace:export',
+    'workspace:import'
 ]
 
 const makePerm = (key, value) => ({
@@ -124,7 +135,18 @@ const PERMISSIONS_BY_CATEGORY = {
     templates: [
         makePerm('templates:marketplace', 'Marketplace Access'),
         makePerm('templates:custom', 'Custom Templates'),
+        makePerm('templates:custom-share', 'Share Custom Templates'),
         makePerm('templates:flowexport', 'Save As Template')
+    ],
+    workspace: [
+        makePerm('workspace:view', 'View'),
+        makePerm('workspace:create', 'Create'),
+        makePerm('workspace:update', 'Update'),
+        makePerm('workspace:delete', 'Delete'),
+        makePerm('workspace:add-user', 'Add User'),
+        makePerm('workspace:unlink-user', 'Remove User'),
+        makePerm('workspace:export', 'Export'),
+        makePerm('workspace:import', 'Import')
     ],
     logs: [makePerm('logs:view', 'View')]
 }
@@ -155,10 +177,7 @@ const buildLoginPayload = (token, meData, tenantId) => {
         activeOrganizationCustomerId: null,
         activeOrganizationProductId: null,
         activeWorkspaceId: tenantId,
-        activeWorkspace: {
-            id: tenantId,
-            name: `tenant-${tenantId.slice(0, 8)}`
-        },
+        activeWorkspace: `tenant-${tenantId.slice(0, 8)}`,
         assignedWorkspaces: [
             {
                 id: tenantId,
@@ -170,26 +189,29 @@ const buildLoginPayload = (token, meData, tenantId) => {
 }
 
 const login = async (body) => {
-    const tenant_id = localStorage.getItem('vetrai_tenant_id') || '00000000-0000-0000-0000-000000000001'
-    const role = localStorage.getItem('vetrai_role') || 'admin'
+    const tenant_id = body?.tenant_id || localStorage.getItem('vetrai_tenant_id') || '00000000-0000-0000-0000-000000000001'
     const email = body?.email || body?.username || 'admin@vetrai.com'
+    const password = body?.password
 
     const tokenResponse = await axios.post(`${baseURL}/api/auth/token`, {
         email,
-        tenant_id,
-        role
+        password,
+        tenant_id
     })
 
     const token = tokenResponse?.data?.access_token
-    if (token) {
-        localStorage.setItem('vetrai_access_token', token)
-        localStorage.setItem('vetrai_tenant_id', tenant_id)
-        localStorage.setItem('vetrai_role', role)
-    }
 
     const meResponse = await axios.get(`${baseURL}/api/auth/me`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
     })
+
+    const role = meResponse?.data?.role || 'admin'
+    if (token) {
+        localStorage.setItem('vetrai_access_token', token)
+        localStorage.setItem('vetrai_tenant_id', tenant_id)
+        localStorage.setItem('vetrai_email', email)
+        localStorage.setItem('vetrai_role', role)
+    }
 
     return {
         data: buildLoginPayload(token, meResponse?.data, tenant_id)

@@ -1,19 +1,20 @@
-import { useEffect, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { z } from 'zod'
+import axios from 'axios'
 
 // material-ui
 import { Alert, Box, Button, Divider, Icon, List, ListItemText, OutlinedInput, Stack, Typography, useTheme } from '@mui/material'
+import { LoadingButton } from '@mui/lab'
 
 // project imports
-import { StyledButton } from '@/ui-component/button/StyledButton'
 import { Input } from '@/ui-component/input/Input'
 import { BackdropLoader } from '@/ui-component/loading/BackdropLoader'
+import MainCard from '@/ui-component/cards/MainCard'
 
 // API
-import accountApi from '@/api/account.api'
 import loginMethodApi from '@/api/loginmethod'
-import ssoApi from '@/api/sso'
+import { baseURL } from '@/store/constant'
 
 // Hooks
 import useApi from '@/hooks/useApi'
@@ -29,28 +30,23 @@ import Auth0SSOLoginIcon from '@/assets/images/auth0.svg'
 import GithubSSOLoginIcon from '@/assets/images/github.svg'
 import GoogleSSOLoginIcon from '@/assets/images/google.svg'
 import AzureSSOLoginIcon from '@/assets/images/microsoft-azure.svg'
-import { store } from '@/store'
-import { loginSuccess } from '@/store/reducers/authSlice'
+import VetraiLogo from '@/assets/images/logo.png'
 import { IconCircleCheck, IconExclamationCircle } from '@tabler/icons-react'
 
 // ==============================|| Register ||============================== //
 
-// IMPORTANT: when updating this schema, update the schema on the server as well
-// packages/server/src/enterprise/Interface.Enterprise.ts
-const RegisterEnterpriseUserSchema = z
-    .object({
-        username: z.string().min(1, 'Name is required'),
-        email: z.string().min(1, 'Email is required').email('Invalid email address'),
-        password: passwordSchema,
-        confirmPassword: z.string().min(1, 'Confirm Password is required'),
-        token: z.string().min(1, 'Invite Code is required')
-    })
-    .refine((data) => data.password === data.confirmPassword, {
-        message: "Passwords don't match",
-        path: ['confirmPassword']
-    })
+const SSO_PROVIDER_CONFIG = {
+    azure: { label: 'Sign In With Microsoft', icon: AzureSSOLoginIcon, alt: 'MicrosoftSSO' },
+    google: { label: 'Sign In With Google', icon: GoogleSSOLoginIcon, alt: 'GoogleSSO' },
+    auth0: { label: 'Sign In With Auth0 by Okta', icon: Auth0SSOLoginIcon, alt: 'Auth0SSO' },
+    github: { label: 'Sign In With Github', icon: GithubSSOLoginIcon, alt: 'GithubSSO' }
+}
 
-const RegisterCloudUserSchema = z
+const SSO_PROVIDER_ORDER = ['azure', 'google', 'auth0', 'github']
+
+// IMPORTANT: when updating this schema, update the schema on the server as well
+// backend/schemas.py
+const RegisterUserSchema = z
     .object({
         username: z.string().min(1, 'Name is required'),
         email: z.string().min(1, 'Email is required').email('Invalid email address'),
@@ -65,7 +61,12 @@ const RegisterCloudUserSchema = z
 const RegisterPage = () => {
     const theme = useTheme()
     useNotifier()
+
     const { isEnterpriseLicensed, isCloud, isOpenSource } = useConfig()
+    const { authRateLimitError, setAuthRateLimitError } = useError()
+
+    const navigate = useNavigate()
+    const location = useLocation()
 
     const usernameInput = {
         label: 'Username',
@@ -89,24 +90,15 @@ const RegisterPage = () => {
     }
 
     const emailInput = {
-        label: 'EMail',
+        label: 'Email',
         name: 'email',
         type: 'email',
         placeholder: 'user@company.com'
     }
 
-    const inviteCodeInput = {
-        label: 'Invite Code',
-        name: 'inviteCode',
-        type: 'text'
-    }
-
-    const [params] = useSearchParams()
-
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
-    const [token, setToken] = useState(params.get('token') ?? '')
     const [username, setUsername] = useState('')
     const [configuredSsoProviders, setConfiguredSsoProviders] = useState([])
 
@@ -114,161 +106,109 @@ const RegisterPage = () => {
     const [authError, setAuthError] = useState('')
     const [successMsg, setSuccessMsg] = useState('')
 
-    const { authRateLimitError, setAuthRateLimitError } = useError()
-
-    const registerApi = useApi(accountApi.registerAccount)
-    const ssoLoginApi = useApi(ssoApi.ssoLogin)
     const getDefaultProvidersApi = useApi(loginMethodApi.getDefaultLoginMethods)
-    const navigate = useNavigate()
+
+    const ssoProvidersToRender = useMemo(() => {
+        return SSO_PROVIDER_ORDER.filter((provider) => configuredSsoProviders.includes(provider) && SSO_PROVIDER_CONFIG[provider])
+    }, [configuredSsoProviders])
+
+    const isFormValid = useMemo(() => {
+        return Boolean(username.trim() && email.trim() && password && confirmPassword)
+    }, [confirmPassword, email, password, username])
+
+    const authShellSx = {
+        minHeight: '100vh',
+        px: { xs: 2, sm: 3 },
+        py: { xs: 3, sm: 5 },
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background:
+            theme.palette.mode === 'dark'
+                ? 'radial-gradient(circle at top right, rgba(71, 98, 130, 0.35), rgba(15, 23, 42, 1) 55%)'
+                : 'radial-gradient(circle at top right, rgba(66, 165, 245, 0.18), rgba(248, 250, 252, 1) 58%)'
+    }
 
     const register = async (event) => {
         event.preventDefault()
         setAuthRateLimitError(null)
-        if (isEnterpriseLicensed) {
-            const result = RegisterEnterpriseUserSchema.safeParse({
-                username,
-                email,
-                token,
-                password,
-                confirmPassword
-            })
-            if (result.success) {
-                setLoading(true)
-                const body = {
-                    user: {
-                        name: username,
-                        email,
-                        credential: password,
-                        tempToken: token
-                    }
-                }
-                await registerApi.request(body)
-            } else {
-                const errorMessages = result.error.errors.map((err) => err.message)
-                setAuthError(errorMessages.join(', '))
-            }
-        } else if (isCloud) {
-            const formData = new FormData(event.target)
-            const referral = formData.get('referral')
-            const result = RegisterCloudUserSchema.safeParse({
-                username,
+        setAuthError('')
+
+        const result = RegisterUserSchema.safeParse({
+            username,
+            email,
+            password,
+            confirmPassword
+        })
+        if (!result.success) {
+            setAuthError(result.error.errors.map((err) => err.message).join(', '))
+            return
+        }
+
+        setLoading(true)
+        try {
+            const tenant_id = 'tenant-' + (username || 'user')
+            const registerResponse = await axios.post(`${baseURL}/api/auth/register`, {
                 email,
                 password,
-                confirmPassword
+                tenant_id,
+                role: 'admin'
             })
-            if (result.success) {
-                setLoading(true)
-                const body = {
-                    user: {
-                        name: username,
-                        email,
-                        credential: password
-                    }
-                }
-                if (referral) {
-                    body.user.referral = referral
-                }
-                await registerApi.request(body)
-            } else {
-                const errorMessages = result.error.errors.map((err) => err.message)
-                setAuthError(errorMessages.join(', '))
+
+            if (registerResponse?.data?.access_token) {
+                const token = registerResponse.data.access_token
+                localStorage.setItem('vetrai_access_token', token)
+                localStorage.setItem('vetrai_tenant_id', tenant_id)
+                localStorage.setItem('vetrai_email', email)
+                localStorage.setItem('vetrai_role', 'admin')
+                setSuccessMsg('Registration successful. Redirecting...')
+                setTimeout(() => {
+                    window.location.href = '/chatflows'
+                }, 1500)
             }
+        } catch (error) {
+            setAuthError(error?.response?.data?.detail || 'Registration failed')
+        } finally {
+            setLoading(false)
         }
     }
 
     const signInWithSSO = (ssoProvider) => {
-        //ssoLoginApi.request(ssoProvider)
         window.location.href = `/api/v1/${ssoProvider}/login`
     }
 
     useEffect(() => {
-        if (registerApi.error) {
-            if (isEnterpriseLicensed) {
-                setAuthError(
-                    `Error in registering user. Please contact your administrator. (${registerApi.error?.response?.data?.message})`
-                )
-            } else if (isCloud) {
-                setAuthError(`Error in registering user. Please try again.`)
-            }
-            setLoading(false)
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [registerApi.error])
-
-    useEffect(() => {
         setAuthRateLimitError(null)
-        if (!isOpenSource) {
-            getDefaultProvidersApi.request()
-        }
+        getDefaultProvidersApi.request()
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     useEffect(() => {
-        if (ssoLoginApi.data) {
-            store.dispatch(loginSuccess(ssoLoginApi.data))
-            navigate(location.state?.path || '/')
+        if (getDefaultProvidersApi.data?.providers) {
+            setConfiguredSsoProviders(getDefaultProvidersApi.data.providers)
         }
-
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [ssoLoginApi.data])
-
-    useEffect(() => {
-        if (ssoLoginApi.error) {
-            if (ssoLoginApi.error?.response?.status === 401 && ssoLoginApi.error?.response?.data.redirectUrl) {
-                window.location.href = ssoLoginApi.error.response.data.redirectUrl
-            } else {
-                setAuthError(ssoLoginApi.error.message)
-            }
-        }
-    }, [ssoLoginApi.error])
-
-    useEffect(() => {
-        if (getDefaultProvidersApi.data && getDefaultProvidersApi.data.providers) {
-            //data is an array of objects, store only the provider attribute
-            setConfiguredSsoProviders(getDefaultProvidersApi.data.providers.map((provider) => provider))
-        }
-
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [getDefaultProvidersApi.data])
 
-    useEffect(() => {
-        if (registerApi.data) {
-            setLoading(false)
-            setAuthError(undefined)
-            setConfirmPassword('')
-            setPassword('')
-            setToken('')
-            setUsername('')
-            setEmail('')
-            if (isEnterpriseLicensed) {
-                setSuccessMsg('Registration Successful. You will be redirected to the sign in page shortly.')
-            } else if (isCloud) {
-                setSuccessMsg('To complete your registration, please click on the verification link we sent to your email address')
-            }
-            setTimeout(() => {
-                navigate('/signin')
-            }, 3000)
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [registerApi.data])
-
     return (
-        <>
-            <Box
+        <Box sx={authShellSx}>
+            <MainCard
+                maxWidth='sm'
                 sx={{
                     width: '100%',
-                    maxHeight: '100vh',
-                    overflowY: 'auto',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    padding: '24px'
+                    maxWidth: 560,
+                    borderRadius: 4,
+                    border: `1px solid ${theme.palette.grey[900]}22`,
+                    boxShadow: theme.palette.mode === 'dark' ? '0 14px 40px rgba(0,0,0,0.45)' : '0 14px 40px rgba(15, 23, 42, 0.12)'
                 }}
             >
-                <Stack flexDirection='column' sx={{ width: '480px', gap: 3 }}>
-                    {authError && (
+                <Stack flexDirection='column' sx={{ width: '100%', gap: 3 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                        <img src={VetraiLogo} alt='Vetrai' style={{ width: '100%', maxWidth: '65px', height: 'auto' }} />
+                    </Box>
+
+                    {authError ? (
                         <Alert icon={<IconExclamationCircle />} variant='filled' severity='error'>
-                            {authError.split(', ').length > 0 ? (
+                            {authError.split(', ').length > 1 ? (
                                 <List dense sx={{ py: 0 }}>
                                     {authError.split(', ').map((error, index) => (
                                         <ListItemText key={index} primary={error} primaryTypographyProps={{ color: '#fff !important' }} />
@@ -278,18 +218,24 @@ const RegisterPage = () => {
                                 authError
                             )}
                         </Alert>
-                    )}
-                    {authRateLimitError && (
+                    ) : null}
+
+                    {authRateLimitError ? (
                         <Alert icon={<IconExclamationCircle />} variant='filled' severity='error'>
                             {authRateLimitError}
                         </Alert>
-                    )}
-                    {successMsg && (
+                    ) : null}
+
+                    {successMsg ? (
                         <Alert icon={<IconCircleCheck />} variant='filled' severity='success'>
                             {successMsg}
                         </Alert>
-                    )}
+                    ) : null}
+
                     <Stack sx={{ gap: 1 }}>
+                        <Typography variant='overline' sx={{ color: theme.palette.primary.main, fontWeight: 700, letterSpacing: 1 }}>
+                            Create Workspace Access
+                        </Typography>
                         <Typography variant='h1'>Sign Up</Typography>
                         <Typography variant='body2' sx={{ color: theme.palette.grey[600] }}>
                             Already have an account?{' '}
@@ -299,73 +245,36 @@ const RegisterPage = () => {
                             .
                         </Typography>
                     </Stack>
+
                     <form onSubmit={register} data-rewardful>
-                        <Stack sx={{ width: '100%', flexDirection: 'column', alignItems: 'left', justifyContent: 'center', gap: 2 }}>
+                        <Stack sx={{ width: '100%', gap: 2 }}>
+
                             <Box>
-                                <div style={{ display: 'flex', flexDirection: 'row' }}>
-                                    <Typography>
-                                        Full Name<span style={{ color: 'red' }}>&nbsp;*</span>
-                                    </Typography>
-                                    <div style={{ flexGrow: 1 }}></div>
-                                </div>
-                                <Input
-                                    inputParam={usernameInput}
-                                    placeholder='Display Name'
-                                    onChange={(newValue) => setUsername(newValue)}
-                                    value={username}
-                                    showDialog={false}
-                                />
+                                <Typography sx={{ fontWeight: 600, mb: 0.75 }}>
+                                    Full Name<span style={{ color: 'red' }}>&nbsp;*</span>
+                                </Typography>
+                                <Input inputParam={usernameInput} onChange={setUsername} value={username} showDialog={false} />
                                 <Typography variant='caption'>
-                                    <i>Is used for display purposes only.</i>
+                                    <i>Used for display purposes only.</i>
                                 </Typography>
                             </Box>
+
                             <Box>
-                                <div style={{ display: 'flex', flexDirection: 'row' }}>
-                                    <Typography>
-                                        Email<span style={{ color: 'red' }}>&nbsp;*</span>
-                                    </Typography>
-                                    <div style={{ flexGrow: 1 }}></div>
-                                </div>
-                                <Input
-                                    inputParam={emailInput}
-                                    onChange={(newValue) => setEmail(newValue)}
-                                    value={email}
-                                    showDialog={false}
-                                />
+                                <Typography sx={{ fontWeight: 600, mb: 0.75 }}>
+                                    Email<span style={{ color: 'red' }}>&nbsp;*</span>
+                                </Typography>
+                                <Input inputParam={emailInput} onChange={setEmail} value={email} showDialog={false} />
                                 <Typography variant='caption'>
-                                    <i>Kindly use a valid email address. Will be used as login id.</i>
+                                    <i>Use a valid email address. It will be used for sign in.</i>
                                 </Typography>
                             </Box>
-                            {isEnterpriseLicensed && (
-                                <Box>
-                                    <div style={{ display: 'flex', flexDirection: 'row' }}>
-                                        <Typography>
-                                            Invite Code<span style={{ color: 'red' }}>&nbsp;*</span>
-                                        </Typography>
-                                        <div style={{ flexGrow: 1 }}></div>
-                                    </div>
-                                    <OutlinedInput
-                                        fullWidth
-                                        type='string'
-                                        placeholder='Paste in the invite code.'
-                                        multiline={false}
-                                        inputParam={inviteCodeInput}
-                                        onChange={(e) => setToken(e.target.value)}
-                                        value={token}
-                                    />
-                                    <Typography variant='caption'>
-                                        <i>Please copy the token you would have received in your email.</i>
-                                    </Typography>
-                                </Box>
-                            )}
+
+
                             <Box>
-                                <div style={{ display: 'flex', flexDirection: 'row' }}>
-                                    <Typography>
-                                        Password<span style={{ color: 'red' }}>&nbsp;*</span>
-                                    </Typography>
-                                    <div style={{ flexGrow: 1 }}></div>
-                                </div>
-                                <Input inputParam={passwordInput} onChange={(newValue) => setPassword(newValue)} value={password} />
+                                <Typography sx={{ fontWeight: 600, mb: 0.75 }}>
+                                    Password<span style={{ color: 'red' }}>&nbsp;*</span>
+                                </Typography>
+                                <Input inputParam={passwordInput} onChange={setPassword} value={password} />
                                 <Typography variant='caption'>
                                     <i>
                                         Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase
@@ -373,109 +282,54 @@ const RegisterPage = () => {
                                     </i>
                                 </Typography>
                             </Box>
+
                             <Box>
-                                <div style={{ display: 'flex', flexDirection: 'row' }}>
-                                    <Typography>
-                                        Confirm Password<span style={{ color: 'red' }}>&nbsp;*</span>
-                                    </Typography>
-                                    <div style={{ flexGrow: 1 }}></div>
-                                </div>
-                                <Input
-                                    inputParam={confirmPasswordInput}
-                                    onChange={(newValue) => setConfirmPassword(newValue)}
-                                    value={confirmPassword}
-                                />
+                                <Typography sx={{ fontWeight: 600, mb: 0.75 }}>
+                                    Confirm Password<span style={{ color: 'red' }}>&nbsp;*</span>
+                                </Typography>
+                                <Input inputParam={confirmPasswordInput} onChange={setConfirmPassword} value={confirmPassword} />
                                 <Typography variant='caption'>
                                     <i>Confirm your password. Must match the password typed above.</i>
                                 </Typography>
                             </Box>
-                            <StyledButton variant='contained' style={{ borderRadius: 12, height: 40, marginRight: 5 }} type='submit'>
+
+                            <LoadingButton
+                                loading={loading}
+                                variant='contained'
+                                sx={{ borderRadius: 2, height: 44, width: '100%' }}
+                                type='submit'
+                                disabled={!isFormValid}
+                            >
                                 Create Account
-                            </StyledButton>
-                            {configuredSsoProviders.length > 0 && <Divider sx={{ width: '100%' }}>OR</Divider>}
-                            {configuredSsoProviders &&
-                                configuredSsoProviders.map(
-                                    (ssoProvider) =>
-                                        //https://learn.microsoft.com/en-us/entra/identity-platform/howto-add-branding-in-apps
-                                        ssoProvider === 'azure' && (
-                                            <Button
-                                                key={ssoProvider}
-                                                variant='outlined'
-                                                style={{ borderRadius: 12, height: 45, marginRight: 5, lineHeight: 0 }}
-                                                onClick={() => signInWithSSO(ssoProvider)}
-                                                startIcon={
-                                                    <Icon>
-                                                        <img src={AzureSSOLoginIcon} alt={'MicrosoftSSO'} width={20} height={20} />
-                                                    </Icon>
-                                                }
-                                            >
-                                                Sign In With Microsoft
-                                            </Button>
-                                        )
-                                )}
-                            {configuredSsoProviders &&
-                                configuredSsoProviders.map(
-                                    (ssoProvider) =>
-                                        ssoProvider === 'google' && (
-                                            <Button
-                                                key={ssoProvider}
-                                                variant='outlined'
-                                                style={{ borderRadius: 12, height: 45, marginRight: 5, lineHeight: 0 }}
-                                                onClick={() => signInWithSSO(ssoProvider)}
-                                                startIcon={
-                                                    <Icon>
-                                                        <img src={GoogleSSOLoginIcon} alt={'GoogleSSO'} width={20} height={20} />
-                                                    </Icon>
-                                                }
-                                            >
-                                                Sign In With Google
-                                            </Button>
-                                        )
-                                )}
-                            {configuredSsoProviders &&
-                                configuredSsoProviders.map(
-                                    (ssoProvider) =>
-                                        ssoProvider === 'auth0' && (
-                                            <Button
-                                                key={ssoProvider}
-                                                variant='outlined'
-                                                style={{ borderRadius: 12, height: 45, marginRight: 5, lineHeight: 0 }}
-                                                onClick={() => signInWithSSO(ssoProvider)}
-                                                startIcon={
-                                                    <Icon>
-                                                        <img src={Auth0SSOLoginIcon} alt={'Auth0SSO'} width={20} height={20} />
-                                                    </Icon>
-                                                }
-                                            >
-                                                Sign In With Auth0 by Okta
-                                            </Button>
-                                        )
-                                )}
-                            {configuredSsoProviders &&
-                                configuredSsoProviders.map(
-                                    (ssoProvider) =>
-                                        ssoProvider === 'github' && (
-                                            <Button
-                                                key={ssoProvider}
-                                                variant='outlined'
-                                                style={{ borderRadius: 12, height: 45, marginRight: 5, lineHeight: 0 }}
-                                                onClick={() => signInWithSSO(ssoProvider)}
-                                                startIcon={
-                                                    <Icon>
-                                                        <img src={GithubSSOLoginIcon} alt={'GithubSSO'} width={20} height={20} />
-                                                    </Icon>
-                                                }
-                                            >
-                                                Sign In With Github
-                                            </Button>
-                                        )
-                                )}
+                            </LoadingButton>
+
+                            {ssoProvidersToRender.length > 0 ? <Divider sx={{ width: '100%' }}>OR</Divider> : null}
+
+                            {ssoProvidersToRender.map((ssoProvider) => {
+                                const providerConfig = SSO_PROVIDER_CONFIG[ssoProvider]
+                                return (
+                                    <Button
+                                        key={ssoProvider}
+                                        variant='outlined'
+                                        sx={{ borderRadius: 2, height: 45, width: '100%', lineHeight: 0 }}
+                                        onClick={() => signInWithSSO(ssoProvider)}
+                                        startIcon={
+                                            <Icon>
+                                                <img src={providerConfig.icon} alt={providerConfig.alt} width={20} height={20} />
+                                            </Icon>
+                                        }
+                                    >
+                                        {providerConfig.label}
+                                    </Button>
+                                )
+                            })}
                         </Stack>
                     </form>
                 </Stack>
-            </Box>
-            {loading && <BackdropLoader open={loading} />}
-        </>
+            </MainCard>
+
+            <BackdropLoader open={loading} />
+        </Box>
     )
 }
 

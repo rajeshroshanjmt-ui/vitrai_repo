@@ -719,9 +719,7 @@ def delete_log(
         raise HTTPException(status_code=403, detail="Forbidden")
 
     db.delete(log)
-    db.commit()
-
-    # Audit log
+    # Audit log - single atomic transaction
     db.add(
         AuditLog(
             tenant_id=user["tenant_id"],
