@@ -1,0 +1,27 @@
+{
+  "name": "vetrai",
+  "version": "1.0.0",
+  "description": "Dockerized reference stack:",
+  "main": "browser-test.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rajeshroshanjmt-ui/vitrai_repo.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/rajeshroshanjmt-ui/vitrai_repo/issues"
+  },
+  "homepage": "https://github.com/rajeshroshanjmt-ui/vitrai_repo#readme",
+  "dependencies": {
+    "playwright": "^1.58.2"
+  }
+}
