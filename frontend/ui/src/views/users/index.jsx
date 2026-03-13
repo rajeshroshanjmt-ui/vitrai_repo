@@ -151,13 +151,17 @@ function ShowUserRow(props) {
                     </PermissionIconButton>
                 </StyledTableCell>
                 <StyledTableCell>
-                    {'ACTIVE' === props.row.status.toUpperCase() && <Chip color={'success'} label={props.row.status.toUpperCase()} />}
-                    {'INVITED' === props.row.status.toUpperCase() && <Chip color={'warning'} label={props.row.status.toUpperCase()} />}
-                    {'INACTIVE' === props.row.status.toUpperCase() && <Chip color={'error'} label={props.row.status.toUpperCase()} />}
+                    {props.row.status && (
+                        <>
+                            {'ACTIVE' === props.row.status.toUpperCase() && <Chip color={'success'} label={props.row.status.toUpperCase()} />}
+                            {'INVITED' === props.row.status.toUpperCase() && <Chip color={'warning'} label={props.row.status.toUpperCase()} />}
+                            {'INACTIVE' === props.row.status.toUpperCase() && <Chip color={'error'} label={props.row.status.toUpperCase()} />}
+                        </>
+                    )}
                 </StyledTableCell>
                 <StyledTableCell>{!props.row.lastLogin ? 'Never' : moment(props.row.lastLogin).format('DD/MM/YYYY HH:mm')}</StyledTableCell>
                 <StyledTableCell>
-                    {props.row.status.toUpperCase() === 'INVITED' && (
+                    {props.row.status && props.row.status.toUpperCase() === 'INVITED' && (
                         <PermissionIconButton
                             permissionId={'workspace:add-user,users:manage'}
                             title='Edit'
