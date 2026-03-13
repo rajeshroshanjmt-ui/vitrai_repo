@@ -25,7 +25,8 @@ import {
     TextField,
     Chip,
     Tooltip,
-    Typography
+    Typography,
+    Divider
 } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 import { IconLayoutGrid, IconList, IconX } from '@tabler/icons-react'
@@ -123,6 +124,11 @@ const Marketplace = () => {
 
     const [view, setView] = React.useState(localStorage.getItem('mpDisplayStyle') || 'card')
     const [search, setSearch] = useState('')
+    const [searchSuggestions, setSearchSuggestions] = useState([])
+    const [recentSearches, setRecentSearches] = useState(
+        JSON.parse(localStorage.getItem('mpRecentSearches') || '[]').slice(0, 5)
+    )
+    const [showSearchSuggestions, setShowSearchSuggestions] = useState(false)
     const [badgeFilter, setBadgeFilter] = useState([])
     const [typeFilter, setTypeFilter] = useState([])
     const [frameworkFilter, setFrameworkFilter] = useState([])
@@ -247,11 +253,79 @@ const Marketplace = () => {
         setView(nextView)
     }
 
+    const generateSearchSuggestions = (searchTerm, data) => {
+        if (!searchTerm.trim() || !data) return []
+
+        const term = searchTerm.toLowerCase()
+        const uniqueSuggestions = new Set()
+
+        // Get matching template names and descriptions
+        data.forEach((template) => {
+            if (template.templateName?.toLowerCase().includes(term)) {
+                uniqueSuggestions.add(template.templateName)
+            }
+            if (template.description?.toLowerCase().includes(term)) {
+                uniqueSuggestions.add(template.templateName)
+            }
+            // Add use cases that match
+            if (template.usecases) {
+                template.usecases.forEach((usecase) => {
+                    if (usecase.toLowerCase().includes(term)) {
+                        uniqueSuggestions.add(usecase)
+                    }
+                })
+            }
+        })
+
+        return Array.from(uniqueSuggestions).slice(0, 8)
+    }
+
     const onSearchChange = (event) => {
-        setSearch(event.target.value)
+        const value = event.target.value
+        setSearch(value)
+        setShowSearchSuggestions(value.length > 0)
+
         const data = activeTabValue === 0 ? getAllTemplatesMarketplacesApi.data : getAllCustomTemplatesApi.data
 
-        getEligibleUsecases(data, { typeFilter, badgeFilter, frameworkFilter, search: event.target.value })
+        // Generate suggestions
+        if (value.length > 1) {
+            const suggestions = generateSearchSuggestions(value, data)
+            setSearchSuggestions(suggestions)
+        } else {
+            setSearchSuggestions([])
+        }
+
+        getEligibleUsecases(data, { typeFilter, badgeFilter, frameworkFilter, difficultyFilter, search: value })
+    }
+
+    const handleSearchSelect = (selectedValue) => {
+        setSearch(selectedValue)
+        setShowSearchSuggestions(false)
+
+        // Save to recent searches
+        const updated = [selectedValue, ...recentSearches.filter((s) => s !== selectedValue)].slice(0, 5)
+        setRecentSearches(updated)
+        localStorage.setItem('mpRecentSearches', JSON.stringify(updated))
+
+        const data = activeTabValue === 0 ? getAllTemplatesMarketplacesApi.data : getAllCustomTemplatesApi.data
+        getEligibleUsecases(data, { typeFilter, badgeFilter, frameworkFilter, difficultyFilter, search: selectedValue })
+    }
+
+    const clearSearchHistory = () => {
+        setRecentSearches([])
+        localStorage.removeItem('mpRecentSearches')
+    }
+
+    const handleQuickFilter = (filterType, filterValue) => {
+        if (filterType === 'difficulty') {
+            setDifficultyFilter([filterValue])
+        } else if (filterType === 'type') {
+            setTypeFilter([filterValue])
+        } else if (filterType === 'framework') {
+            setFrameworkFilter([filterValue])
+        }
+        setSearch('')
+        setShowSearchSuggestions(false)
     }
 
     const onDeleteCustomTemplate = async (template) => {
@@ -750,6 +824,75 @@ const Marketplace = () => {
                                 </ToggleButton>
                             </ToggleButtonGroup>
                         </ViewHeader>
+                        {showSearchSuggestions && activeTabValue === 0 && (
+                            <MainCard
+                                sx={{
+                                    mt: -2.5,
+                                    mb: 2,
+                                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                                    position: 'relative',
+                                    zIndex: 10
+                                }}
+                            >
+                                <Stack sx={{ gap: 2 }}>
+                                    {searchSuggestions.length > 0 && (
+                                        <Box>
+                                            <Typography variant='caption' sx={{ color: theme.palette.grey[600], fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                                Suggestions
+                                            </Typography>
+                                            <Stack sx={{ gap: 0.5, mt: 1 }}>
+                                                {searchSuggestions.map((suggestion, index) => (
+                                                    <Box
+                                                        key={index}
+                                                        onClick={() => handleSearchSelect(suggestion)}
+                                                        sx={{
+                                                            p: 1,
+                                                            borderRadius: 1,
+                                                            cursor: 'pointer',
+                                                            '&:hover': {
+                                                                backgroundColor: theme.palette.grey[100]
+                                                            },
+                                                            transition: 'background-color 0.2s'
+                                                        }}
+                                                    >
+                                                        <Typography variant='body2'>{suggestion}</Typography>
+                                                    </Box>
+                                                ))}
+                                            </Stack>
+                                        </Box>
+                                    )}
+                                    {recentSearches.length > 0 && (
+                                        <Box>
+                                            <Stack direction='row' justifyContent='space-between' alignItems='center' sx={{ mb: 1 }}>
+                                                <Typography variant='caption' sx={{ color: theme.palette.grey[600], fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                                    Recent Searches
+                                                </Typography>
+                                                <Button size='small' onClick={clearSearchHistory} sx={{ fontSize: '0.75rem' }}>
+                                                    Clear
+                                                </Button>
+                                            </Stack>
+                                            <Stack direction='row' sx={{ gap: 1, flexWrap: 'wrap' }}>
+                                                {recentSearches.map((recent, index) => (
+                                                    <Chip
+                                                        key={index}
+                                                        label={recent}
+                                                        onClick={() => handleSearchSelect(recent)}
+                                                        variant='outlined'
+                                                        size='small'
+                                                        sx={{ cursor: 'pointer' }}
+                                                    />
+                                                ))}
+                                            </Stack>
+                                        </Box>
+                                    )}
+                                    {searchSuggestions.length === 0 && recentSearches.length === 0 && (
+                                        <Typography variant='body2' sx={{ color: theme.palette.grey[500], textAlign: 'center', py: 2 }}>
+                                            No suggestions found
+                                        </Typography>
+                                    )}
+                                </Stack>
+                            </MainCard>
+                        )}
                         {hasPermission('templates:marketplace') && hasPermission('templates:custom') && (
                             <Stack direction='row' justifyContent='space-between' sx={{ mb: 2 }}>
                                 <Tabs value={activeTabValue} onChange={handleTabChange} textColor='primary' aria-label='tabs'>
@@ -878,6 +1021,35 @@ const Marketplace = () => {
                                                         </Typography>
                                                     </Stack>
                                                 </MainCard>
+                                            </Stack>
+                                        </Box>
+                                        <Box>
+                                            <Typography variant='body2' sx={{ mb: 1.5, color: theme.palette.grey[600], fontWeight: 600 }}>
+                                                Quick Filters
+                                            </Typography>
+                                            <Stack direction='row' sx={{ gap: 1, flexWrap: 'wrap' }}>
+                                                {['Beginner', 'Intermediate', 'Advanced'].map((level) => (
+                                                    <Chip
+                                                        key={level}
+                                                        label={level}
+                                                        onClick={() => handleQuickFilter('difficulty', level)}
+                                                        variant={difficultyFilter.includes(level) ? 'filled' : 'outlined'}
+                                                        color={
+                                                            level === 'Beginner' ? 'success' : level === 'Intermediate' ? 'warning' : 'error'
+                                                        }
+                                                        sx={{ cursor: 'pointer' }}
+                                                    />
+                                                ))}
+                                                <Divider sx={{ my: 1, width: '100%' }} />
+                                                {['Chatflow', 'AgentflowV2', 'Assistant'].map((type) => (
+                                                    <Chip
+                                                        key={type}
+                                                        label={type}
+                                                        onClick={() => handleQuickFilter('type', type)}
+                                                        variant={typeFilter.includes(type) ? 'filled' : 'outlined'}
+                                                        sx={{ cursor: 'pointer' }}
+                                                    />
+                                                ))}
                                             </Stack>
                                         </Box>
                                         {selectedUsecases.length === 0 && badgeFilter.length === 0 && typeFilter.length === 0 && difficultyFilter.length === 0 && search === '' && (
