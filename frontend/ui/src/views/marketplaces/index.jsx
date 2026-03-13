@@ -24,7 +24,8 @@ import {
     Autocomplete,
     TextField,
     Chip,
-    Tooltip
+    Tooltip,
+    Typography
 } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 import { IconLayoutGrid, IconList, IconX } from '@tabler/icons-react'
@@ -831,7 +832,7 @@ const Marketplace = () => {
                         <Available permission='templates:marketplace'>
                             <TabPanel value={activeTabValue} index={0}>
                                 {!isLoading && getAllTemplatesMarketplacesApi.data && (
-                                    <Stack sx={{ mb: 3, gap: 2 }}>
+                                    <Stack sx={{ mb: 3, gap: 3 }}>
                                         <Box>
                                             <Typography variant='h6' sx={{ mb: 2, fontWeight: 700 }}>
                                                 Marketplace Overview
@@ -879,6 +880,45 @@ const Marketplace = () => {
                                                 </MainCard>
                                             </Stack>
                                         </Box>
+                                        {selectedUsecases.length === 0 && badgeFilter.length === 0 && typeFilter.length === 0 && difficultyFilter.length === 0 && search === '' && (
+                                            <Box>
+                                                <Typography variant='h6' sx={{ mb: 2, fontWeight: 700 }}>
+                                                    Popular Templates
+                                                </Typography>
+                                                <Box display='grid' gridTemplateColumns='repeat(auto-fill, minmax(250px, 1fr))' gap={gridSpacing}>
+                                                    {getFeaturedTemplates(getAllTemplatesMarketplacesApi.data).map((template, index) => (
+                                                        <Box key={index}>
+                                                            {template.badge && (
+                                                                <Badge
+                                                                    sx={{
+                                                                        width: '100%',
+                                                                        height: '100%',
+                                                                        '& .MuiBadge-badge': { right: 20 }
+                                                                    }}
+                                                                    badgeContent={template.badge}
+                                                                    color={template.badge === 'POPULAR' ? 'primary' : 'error'}
+                                                                >
+                                                                    <ItemCard
+                                                                        onClick={() => openTemplate(template)}
+                                                                        data={template}
+                                                                        images={template.flowData ? images[template.id] : []}
+                                                                        icons={template.flowData ? icons[template.id] : []}
+                                                                    />
+                                                                </Badge>
+                                                            )}
+                                                            {!template.badge && (
+                                                                <ItemCard
+                                                                    onClick={() => openTemplate(template)}
+                                                                    data={template}
+                                                                    images={template.flowData ? images[template.id] : []}
+                                                                    icons={template.flowData ? icons[template.id] : []}
+                                                                />
+                                                            )}
+                                                        </Box>
+                                                    ))}
+                                                </Box>
+                                            </Box>
+                                        )}
                                     </Stack>
                                 )}
                                 {!view || view === 'card' ? (
