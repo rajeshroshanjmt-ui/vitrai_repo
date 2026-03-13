@@ -250,6 +250,7 @@ const Agentflows = () => {
                             </ToggleButton>
                         </ToggleButtonGroup>
                         <StyledPermissionButton
+                            data-testid='agentflows-add-new'
                             permissionId={'agentflows:create'}
                             variant='contained'
                             onClick={addNew}
@@ -263,7 +264,7 @@ const Agentflows = () => {
                     {!isLoading && total > 0 && (
                         <>
                             {!view || view === 'card' ? (
-                                <Box display='grid' gridTemplateColumns='repeat(3, 1fr)' gap={gridSpacing}>
+                                <Box data-testid='agentflows-grid' display='grid' gridTemplateColumns='repeat(3, 1fr)' gap={gridSpacing}>
                                     {getAllAgentflows.data?.data.filter(filterFlows).map((data, index) => (
                                         <ItemCard
                                             key={index}
@@ -275,7 +276,7 @@ const Agentflows = () => {
                                     ))}
                                 </Box>
                             ) : (
-                                <FlowListTable
+                                <FlowListTable data-testid='agentflows-table'
                                     isAgentCanvas={true}
                                     isAgentflowV2={agentflowVersion === 'v2'}
                                     data={getAllAgentflows.data?.data}

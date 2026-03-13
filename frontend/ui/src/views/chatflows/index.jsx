@@ -182,6 +182,7 @@ const Chatflows = () => {
                             </ToggleButton>
                         </ToggleButtonGroup>
                         <StyledPermissionButton
+                            data-testid='chatflows-add-new'
                             permissionId={'chatflows:create'}
                             variant='contained'
                             onClick={addNew}
@@ -202,13 +203,13 @@ const Chatflows = () => {
                     {!isLoading && total > 0 && (
                         <>
                             {!view || view === 'card' ? (
-                                <Box display='grid' gridTemplateColumns='repeat(3, 1fr)' gap={gridSpacing}>
+                                <Box data-testid='chatflows-grid' display='grid' gridTemplateColumns='repeat(3, 1fr)' gap={gridSpacing}>
                                     {getAllChatflowsApi.data?.data?.filter(filterFlows).map((data, index) => (
                                         <ItemCard key={index} onClick={() => goToCanvas(data)} data={data} images={images[data.id]} />
                                     ))}
                                 </Box>
                             ) : (
-                                <FlowListTable
+                                <FlowListTable data-testid='chatflows-table'
                                     data={getAllChatflowsApi.data?.data}
                                     images={images}
                                     isLoading={isLoading}

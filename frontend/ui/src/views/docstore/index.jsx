@@ -193,6 +193,7 @@ const Documents = () => {
                             </ToggleButtonGroup>
                         )}
                         <StyledPermissionButton
+                            data-testid='docstore-add-new'
                             permissionId={'documentStores:create'}
                             variant='contained'
                             sx={{ borderRadius: 2, height: '100%' }}
@@ -217,7 +218,7 @@ const Documents = () => {
                     ) : (
                         <React.Fragment>
                             {!view || view === 'card' ? (
-                                <Box display='grid' gridTemplateColumns='repeat(3, 1fr)' gap={gridSpacing}>
+                                <Box data-testid='docstore-grid' display='grid' gridTemplateColumns='repeat(3, 1fr)' gap={gridSpacing}>
                                     {docStores?.filter(filterDocStores).map((data, index) => (
                                         <DocumentStoreCard
                                             key={index}
@@ -228,7 +229,7 @@ const Documents = () => {
                                     ))}
                                 </Box>
                             ) : (
-                                <DocumentStoreTable
+                                <DocumentStoreTable data-testid='docstore-table'
                                     isLoading={isLoading}
                                     data={docStores?.filter(filterDocStores)}
                                     images={images}

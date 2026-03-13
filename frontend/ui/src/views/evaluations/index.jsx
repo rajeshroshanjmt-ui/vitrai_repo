@@ -346,6 +346,7 @@ const EvalsEvaluation = () => {
                                 <IconRefresh />
                             </IconButton>
                             <StyledPermissionButton
+                                data-testid='evaluations-add-new'
                                 permissionId={'evaluations:create'}
                                 sx={{ borderRadius: 2, height: '100%' }}
                                 onClick={createEvaluation}
@@ -380,6 +381,7 @@ const EvalsEvaluation = () => {
                         ) : (
                             <>
                                 <TableContainer
+                                    data-testid='evaluations-table'
                                     sx={{ border: 1, borderColor: theme.palette.grey[900] + 25, borderRadius: 2 }}
                                     component={Paper}
                                 >

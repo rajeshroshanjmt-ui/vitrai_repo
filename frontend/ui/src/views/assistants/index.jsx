@@ -71,6 +71,7 @@ const FeatureCards = () => {
 
     return (
         <Stack
+            data-testid='assistants-grid'
             spacing={3}
             direction='row'
             sx={{
@@ -81,6 +82,7 @@ const FeatureCards = () => {
             {cards.map((card, index) => (
                 <StyledCard
                     key={index}
+                    data-testid={`assistants-card-${index}`}
                     gradient={card.gradient}
                     sx={{
                         flex: 1,
