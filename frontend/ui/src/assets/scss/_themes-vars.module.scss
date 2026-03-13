@@ -1,80 +1,80 @@
 // ==============================|| CORE SURFACES ||============================== //
 
 $paper: #ffffff;
-$canvasLight: #f4f8ff;
-$canvasDark: #020a16;
+$canvasLight: #f8f9fc;
+$canvasDark: #111827;
 
 // ==============================|| BRAND (LIGHT) ||============================== //
 
-$primaryLight: #dbe9ff;
-$primaryMain: #2a6fe8;
-$primaryDark: #1b4ea8;
+$primaryLight: #dbeafe;
+$primaryMain: #2563eb;
+$primaryDark: #1d4ed8;
 $primary200: #93b5f8;
 $primary800: #123f8a;
 
-$secondaryLight: #d6f4ff;
-$secondaryMain: #129ccf;
-$secondaryDark: #0f6b91;
+$secondaryLight: #e0e7ff;
+$secondaryMain: #4f46e5;
+$secondaryDark: #3730a3;
 $secondary200: #7ccfe8;
 $secondary800: #0b4e6b;
 
-$successLight: #d7f4e4;
-$success200: #6fe2a4;
-$successMain: #21b06f;
-$successDark: #12734a;
+$successLight: #d1fae5;
+$success200: #6ee7b7;
+$successMain: #059669;
+$successDark: #047857;
 
-$errorLight: #f9d9dd;
-$errorMain: #d94a5d;
-$errorDark: #9f1f33;
+$errorLight: #fee2e2;
+$errorMain: #dc2626;
+$errorDark: #991b1b;
 
-$orangeLight: #ffe8cf;
-$orangeMain: #f6a24b;
-$orangeDark: #b56b1f;
+$orangeLight: #fed7aa;
+$orangeMain: #ea580c;
+$orangeDark: #7c2d12;
 
-$tealLight: #b8eef2;
-$tealMain: #35b7c2;
-$tealDark: #1c7f87;
+$tealLight: #ccfbf1;
+$tealMain: #14b8a6;
+$tealDark: #0d9488;
 
-$warningLight: #fff4cc;
-$warningMain: #f2bd44;
-$warningDark: #a06f11;
+$warningLight: #fef3c7;
+$warningMain: #d97706;
+$warningDark: #92400e;
 
-$grey50: #f9fbff;
-$grey100: #edf3fb;
-$grey200: #dce6f4;
-$grey300: #c3d1e3;
-$grey400: #9eb2cc;
-$grey500: #7b8da8;
-$grey600: #5e6f89;
-$grey700: #44516a;
-$grey900: #1b2638;
+$grey50: #f9fafb;
+$grey100: #f3f4f6;
+$grey200: #e5e7eb;
+$grey300: #d1d5db;
+$grey400: #9ca3af;
+$grey500: #6b7280;
+$grey600: #4b5563;
+$grey700: #374151;
+$grey900: #111827;
 
 $transparent: #ffffff00;
 
 // ==============================|| SEMANTIC (LIGHT) ||============================== //
 
-$brandLight: #dbe9ff;
-$brandMain: #2a6fe8;
-$brandDark: #1b4ea8;
+$brandLight: #dbeafe;
+$brandMain: #2563eb;
+$brandDark: #1d4ed8;
 
-$surfaceBaseLight: #f4f8ff;
+$surfaceBaseLight: #f8f9fc;
 $surfaceRaisedLight: #ffffff;
-$surfaceSunkenLight: #ecf2fb;
+$surfaceSunkenLight: #f1f5f9;
 
-$outlineSubtleLight: rgba(35, 72, 127, 0.16);
-$outlineStrongLight: rgba(25, 57, 104, 0.3);
+$outlineSubtleLight: rgba(17, 24, 39, 0.08);
+$outlineStrongLight: rgba(17, 24, 39, 0.15);
 
-$glowSoftLight: rgba(42, 111, 232, 0.15);
-$glowElevatedLight: rgba(25, 87, 174, 0.22);
+$glowSoftLight: rgba(37, 99, 235, 0.10);
+$glowElevatedLight: rgba(37, 99, 235, 0.15);
 
 $focusRingLight: rgba(20, 108, 255, 0.5);
 
 // ==============================|| DARK THEME TOKENS ||============================== //
 
-$darkBackground: #020a16;
-$darkPaper: #071428;
-$darkLevel1: #0c1f35;
-$darkLevel2: #132b45;
+$darkBackground: #111827;
+$darkPaper: #1f2937;
+$darkLevel1: #374151;
+$darkLevel2: #374151;
 
 $darkPrimaryLight: #1a3c60;
 $darkPrimaryMain: #2363d4;
@@ -88,25 +88,25 @@ $darkSecondaryDark: #d8f2fd;
 $darkSecondary200: #1f5f7d;
 $darkSecondary800: #0e4a63;
 
-$darkTextTitle: #e5efff;
-$darkTextPrimary: #d3e2f8;
-$darkTextSecondary: #98abc7;
+$darkTextTitle: #f9fafb;
+$darkTextPrimary: #e5e7eb;
+$darkTextSecondary: #9ca3af;
 
 // ==============================|| SEMANTIC (DARK) ||============================== //
 
-$darkBrandLight: #4d8cf0;
-$darkBrandMain: #6aa5ff;
-$darkBrandDark: #2e67d4;
+$darkBrandLight: #bfdbfe;
+$darkBrandMain: #60a5fa;
+$darkBrandDark: #1d4ed8;
 
-$surfaceBaseDark: #020a16;
-$surfaceRaisedDark: #09192c;
-$surfaceSunkenDark: #061426;
+$surfaceBaseDark: #111827;
+$surfaceRaisedDark: #1f2937;
+$surfaceSunkenDark: #0f172a;
 
-$outlineSubtleDark: rgba(126, 177, 255, 0.18);
-$outlineStrongDark: rgba(136, 188, 255, 0.33);
+$outlineSubtleDark: rgba(249, 250, 251, 0.08);
+$outlineStrongDark: rgba(249, 250, 251, 0.15);
 
-$glowSoftDark: rgba(71, 138, 255, 0.26);
-$glowElevatedDark: rgba(96, 162, 255, 0.35);
+$glowSoftDark: rgba(96, 165, 250, 0.10);
+$glowElevatedDark: rgba(96, 165, 250, 0.15);
 
 $focusRingDark: rgba(126, 183, 255, 0.65);
 

@@ -27,7 +27,7 @@ const mapExecutionLogToPrediction = (log, input = {}) => ({
     artifacts: null
 })
 
-const pollExecutionResult = async (executionLogId, attempts = 45, intervalMs = 450) => {
+const pollExecutionResult = async (executionLogId, attempts = 120, intervalMs = 1000) => {
     for (let i = 0; i < attempts; i += 1) {
         const logsResponse = await client.get('/flows/logs', { params: { limit: 100 } })
         const logs = Array.isArray(logsResponse?.data) ? logsResponse.data : []

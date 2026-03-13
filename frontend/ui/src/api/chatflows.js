@@ -1,4 +1,5 @@
 import client from './client'
+import { unavailableObjectResponse, unavailableResponse } from './responseAdapter'
 
 const DEFAULT_FLOW_TYPE = 'CHATFLOW'
 
@@ -104,7 +105,45 @@ const getSpecificChatflow = async (id) => {
     }
 }
 
-const getSpecificChatflowFromPublicEndpoint = getSpecificChatflow
+const getSpecificChatflowFromPublicEndpoint = async (id) => {
+    try {
+        return await getSpecificChatflow(id)
+    } catch (error) {
+        const status = error?.response?.status
+        if (status === 401 || status === 403 || status === 404 || status === 501 || status === 503) {
+            return unavailableObjectResponse(status || 404)
+        }
+        throw error
+    }
+}
+
+const getPublicChatbotCompatibility = async (id) => {
+    try {
+        const response = await client.get(`/v1/chatflows-streaming/${id}`)
+        const payload = response?.data || {}
+        const explicitlyUnsupported = payload?.supported === false || payload?.isUnavailable === true
+        return {
+            data: {
+                ...payload,
+                supported: response.status >= 200 && response.status < 300 && !explicitlyUnsupported,
+                status: response.status
+            },
+            status: response.status
+        }
+    } catch (error) {
+        const status = error?.response?.status
+        if (status === 401 || status === 403 || status === 404 || status === 405 || status === 501 || status === 503) {
+            return unavailableResponse(
+                {
+                    supported: false,
+                    status: status || 404
+                },
+                status || 404
+            )
+        }
+        throw error
+    }
+}
 
 const createNewChatflow = async (body) => {
     const rawDefinition = typeof body?.flowData === 'string' ? JSON.parse(body.flowData) : body?.flowData || {}
@@ -190,6 +229,7 @@ export default {
     getAllAgentflows,
     getSpecificChatflow,
     getSpecificChatflowFromPublicEndpoint,
+    getPublicChatbotCompatibility,
     createNewChatflow,
     updateChatflow,
     deleteChatflow,

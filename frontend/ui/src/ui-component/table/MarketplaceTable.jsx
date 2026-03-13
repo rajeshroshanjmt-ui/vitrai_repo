@@ -48,6 +48,7 @@ export const MarketplaceTable = ({
     filterByUsecases,
     goToCanvas,
     goToTool,
+    goToAssistant,
     isLoading,
     onDelete,
     onShare
@@ -56,6 +57,10 @@ export const MarketplaceTable = ({
     const customization = useSelector((state) => state.customization)
 
     const openTemplate = (selectedTemplate) => {
+        if (selectedTemplate.type === 'Assistant') {
+            if (goToAssistant) goToAssistant(selectedTemplate)
+            return
+        }
         if (selectedTemplate.flowData) {
             goToCanvas(selectedTemplate)
         } else {
@@ -277,6 +282,7 @@ MarketplaceTable.propTypes = {
     filterByUsecases: PropTypes.func,
     goToTool: PropTypes.func,
     goToCanvas: PropTypes.func,
+    goToAssistant: PropTypes.func,
     isLoading: PropTypes.bool,
     onDelete: PropTypes.func,
     onShare: PropTypes.func

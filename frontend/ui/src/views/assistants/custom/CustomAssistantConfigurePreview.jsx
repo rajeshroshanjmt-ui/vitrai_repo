@@ -88,6 +88,7 @@ const CustomAssistantConfigurePreview = () => {
     const getDocStoresApi = useApi(assistantsApi.getDocStores)
     const getToolsApi = useApi(assistantsApi.getTools)
     const getSpecificChatflowApi = useApi(chatflowsApi.getSpecificChatflow)
+    const getPublicChatbotCompatibilityApi = useApi(chatflowsApi.getPublicChatbotCompatibility)
 
     const { id: customAssistantId } = useParams()
 
@@ -798,6 +799,14 @@ const CustomAssistantConfigurePreview = () => {
     }, [getSpecificChatflowApi.data, getSpecificChatflowApi.error])
 
     useEffect(() => {
+        if (customAssistantFlowId) {
+            getPublicChatbotCompatibilityApi.request(customAssistantFlowId)
+        }
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [customAssistantFlowId])
+
+    useEffect(() => {
         if (getSpecificAssistantApi.error) {
             setLoadingAssistant(false)
             setError(getSpecificAssistantApi.error)
@@ -822,8 +831,15 @@ const CustomAssistantConfigurePreview = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [getDocStoresApi.error])
 
+    const previewSupported = Boolean(getPublicChatbotCompatibilityApi.data?.supported)
+    const previewUnavailable =
+        customAssistantFlowId &&
+        !loadingAssistant &&
+        (getPublicChatbotCompatibilityApi.isUnavailable ||
+            (getPublicChatbotCompatibilityApi.data && !getPublicChatbotCompatibilityApi.data?.supported))
+
     const defaultWidth = () => {
-        if (customAssistantFlowId && !loadingAssistant) {
+        if (customAssistantFlowId && !loadingAssistant && previewSupported) {
             return 6
         }
         return 12
@@ -1307,7 +1323,7 @@ const CustomAssistantConfigurePreview = () => {
                                         )}
                                     </div>
                                 </Grid>
-                                {customAssistantFlowId && !loadingAssistant && (
+                                {customAssistantFlowId && !loadingAssistant && previewSupported && (
                                     <Grid item xs={12} md={6} lg={6} sm={6}>
                                         <Box sx={{ mt: 2 }}>
                                             {customization.isDarkMode && (
@@ -1380,6 +1396,16 @@ const CustomAssistantConfigurePreview = () => {
                                                     }}
                                                 />
                                             )}
+                                        </Box>
+                                    </Grid>
+                                )}
+                                {previewUnavailable && (
+                                    <Grid item xs={12}>
+                                        <Box sx={{ mt: 2, p: 2, border: `1px solid ${theme.palette.grey[900] + 25}`, borderRadius: 2 }}>
+                                            <Typography variant='h4'>Preview Unavailable</Typography>
+                                            <Typography variant='body2' sx={{ mt: 1 }}>
+                                                This deployment does not support public chat preview endpoints.
+                                            </Typography>
                                         </Box>
                                     </Grid>
                                 )}

@@ -131,6 +131,27 @@ const normalizeFlowDefinition = (flow) => {
     return { nodes, edges }
 }
 
+const parseFlowPayload = (rawFlow) => {
+    if (!rawFlow) return null
+
+    try {
+        const parsed = typeof rawFlow === 'string' ? JSON.parse(rawFlow) : rawFlow
+        if (!parsed || typeof parsed !== 'object') return null
+
+        const hasNodes = Array.isArray(parsed.nodes)
+        const hasEdges = Array.isArray(parsed.edges)
+        if (!hasNodes && !hasEdges) return null
+
+        return {
+            ...parsed,
+            nodes: hasNodes ? parsed.nodes : [],
+            edges: hasEdges ? parsed.edges : []
+        }
+    } catch {
+        return null
+    }
+}
+
 // ==============================|| CANVAS ||============================== //
 
 const AgentflowCanvas = () => {
@@ -171,6 +192,7 @@ const AgentflowCanvas = () => {
     const [editNodeDialogProps, setEditNodeDialogProps] = useState({})
     const [isSnappingEnabled, setIsSnappingEnabled] = useState(false)
     const [isBackgroundEnabled, setIsBackgroundEnabled] = useState(true)
+    const templateAppliedOnEditRef = useRef(false)
 
     const reactFlowWrapper = useRef(null)
 
@@ -227,16 +249,13 @@ const AgentflowCanvas = () => {
     }
 
     const handleLoadFlow = (file) => {
-        try {
-            const flowData = JSON.parse(file)
-            const normalizedFlow = normalizeFlowDefinition(flowData)
+        const flowData = parseFlowPayload(file)
+        if (!flowData) return
 
-            setNodes(normalizedFlow.nodes)
-            setEdges(normalizedFlow.edges)
-            setTimeout(() => setDirty(), 0)
-        } catch (e) {
-            console.error(e)
-        }
+        const normalizedFlow = normalizeFlowDefinition(flowData)
+        setNodes(normalizedFlow.nodes)
+        setEdges(normalizedFlow.edges)
+        setTimeout(() => setDirty(), 0)
     }
 
     const handleDeleteFlow = async () => {
@@ -534,7 +553,49 @@ const AgentflowCanvas = () => {
         position: 'fixed'
     })
 
-    const triggerConfetti = () => {
+    const appendInstructionStickyNote = (instruction) => {
+        const text = String(instruction || '').trim()
+        if (!reactFlowInstance || !text) return false
+
+        const existingNodes = Array.isArray(reactFlowInstance.getNodes()) ? reactFlowInstance.getNodes() : []
+        const noteIndex = existingNodes.filter((node) => String(node?.data?.name || '') === 'stickyNoteAgentflow').length
+        const noteId = `stickyNoteAgentflow_${Date.now()}`
+        const maxY = existingNodes.reduce((acc, node) => Math.max(acc, Number(node?.position?.y) || 0), 0)
+
+        const stickyNoteNode = {
+            id: noteId,
+            type: 'stickyNote',
+            position: { x: 120, y: maxY + 180 },
+            data: {
+                id: noteId,
+                label: `Generated Prompt ${noteIndex + 1}`,
+                name: 'stickyNoteAgentflow',
+                color: '#fee440',
+                inputParams: [{ label: 'Text', name: 'text', type: 'string', optional: true, placeholder: 'Add note' }],
+                inputAnchors: [],
+                outputAnchors: [],
+                inputs: { text },
+                outputs: {}
+            }
+        }
+
+        reactFlowInstance.setNodes((prevNodes) => [...(Array.isArray(prevNodes) ? prevNodes : []), stickyNoteNode])
+        return true
+    }
+
+    const triggerConfetti = (result) => {
+        let hasCanvasChanges = false
+        if (result?.applied === 'graph') {
+            hasCanvasChanges = true
+        } else if (result?.applied === 'instruction') {
+            hasCanvasChanges = appendInstructionStickyNote(result?.instruction)
+        }
+
+        if (hasCanvasChanges) {
+            setDirty()
+            checkIfSyncNodesAvailable(Array.isArray(reactFlowInstance?.getNodes?.()) ? reactFlowInstance.getNodes() : [])
+        }
+
         setTimeout(() => {
             confettiReward()
         }, 50)
@@ -607,6 +668,14 @@ const AgentflowCanvas = () => {
             setNodes(initialFlow.nodes)
             setEdges(initialFlow.edges)
             dispatch({ type: SET_CHATFLOW, chatflow })
+
+            if (chatflowId && !templateAppliedOnEditRef.current) {
+                const templateFlow = parseFlowPayload(templateFlowData)
+                if (templateFlow) {
+                    templateAppliedOnEditRef.current = true
+                    handleLoadFlow(templateFlow)
+                }
+            }
         } else if (getSpecificChatflowApi.error) {
             errorFailed(`Failed to retrieve ${canvasTitle}: ${getSpecificChatflowApi.error?.response?.data?.message || getSpecificChatflowApi.error.message}`)
         }
@@ -687,12 +756,14 @@ const AgentflowCanvas = () => {
     }, [canvas])
 
     useEffect(() => {
+        templateAppliedOnEditRef.current = false
+    }, [chatflowId, templateFlowData])
+
+    useEffect(() => {
         function handlePaste(e) {
             const pasteData = e.clipboardData.getData('text')
-            //TODO: prevent paste event when input focused, temporary fix: catch chatflow syntax
-            if (pasteData.includes('{"nodes":[') && pasteData.includes('],"edges":[')) {
-                handleLoadFlow(pasteData)
-            }
+            const parsedFlow = parseFlowPayload(pasteData)
+            if (parsedFlow) handleLoadFlow(parsedFlow)
         }
 
         window.addEventListener('paste', handlePaste)
@@ -705,12 +776,13 @@ const AgentflowCanvas = () => {
     }, [])
 
     useEffect(() => {
-        if (templateFlowData && templateFlowData.includes('"nodes":[') && templateFlowData.includes('],"edges":[')) {
-            handleLoadFlow(templateFlowData)
-        }
+        // For edit routes, template application is done after existing flow load completes.
+        if (chatflowId) return
+        const parsedFlow = parseFlowPayload(templateFlowData)
+        if (parsedFlow) handleLoadFlow(parsedFlow)
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [templateFlowData])
+    }, [templateFlowData, chatflowId])
 
     usePrompt('You have unsaved changes! Do you want to navigate away?', canvasDataStore.isDirty)
 

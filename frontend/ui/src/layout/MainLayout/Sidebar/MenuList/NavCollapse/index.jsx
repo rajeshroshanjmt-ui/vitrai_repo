@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux'
 
 // material-ui
 import { useTheme } from '@mui/material/styles'
-import { Collapse, List, ListItemButton, ListItemIcon, ListItemText, Typography } from '@mui/material'
+import { Collapse, List, ListItemButton, ListItemIcon, ListItemText, Tooltip, Typography } from '@mui/material'
 
 // project imports
 import NavItem from '../NavItem'
@@ -15,7 +15,7 @@ import { IconChevronDown, IconChevronUp } from '@tabler/icons-react'
 
 // ==============================|| SIDEBAR MENU LIST COLLAPSE ITEMS ||============================== //
 
-const NavCollapse = ({ menu, level }) => {
+const NavCollapse = ({ menu, level, isCollapsed = false }) => {
     const theme = useTheme()
     const customization = useSelector((state) => state.customization)
 
@@ -31,9 +31,9 @@ const NavCollapse = ({ menu, level }) => {
     const menus = menu.children?.map((item) => {
         switch (item.type) {
             case 'collapse':
-                return <NavCollapse key={item.id} menu={item} level={level + 1} />
+                return <NavCollapse key={item.id} menu={item} level={level + 1} isCollapsed={isCollapsed} />
             case 'item':
-                return <NavItem key={item.id} item={item} level={level + 1} />
+                return <NavItem key={item.id} item={item} level={level + 1} isCollapsed={isCollapsed} />
             default:
                 return (
                     <Typography key={item.id} variant='h6' color='error' align='center'>
@@ -56,21 +56,23 @@ const NavCollapse = ({ menu, level }) => {
         />
     )
 
-    return (
-        <>
-            <ListItemButton
-                sx={{
-                    borderRadius: `${customization.borderRadius}px`,
-                    mb: 0.6,
-                    alignItems: 'flex-start',
-                    backgroundColor: level > 1 ? 'transparent !important' : 'inherit',
-                    py: level > 1 ? 1 : 1.25,
-                    pl: `${level * 24}px`
-                }}
-                selected={selected === menu.id}
-                onClick={handleClick}
-            >
-                <ListItemIcon sx={{ my: 'auto', minWidth: !menu.icon ? 18 : 36 }}>{menuIcon}</ListItemIcon>
+    const collapseButton = (
+        <ListItemButton
+            sx={{
+                borderRadius: `${customization.borderRadius}px`,
+                mb: 0.6,
+                alignItems: 'center',
+                justifyContent: isCollapsed ? 'center' : 'flex-start',
+                backgroundColor: level > 1 ? 'transparent !important' : 'inherit',
+                py: level > 1 ? 1 : 1.25,
+                px: isCollapsed ? 1 : 2,
+                pl: isCollapsed ? 1 : `${level * 24}px`
+            }}
+            selected={selected === menu.id}
+            onClick={handleClick}
+        >
+            <ListItemIcon sx={{ my: 'auto', minWidth: isCollapsed ? 'auto' : !menu.icon ? 18 : 36 }}>{menuIcon}</ListItemIcon>
+            {!isCollapsed && (
                 <ListItemText
                     primary={
                         <Typography variant={selected === menu.id ? 'h5' : 'body1'} color='inherit' sx={{ my: 'auto' }}>
@@ -85,12 +87,25 @@ const NavCollapse = ({ menu, level }) => {
                         )
                     }
                 />
-                {open ? (
+            )}
+            {!isCollapsed &&
+                (open ? (
                     <IconChevronUp stroke={1.5} size='1rem' style={{ marginTop: 'auto', marginBottom: 'auto' }} />
                 ) : (
                     <IconChevronDown stroke={1.5} size='1rem' style={{ marginTop: 'auto', marginBottom: 'auto' }} />
-                )}
-            </ListItemButton>
+                ))}
+        </ListItemButton>
+    )
+
+    return (
+        <>
+            {isCollapsed ? (
+                <Tooltip title={menu.title || ''} placement='right'>
+                    {collapseButton}
+                </Tooltip>
+            ) : (
+                collapseButton
+            )}
             <Collapse in={open} timeout='auto' unmountOnExit>
                 <List
                     component='div'
@@ -118,7 +133,8 @@ const NavCollapse = ({ menu, level }) => {
 
 NavCollapse.propTypes = {
     menu: PropTypes.object,
-    level: PropTypes.number
+    level: PropTypes.number,
+    isCollapsed: PropTypes.bool
 }
 
 export default NavCollapse

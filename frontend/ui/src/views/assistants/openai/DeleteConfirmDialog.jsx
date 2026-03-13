@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { Button, Dialog, DialogContent, DialogTitle } from '@mui/material'
 import { StyledButton } from '@/ui-component/button/StyledButton'
 
-const DeleteConfirmDialog = ({ show, dialogProps, onCancel, onDelete, onDeleteBoth }) => {
+const DeleteConfirmDialog = ({ show, dialogProps, onCancel, onDelete, onDeleteBoth, providerLabel = 'OpenAI' }) => {
     const portalElement = document.getElementById('portal')
 
     const component = show ? (
@@ -25,7 +25,7 @@ const DeleteConfirmDialog = ({ show, dialogProps, onCancel, onDelete, onDeleteBo
                         Only Vetrai
                     </Button>
                     <StyledButton sx={{ flex: 1, mb: 1, ml: 1 }} color='error' variant='contained' onClick={onDeleteBoth}>
-                        OpenAI and Vetrai
+                        {`${providerLabel} and Vetrai`}
                     </StyledButton>
                 </div>
             </DialogContent>
@@ -40,7 +40,8 @@ DeleteConfirmDialog.propTypes = {
     dialogProps: PropTypes.object,
     onDeleteBoth: PropTypes.func,
     onDelete: PropTypes.func,
-    onCancel: PropTypes.func
+    onCancel: PropTypes.func,
+    providerLabel: PropTypes.string
 }
 
 export default DeleteConfirmDialog

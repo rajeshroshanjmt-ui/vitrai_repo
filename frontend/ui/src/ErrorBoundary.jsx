@@ -1,14 +1,24 @@
 import PropTypes from 'prop-types'
 
-import { Box, Card, IconButton, Stack, Typography, useTheme } from '@mui/material'
-import { IconCopy } from '@tabler/icons-react'
+import { Box, Button, Card, IconButton, Stack, Typography, useTheme } from '@mui/material'
+import { IconCopy, IconRefresh } from '@tabler/icons-react'
 
-const ErrorBoundary = ({ error }) => {
+const ErrorBoundary = ({ error, onRetry }) => {
     const theme = useTheme()
+    const statusCode = error?.response?.status || error?.status || 'Unknown'
+    const errorMessage = error?.response?.data?.message || error?.message || 'Unexpected error'
+    const errorDetails = `Status: ${statusCode}\n${errorMessage}`
 
     const copyToClipboard = () => {
-        const errorMessage = `Status: ${error.response.status}\n${error.response.data.message}`
-        navigator.clipboard.writeText(errorMessage)
+        navigator.clipboard.writeText(errorDetails)
+    }
+
+    const handleRetry = () => {
+        if (onRetry) {
+            onRetry()
+            return
+        }
+        window.location.reload()
     }
 
     return (
@@ -28,12 +38,15 @@ const ErrorBoundary = ({ error }) => {
                             <IconCopy />
                         </IconButton>
                         <pre style={{ margin: 0, overflowWrap: 'break-word', whiteSpace: 'pre-wrap', textAlign: 'center' }}>
-                            <code>{`Status: ${error.response.status}`}</code>
+                            <code>{`Status: ${statusCode}`}</code>
                             <br />
-                            <code>{error.response?.data?.message}</code>
+                            <code>{errorMessage}</code>
                         </pre>
                     </Box>
                 </Card>
+                <Button variant='outlined' startIcon={<IconRefresh size={16} />} onClick={handleRetry}>
+                    Retry
+                </Button>
                 <Typography variant='body1' sx={{ fontSize: '1.1rem', textAlign: 'center', lineHeight: '1.5' }}>
                     Please retry after some time. If the issue persists, reach out to us on our Discord server.
                     <br />
@@ -45,7 +58,8 @@ const ErrorBoundary = ({ error }) => {
 }
 
 ErrorBoundary.propTypes = {
-    error: PropTypes.object
+    error: PropTypes.object,
+    onRetry: PropTypes.func
 }
 
 export default ErrorBoundary

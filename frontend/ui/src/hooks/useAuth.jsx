@@ -32,7 +32,8 @@ export const useAuth = () => {
     }
 
     const hasDisplay = (display) => {
-        if (!display) {
+        const displayFlags = Array.isArray(display) ? display.filter(Boolean) : display ? [display] : []
+        if (displayFlags.length === 0) {
             return true
         }
 
@@ -41,13 +42,11 @@ export const useAuth = () => {
             return false
         }
 
-        // check if the display flag is in the features
-        if (Object.hasOwnProperty.call(features, display)) {
-            const flag = features[display] === 'true' || features[display] === true
-            return flag
-        }
-
-        return false
+        // check if at least one display flag is enabled in features
+        return displayFlags.some((flagName) => {
+            if (!Object.hasOwnProperty.call(features, flagName)) return false
+            return features[flagName] === 'true' || features[flagName] === true
+        })
     }
 
     return { hasPermission, hasAssignedWorkspace, hasDisplay }

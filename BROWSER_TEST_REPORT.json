@@ -1,0 +1,121 @@
+{
+  "tests": [
+    {
+      "name": "Browser Launch",
+      "status": "PASS",
+      "details": "Chromium launched successfully",
+      "timestamp": "2026-03-11T22:32:54.791Z"
+    },
+    {
+      "name": "Page Load",
+      "status": "PASS",
+      "details": "Homepage loaded",
+      "timestamp": "2026-03-11T22:33:06.032Z"
+    },
+    {
+      "name": "Login Form Visible",
+      "status": "PASS",
+      "details": "Login form found on page",
+      "timestamp": "2026-03-11T22:33:06.561Z"
+    },
+    {
+      "name": "Credentials Entered",
+      "status": "PASS",
+      "details": "Email and password filled",
+      "timestamp": "2026-03-11T22:33:06.632Z"
+    },
+    {
+      "name": "Login Button Clicked",
+      "status": "PASS",
+      "details": "Login attempt made",
+      "timestamp": "2026-03-11T22:33:11.916Z"
+    },
+    {
+      "name": "Authentication Success",
+      "status": "WARN",
+      "details": "Current URL: http://localhost/login",
+      "timestamp": "2026-03-11T22:33:14.918Z"
+    },
+    {
+      "name": "Dashboard Title",
+      "status": "PASS",
+      "details": "Dashboard header visible",
+      "timestamp": "2026-03-11T22:33:14.930Z"
+    },
+    {
+      "name": "Menu Items",
+      "status": "PASS",
+      "details": "Found 2 navigation elements",
+      "timestamp": "2026-03-11T22:33:14.953Z"
+    },
+    {
+      "name": "Navigate to Chatflows",
+      "status": "WARN",
+      "details": "Chatflows link not found in expected location",
+      "timestamp": "2026-03-11T22:33:14.960Z"
+    },
+    {
+      "name": "Create Workflow Button",
+      "status": "WARN",
+      "details": "Create button not found",
+      "timestamp": "2026-03-11T22:33:14.973Z"
+    },
+    {
+      "name": "Editor Login",
+      "status": "PASS",
+      "details": "Editor account login attempted",
+      "timestamp": "2026-03-11T22:33:19.131Z"
+    },
+    {
+      "name": "Mobile Viewport (375px)",
+      "status": "PASS",
+      "details": "Page loaded on mobile resolution",
+      "timestamp": "2026-03-11T22:33:20.004Z"
+    },
+    {
+      "name": "Tablet Viewport (768px)",
+      "status": "PASS",
+      "details": "Page loaded on tablet resolution",
+      "timestamp": "2026-03-11T22:33:20.096Z"
+    },
+    {
+      "name": "Desktop Viewport (1920px)",
+      "status": "PASS",
+      "details": "Page loaded on desktop resolution",
+      "timestamp": "2026-03-11T22:33:20.234Z"
+    },
+    {
+      "name": "Page Load Time",
+      "status": "PASS",
+      "details": "887ms (Target: <5000ms)",
+      "timestamp": "2026-03-11T22:33:20.291Z"
+    },
+    {
+      "name": "API Calls",
+      "status": "WARN",
+      "details": "No API calls captured",
+      "timestamp": "2026-03-11T22:33:21.246Z"
+    },
+    {
+      "name": "Console Errors",
+      "status": "PASS",
+      "details": "No JavaScript errors in console",
+      "timestamp": "2026-03-11T22:33:21.246Z"
+    },
+    {
+      "name": "Interactive Elements",
+      "status": "PASS",
+      "details": "Found 9 interactive elements",
+      "timestamp": "2026-03-11T22:33:21.646Z"
+    },
+    {
+      "name": "Browser Cleanup",
+      "status": "PASS",
+      "details": "Browser closed successfully",
+      "timestamp": "2026-03-11T22:33:21.826Z"
+    }
+  ],
+  "passed": 15,
+  "failed": 0,
+  "startTime": "2026-03-11T22:32:54.244Z"
+}

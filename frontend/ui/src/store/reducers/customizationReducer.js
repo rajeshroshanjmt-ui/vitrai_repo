@@ -9,6 +9,7 @@ export const initialState = {
     fontFamily: config.fontFamily,
     borderRadius: config.borderRadius,
     opened: true,
+    isSidebarCollapsed: localStorage.getItem('isSidebarCollapsed') === 'true',
     isHorizontal: localStorage.getItem('isHorizontal') === 'true' ? true : false,
     isDarkMode: localStorage.getItem('isDarkMode') === 'true' ? true : false
 }
@@ -48,6 +49,11 @@ const customizationReducer = (state = initialState, action) => {
             return {
                 ...state,
                 isDarkMode: action.isDarkMode
+            }
+        case actionTypes.SET_SIDEBAR_COLLAPSED:
+            return {
+                ...state,
+                isSidebarCollapsed: action.isSidebarCollapsed
             }
         default:
             return state

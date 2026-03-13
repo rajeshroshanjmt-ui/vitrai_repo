@@ -5,7 +5,7 @@ const isNotFound = (error) => error?.response?.status === 404
 
 const getInternalChatmessageFromChatflow = async (id, params = {}) => {
     try {
-        const response = await client.get(`/internal-chatmessage/${id}`, { params: { feedback: true, ...params } })
+        const response = await client.get(`/chatmessage/${id}`, { params: { order: 'DESC', feedback: true, ...params } })
         return successResponse(Array.isArray(response?.data) ? response.data : [], response?.status || 200)
     } catch (error) {
         if (isNotFound(error)) return unavailableListResponse(404)

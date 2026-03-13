@@ -13,7 +13,7 @@ import { getMenuChildren } from '../menuUtils'
 
 // ==============================|| SIDEBAR MENU LIST GROUP ||============================== //
 
-const NavGroup = ({ item }) => {
+const NavGroup = ({ item, isCollapsed = false }) => {
     const theme = useTheme()
     const { hasPermission, hasDisplay } = useAuth()
 
@@ -26,9 +26,9 @@ const NavGroup = ({ item }) => {
         // Handle item and group types
         switch (menu.type) {
             case 'collapse':
-                return <NavCollapse key={menu.id} menu={menu} level={level} />
+                return <NavCollapse key={menu.id} menu={menu} level={level} isCollapsed={isCollapsed} />
             case 'item':
-                return <NavItem key={menu.id} item={menu} level={level} navType='MENU' />
+                return <NavItem key={menu.id} item={menu} level={level} navType='MENU' isCollapsed={isCollapsed} />
             case 'group':
                 return getMenuChildren(menu).map((child) => listItems(child, level + 1))
             default:
@@ -87,7 +87,8 @@ const NavGroup = ({ item }) => {
         <>
             <List
                 subheader={
-                    item.title && (
+                    item.title &&
+                    !isCollapsed && (
                         <Typography variant='caption' sx={{ ...theme.typography.menuCaption }} display='block' gutterBottom>
                             {item.title}
                             {item.caption && (
@@ -98,7 +99,13 @@ const NavGroup = ({ item }) => {
                         </Typography>
                     )
                 }
-                sx={{ p: '16px', py: 2, display: 'flex', flexDirection: 'column', gap: 1 }}
+                sx={{
+                    px: isCollapsed ? 1 : 2,
+                    py: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1
+                }}
             >
                 {renderPrimaryItems().map((menu) => listItems(menu))}
             </List>
@@ -111,11 +118,13 @@ const NavGroup = ({ item }) => {
                             <Divider sx={{ height: '1px', borderColor: theme.palette.outline?.subtle || theme.palette.divider, my: 0 }} />
                             <List
                                 subheader={
-                                    <Typography variant='caption' sx={{ ...theme.typography.subMenuCaption }} display='block' gutterBottom>
-                                        {group.title}
-                                    </Typography>
+                                    !isCollapsed ? (
+                                        <Typography variant='caption' sx={{ ...theme.typography.subMenuCaption }} display='block' gutterBottom>
+                                            {group.title}
+                                        </Typography>
+                                    ) : null
                                 }
-                                sx={{ p: '16px', py: 2, display: 'flex', flexDirection: 'column', gap: 1 }}
+                                sx={{ px: isCollapsed ? 1 : 2, py: 2, display: 'flex', flexDirection: 'column', gap: 1 }}
                             >
                                 {group.children.map((menu) => listItems(menu))}
                             </List>
@@ -128,7 +137,8 @@ const NavGroup = ({ item }) => {
 }
 
 NavGroup.propTypes = {
-    item: PropTypes.object
+    item: PropTypes.object,
+    isCollapsed: PropTypes.bool
 }
 
 export default NavGroup

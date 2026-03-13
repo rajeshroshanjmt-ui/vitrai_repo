@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import PropTypes from 'prop-types'
 
 // material-ui
 import { Box, Stack, Skeleton } from '@mui/material'
@@ -26,7 +27,7 @@ import { gridSpacing } from '@/store/constant'
 
 // ==============================|| OpenAIAssistantLayout ||============================== //
 
-const OpenAIAssistantLayout = () => {
+const OpenAIAssistantLayout = ({ providerType = 'OPENAI', providerLabel = 'OpenAI', credentialNames = ['openAIApi'] }) => {
     const navigate = useNavigate()
 
     const getAllAssistantsApi = useApi(assistantsApi.getAllAssistants)
@@ -40,7 +41,7 @@ const OpenAIAssistantLayout = () => {
 
     const loadExisting = () => {
         const dialogProp = {
-            title: 'Load Existing Assistant'
+            title: `Load Existing ${providerLabel} Assistant`
         }
         setLoadDialogProps(dialogProp)
         setShowLoadDialog(true)
@@ -51,18 +52,18 @@ const OpenAIAssistantLayout = () => {
         setSearch(event.target.value)
     }
 
-    const onAssistantSelected = (selectedOpenAIAssistantId, credential) => {
+    const onAssistantSelected = (selectedAssistantId, credential) => {
         setShowLoadDialog(false)
-        addNew(selectedOpenAIAssistantId, credential)
+        addNew(selectedAssistantId, credential)
     }
 
-    const addNew = (selectedOpenAIAssistantId, credential) => {
+    const addNew = (selectedAssistantId, credential) => {
         const dialogProp = {
             title: 'Add New Assistant',
             type: 'ADD',
             cancelButtonName: 'Cancel',
             confirmButtonName: 'Add',
-            selectedOpenAIAssistantId,
+            selectedAssistantId,
             credential
         }
         setDialogProps(dialogProp)
@@ -83,7 +84,7 @@ const OpenAIAssistantLayout = () => {
 
     const onConfirm = () => {
         setShowDialog(false)
-        getAllAssistantsApi.request('OPENAI')
+        getAllAssistantsApi.request(providerType)
     }
 
     function filterAssistants(data) {
@@ -92,10 +93,10 @@ const OpenAIAssistantLayout = () => {
     }
 
     useEffect(() => {
-        getAllAssistantsApi.request('OPENAI')
+        getAllAssistantsApi.request(providerType)
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    }, [providerType])
 
     useEffect(() => {
         setLoading(getAllAssistantsApi.loading)
@@ -119,8 +120,8 @@ const OpenAIAssistantLayout = () => {
                             onSearchChange={onSearchChange}
                             search={true}
                             searchPlaceholder='Search Assistants'
-                            title='OpenAI Assistant'
-                            description='Create assistants using OpenAI Assistant API'
+                            title={`${providerLabel} Assistant`}
+                            description={`Create assistants using ${providerLabel} Assistant API`}
                             onBack={() => navigate(-1)}
                         >
                             <PermissionButton
@@ -136,7 +137,7 @@ const OpenAIAssistantLayout = () => {
                                 permissionId={'assistants:create'}
                                 variant='contained'
                                 sx={{ borderRadius: 2, height: 40 }}
-                                onClick={addNew}
+                                onClick={() => addNew()}
                                 startIcon={<IconPlus />}
                             >
                                 Add
@@ -173,7 +174,7 @@ const OpenAIAssistantLayout = () => {
                                         alt='AssistantEmptySVG'
                                     />
                                 </Box>
-                                <div>No OpenAI Assistants Added Yet</div>
+                                <div>{`No ${providerLabel} Assistants Added Yet`}</div>
                             </Stack>
                         )}
                     </Stack>
@@ -185,6 +186,9 @@ const OpenAIAssistantLayout = () => {
                 onCancel={() => setShowLoadDialog(false)}
                 onAssistantSelected={onAssistantSelected}
                 setError={setError}
+                providerType={providerType}
+                providerLabel={providerLabel}
+                credentialNames={credentialNames}
             ></LoadAssistantDialog>
             <AssistantDialog
                 show={showDialog}
@@ -192,9 +196,18 @@ const OpenAIAssistantLayout = () => {
                 onCancel={() => setShowDialog(false)}
                 onConfirm={onConfirm}
                 setError={setError}
+                providerType={providerType}
+                providerLabel={providerLabel}
+                credentialNames={credentialNames}
             ></AssistantDialog>
         </>
     )
+}
+
+OpenAIAssistantLayout.propTypes = {
+    providerType: PropTypes.string,
+    providerLabel: PropTypes.string,
+    credentialNames: PropTypes.array
 }
 
 export default OpenAIAssistantLayout

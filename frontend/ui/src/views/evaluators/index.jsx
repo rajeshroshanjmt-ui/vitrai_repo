@@ -272,10 +272,9 @@ const Evaluators = () => {
                                             ) : (
                                                 <>
                                                     {evaluators.filter(filterDatasets).map((ds, index) => (
-                                                        <>
                                                             <StyledTableRow
                                                                 hover
-                                                                key={index}
+                                                                key={ds?.id || index}
                                                                 sx={{
                                                                     cursor: 'pointer',
                                                                     '&:last-child td, &:last-child th': { border: 0 }
@@ -545,7 +544,6 @@ const Evaluators = () => {
                                                                     </PermissionIconButton>
                                                                 </TableCell>
                                                             </StyledTableRow>
-                                                        </>
                                                     ))}
                                                 </>
                                             )}

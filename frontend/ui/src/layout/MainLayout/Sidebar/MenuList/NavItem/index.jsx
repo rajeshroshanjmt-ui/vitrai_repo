@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux'
 
 // material-ui
 import { useTheme } from '@mui/material/styles'
-import { Avatar, Chip, ListItemButton, ListItemIcon, ListItemText, Typography, useMediaQuery } from '@mui/material'
+import { Avatar, Badge, Chip, ListItemButton, ListItemIcon, ListItemText, Tooltip, Typography, useMediaQuery } from '@mui/material'
 
 // project imports
 import { MENU_OPEN, SET_MENU } from '@/store/actions'
@@ -16,15 +16,25 @@ import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord'
 
 // ==============================|| SIDEBAR MENU LIST ITEMS ||============================== //
 
-const NavItem = ({ item, level, navType, onClick, onUploadFile }) => {
+const NavItem = ({ item, level, navType, onClick, onUploadFile, isCollapsed = false }) => {
     const theme = useTheme()
     const dispatch = useDispatch()
     const customization = useSelector((state) => state.customization)
     const matchesSM = useMediaQuery(theme.breakpoints.down('lg'))
 
     const Icon = item.icon
+    const badgeCount = Number(item?.badgeCount || 0)
     const itemIcon = item?.icon ? (
-        <Icon stroke={1.5} size='1.3rem' />
+        <Badge
+            color='primary'
+            badgeContent={badgeCount > 99 ? '99+' : badgeCount}
+            overlap='circular'
+            max={99}
+            invisible={badgeCount <= 0}
+            sx={{ '& .MuiBadge-badge': { fontSize: '0.6rem', height: 16, minWidth: 16 } }}
+        >
+            <Icon stroke={1.5} size='1.3rem' />
+        </Badge>
     ) : (
         <FiberManualRecordIcon
             sx={{
@@ -95,65 +105,81 @@ const NavItem = ({ item, level, navType, onClick, onUploadFile }) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [navType])
 
-    return (
+    const navButton = (
         <ListItemButton
             {...listItemProps}
             disabled={item.disabled}
             sx={{
                 borderRadius: `${customization.borderRadius}px`,
-                alignItems: 'flex-start',
+                alignItems: 'center',
+                justifyContent: isCollapsed ? 'center' : 'flex-start',
                 backgroundColor: level > 1 ? 'transparent !important' : 'inherit',
                 py: level > 1 ? 1 : 1.25,
-                pl: `${level * 24}px`
+                px: isCollapsed ? 1 : 2,
+                pl: isCollapsed ? 1 : `${level * 24}px`
             }}
             selected={customization.isOpen.findIndex((id) => id === item.id) > -1}
             onClick={() => itemHandler(item.id)}
         >
             {item.id === 'loadChatflow' && <input type='file' hidden accept='.json' onChange={(e) => handleFileUpload(e)} />}
-            <ListItemIcon sx={{ my: 'auto', minWidth: !item?.icon ? 18 : 36 }}>{itemIcon}</ListItemIcon>
-            <ListItemText
-                primary={
-                    <Typography
-                        variant={customization.isOpen.findIndex((id) => id === item.id) > -1 ? 'h5' : 'body1'}
-                        color='inherit'
-                        sx={{ my: 0.5 }}
-                    >
-                        {item.title}
-                    </Typography>
-                }
-                secondary={
-                    item.caption && (
-                        <Typography variant='caption' sx={{ ...theme.typography.subMenuCaption, mt: -0.6 }} display='block' gutterBottom>
-                            {item.caption}
+            <ListItemIcon sx={{ my: 'auto', minWidth: isCollapsed ? 'auto' : !item?.icon ? 18 : 36 }}>{itemIcon}</ListItemIcon>
+            {!isCollapsed && (
+                <ListItemText
+                    primary={
+                        <Typography
+                            variant={customization.isOpen.findIndex((id) => id === item.id) > -1 ? 'h5' : 'body1'}
+                            color='inherit'
+                            sx={{ my: 0.5 }}
+                        >
+                            {item.title}
                         </Typography>
-                    )
-                }
-                sx={{ my: 'auto' }}
-            />
-            {item.chip && (
-                <Chip
-                    color={item.chip.color}
-                    variant={item.chip.variant}
-                    size={item.chip.size}
-                    label={item.chip.label}
-                    avatar={item.chip.avatar && <Avatar>{item.chip.avatar}</Avatar>}
+                    }
+                    secondary={
+                        item.caption && (
+                            <Typography variant='caption' sx={{ ...theme.typography.subMenuCaption, mt: -0.6 }} display='block' gutterBottom>
+                                {item.caption}
+                            </Typography>
+                        )
+                    }
+                    sx={{ my: 'auto' }}
                 />
             )}
-            {item.isBeta && (
-                <Chip
-                    sx={{
-                        my: 'auto',
-                        width: 'max-content',
-                        fontWeight: 700,
-                        fontSize: '0.65rem',
-                        background: theme.palette.teal.main,
-                        color: 'white'
-                    }}
-                    label={'BETA'}
-                />
-            )}
+            {!isCollapsed &&
+                item.chip && (
+                    <Chip
+                        color={item.chip.color}
+                        variant={item.chip.variant}
+                        size={item.chip.size}
+                        label={item.chip.label}
+                        avatar={item.chip.avatar && <Avatar>{item.chip.avatar}</Avatar>}
+                    />
+                )}
+            {!isCollapsed &&
+                item.isBeta && (
+                    <Chip
+                        sx={{
+                            my: 'auto',
+                            width: 'max-content',
+                            fontWeight: 700,
+                            fontSize: '0.65rem',
+                            background: theme.palette.teal.main,
+                            color: 'white'
+                        }}
+                        label={'BETA'}
+                    />
+                )}
         </ListItemButton>
     )
+
+    if (isCollapsed) {
+        return (
+            <Tooltip title={item.title || ''} placement='right'>
+                {navButton}
+            </Tooltip>
+        )
+    }
+
+    return navButton
 }
 
 NavItem.propTypes = {
@@ -161,7 +187,8 @@ NavItem.propTypes = {
     level: PropTypes.number,
     navType: PropTypes.string,
     onClick: PropTypes.func,
-    onUploadFile: PropTypes.func
+    onUploadFile: PropTypes.func,
+    isCollapsed: PropTypes.bool
 }
 
 export default NavItem

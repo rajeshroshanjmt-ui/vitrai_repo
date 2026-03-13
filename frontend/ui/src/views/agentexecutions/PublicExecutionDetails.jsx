@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { ExecutionDetails } from './ExecutionDetails'
 import { omit } from 'lodash'
+import { parseExecutionData } from './executionUtils'
 
 // API
 import executionsApi from '@/api/executions'
@@ -33,26 +34,30 @@ const PublicExecutionDetails = () => {
     }, [])
 
     useEffect(() => {
-        if (getExecutionByIdPublicApi.data) {
-            const execution = getExecutionByIdPublicApi.data
-            const executionDetails =
-                typeof execution.executionData === 'string' ? JSON.parse(execution.executionData) : execution.executionData
+        if (getExecutionByIdPublicApi.data?.id) {
+            const publicExecution = getExecutionByIdPublicApi.data
+            const executionDetails = parseExecutionData(publicExecution.executionData)
             setExecution(executionDetails)
             const newMetadata = {
-                ...omit(execution, ['executionData']),
+                ...omit(publicExecution, ['executionData']),
                 agentflow: {
                     ...selectedMetadata.agentflow
                 }
             }
             setSelectedMetadata(newMetadata)
+        } else if (getExecutionByIdPublicApi.isUnavailable) {
+            setExecution(null)
+            setSelectedMetadata({})
         }
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [getExecutionByIdPublicApi.data])
+    }, [getExecutionByIdPublicApi.data, getExecutionByIdPublicApi.isUnavailable])
 
     useEffect(() => {
         setLoading(getExecutionByIdPublicApi.loading)
     }, [getExecutionByIdPublicApi.loading])
+
+    const isUnavailable = getExecutionByIdPublicApi.isUnavailable || (!isLoading && !execution)
 
     return (
         <>
@@ -62,7 +67,7 @@ const PublicExecutionDetails = () => {
                 </Box>
             ) : (
                 <>
-                    {getExecutionByIdPublicApi.error ? (
+                    {isUnavailable || getExecutionByIdPublicApi.error ? (
                         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
                             <Box sx={{ maxWidth: '500px', width: '100%' }}>
                                 <Card

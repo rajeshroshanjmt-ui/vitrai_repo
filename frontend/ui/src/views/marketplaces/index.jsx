@@ -61,8 +61,8 @@ import { gridSpacing } from '@/store/constant'
 import { useError } from '@/store/context/ErrorContext'
 
 const badges = ['POPULAR', 'NEW']
-const types = ['Chatflow', 'AgentflowV2', 'Tool']
-const framework = ['Langchain', 'LlamaIndex']
+const types = ['Chatflow', 'AgentflowV2', 'Assistant', 'Tool']
+const framework = ['Langchain', 'Langgraph', 'LlamaIndex', 'Assistant Runtime']
 const MenuProps = {
     PaperProps: {
         style: {
@@ -311,7 +311,7 @@ const Marketplace = () => {
 
         const usecases = []
         for (let i = 0; i < filteredData.length; i += 1) {
-            if (filteredData[i].flowData) {
+            if (filteredData[i].flowData || filteredData[i].assistantData || filteredData[i].toolData) {
                 usecases.push(...filteredData[i].usecases)
             }
         }
@@ -349,6 +349,55 @@ const Marketplace = () => {
         }
     }
 
+    const goToAssistant = async (selectedAssistantTemplate) => {
+        try {
+            const response = await marketplacesApi.importAssistantTemplate(selectedAssistantTemplate)
+            const assistantId = response?.data?.id
+            if (!assistantId) throw new Error('Assistant import did not return id')
+
+            enqueueSnackbar({
+                message: `${selectedAssistantTemplate.templateName || 'Assistant template'} imported successfully`,
+                options: {
+                    key: new Date().getTime() + Math.random(),
+                    variant: 'success',
+                    action: (key) => (
+                        <Button style={{ color: 'white' }} onClick={() => closeSnackbar(key)}>
+                            <IconX />
+                        </Button>
+                    )
+                }
+            })
+            navigate(`/assistants/custom/${assistantId}`)
+        } catch (err) {
+            const message = err?.response?.data?.message || err?.response?.data || err?.message || 'Unknown error'
+            enqueueSnackbar({
+                message: `Failed to import assistant template: ${message}`,
+                options: {
+                    key: new Date().getTime() + Math.random(),
+                    variant: 'error',
+                    persist: true,
+                    action: (key) => (
+                        <Button style={{ color: 'white' }} onClick={() => closeSnackbar(key)}>
+                            <IconX />
+                        </Button>
+                    )
+                }
+            })
+        }
+    }
+
+    const openTemplate = (template) => {
+        if (template.type === 'Assistant') {
+            goToAssistant(template)
+            return
+        }
+        if (template.type === 'Chatflow' || template.type === 'Agentflow' || template.type === 'AgentflowV2') {
+            goToCanvas(template)
+            return
+        }
+        goToTool(template)
+    }
+
     useEffect(() => {
         if (hasPermission('templates:marketplace')) {
             getAllTemplatesMarketplacesApi.request()
@@ -371,10 +420,10 @@ const Marketplace = () => {
                 const images = {}
                 const icons = {}
                 for (let i = 0; i < flows.length; i += 1) {
+                    usecases.push(...(flows[i].usecases || []))
                     if (flows[i].flowData) {
                         const flowDataStr = flows[i].flowData
                         const flowData = JSON.parse(flowDataStr)
-                        usecases.push(...flows[i].usecases)
                         const nodes = flowData.nodes || []
                         images[flows[i].id] = []
                         icons[flows[i].id] = []
@@ -424,13 +473,10 @@ const Marketplace = () => {
                 const tImages = {}
                 const tIcons = {}
                 for (let i = 0; i < flows.length; i += 1) {
+                    usecases.push(...(flows[i].usecases || []))
                     if (flows[i].flowData) {
                         const flowDataStr = flows[i].flowData
                         const flowData = JSON.parse(flowDataStr)
-                        usecases.push(...flows[i].usecases)
-                        if (flows[i].framework) {
-                            flows[i].framework = [flows[i].framework] || []
-                        }
                         const nodes = flowData.nodes || []
                         tImages[flows[i].id] = []
                         tIcons[flows[i].id] = []
@@ -735,34 +781,21 @@ const Marketplace = () => {
                                                                     badgeContent={data.badge}
                                                                     color={data.badge === 'POPULAR' ? 'primary' : 'error'}
                                                                 >
-                                                                    {(data.type === 'Chatflow' ||
-                                                                        data.type === 'Agentflow' ||
-                                                                        data.type === 'AgentflowV2') && (
-                                                                        <ItemCard
-                                                                            onClick={() => goToCanvas(data)}
-                                                                            data={data}
-                                                                            images={images[data.id]}
-                                                                            icons={icons[data.id]}
-                                                                        />
-                                                                    )}
-                                                                    {data.type === 'Tool' && (
-                                                                        <ItemCard data={data} onClick={() => goToTool(data)} />
-                                                                    )}
+                                                                    <ItemCard
+                                                                        onClick={() => openTemplate(data)}
+                                                                        data={data}
+                                                                        images={data.flowData ? images[data.id] : []}
+                                                                        icons={data.flowData ? icons[data.id] : []}
+                                                                    />
                                                                 </Badge>
                                                             )}
-                                                            {!data.badge &&
-                                                                (data.type === 'Chatflow' ||
-                                                                    data.type === 'Agentflow' ||
-                                                                    data.type === 'AgentflowV2') && (
-                                                                    <ItemCard
-                                                                        onClick={() => goToCanvas(data)}
-                                                                        data={data}
-                                                                        images={images[data.id]}
-                                                                        icons={icons[data.id]}
-                                                                    />
-                                                                )}
-                                                            {!data.badge && data.type === 'Tool' && (
-                                                                <ItemCard data={data} onClick={() => goToTool(data)} />
+                                                            {!data.badge && (
+                                                                <ItemCard
+                                                                    onClick={() => openTemplate(data)}
+                                                                    data={data}
+                                                                    images={data.flowData ? images[data.id] : []}
+                                                                    icons={data.flowData ? icons[data.id] : []}
+                                                                />
                                                             )}
                                                         </Box>
                                                     ))}
@@ -779,6 +812,7 @@ const Marketplace = () => {
                                         filterByUsecases={filterByUsecases}
                                         goToTool={goToTool}
                                         goToCanvas={goToCanvas}
+                                        goToAssistant={goToAssistant}
                                         isLoading={isLoading}
                                         setError={setError}
                                     />
@@ -868,34 +902,21 @@ const Marketplace = () => {
                                                                     badgeContent={data.badge}
                                                                     color={data.badge === 'POPULAR' ? 'primary' : 'error'}
                                                                 >
-                                                                    {(data.type === 'Chatflow' ||
-                                                                        data.type === 'Agentflow' ||
-                                                                        data.type === 'AgentflowV2') && (
-                                                                        <ItemCard
-                                                                            onClick={() => goToCanvas(data)}
-                                                                            data={data}
-                                                                            images={templateImages[data.id]}
-                                                                            icons={templateIcons[data.id]}
-                                                                        />
-                                                                    )}
-                                                                    {data.type === 'Tool' && (
-                                                                        <ItemCard data={data} onClick={() => goToTool(data)} />
-                                                                    )}
+                                                                    <ItemCard
+                                                                        onClick={() => openTemplate(data)}
+                                                                        data={data}
+                                                                        images={data.flowData ? templateImages[data.id] : []}
+                                                                        icons={data.flowData ? templateIcons[data.id] : []}
+                                                                    />
                                                                 </Badge>
                                                             )}
-                                                            {!data.badge &&
-                                                                (data.type === 'Chatflow' ||
-                                                                    data.type === 'Agentflow' ||
-                                                                    data.type === 'AgentflowV2') && (
-                                                                    <ItemCard
-                                                                        onClick={() => goToCanvas(data)}
-                                                                        data={data}
-                                                                        images={templateImages[data.id]}
-                                                                        icons={templateIcons[data.id]}
-                                                                    />
-                                                                )}
-                                                            {!data.badge && data.type === 'Tool' && (
-                                                                <ItemCard data={data} onClick={() => goToTool(data)} />
+                                                            {!data.badge && (
+                                                                <ItemCard
+                                                                    onClick={() => openTemplate(data)}
+                                                                    data={data}
+                                                                    images={data.flowData ? templateImages[data.id] : []}
+                                                                    icons={data.flowData ? templateIcons[data.id] : []}
+                                                                />
                                                             )}
                                                         </Box>
                                                     ))}
@@ -912,6 +933,7 @@ const Marketplace = () => {
                                         filterByUsecases={filterByUsecases}
                                         goToTool={goToTool}
                                         goToCanvas={goToCanvas}
+                                        goToAssistant={goToAssistant}
                                         isLoading={isLoading}
                                         setError={setError}
                                         onDelete={hasPermission('templates:custom-delete') ? onDeleteCustomTemplate : null}

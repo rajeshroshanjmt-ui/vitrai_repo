@@ -209,7 +209,7 @@ const AgentflowGeneratorDialog = ({ show, dialogProps, onCancel, onConfirm }) =>
             if (generatedNodes && generatedEdges) {
                 reactFlowInstance.setNodes(generatedNodes)
                 reactFlowInstance.setEdges(generatedEdges)
-                onConfirm()
+                onConfirm({ applied: 'graph' })
                 return
             }
 
@@ -473,7 +473,12 @@ const AgentflowGeneratorDialog = ({ show, dialogProps, onCancel, onConfirm }) =>
                                 </Button>
                             )}
                             {generatedInstruction && instructionOnlyResult && (
-                                <Button variant='contained' onClick={onConfirm}>
+                                <Button
+                                    variant='contained'
+                                    onClick={() => {
+                                        onConfirm({ applied: 'instruction', instruction: generatedInstruction.trim() })
+                                    }}
+                                >
                                     Apply
                                 </Button>
                             )}

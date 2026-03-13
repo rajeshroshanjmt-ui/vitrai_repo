@@ -7,8 +7,8 @@ export default function themeTypography(theme) {
     return {
         fontFamily: theme?.customization?.fontFamily,
         fontWeightLight: 400,
-        fontWeightRegular: 500,
-        fontWeightMedium: 600,
+        fontWeightRegular: 400,
+        fontWeightMedium: 500,
         fontWeightBold: 700,
         h6: {
             fontWeight: 600,
@@ -25,11 +25,11 @@ export default function themeTypography(theme) {
         h4: {
             fontSize: '1.06rem',
             color: theme.heading,
-            fontWeight: 650,
+            fontWeight: 600,
             letterSpacing: '0.01em'
         },
         h3: {
-            fontSize: '1.32rem',
+            fontSize: '1.25rem',
             color: theme.heading,
             fontWeight: 700,
             letterSpacing: '0.005em'
@@ -63,21 +63,21 @@ export default function themeTypography(theme) {
             fontWeight: 500
         },
         body1: {
-            fontSize: '0.94rem',
-            fontWeight: 500,
-            lineHeight: 1.5,
+            fontSize: '0.9375rem',
+            fontWeight: 400,
+            lineHeight: 1.6,
             color: theme.darkTextPrimary
         },
         body2: {
             fontSize: '0.86rem',
             letterSpacing: '0.005em',
-            fontWeight: 500,
-            lineHeight: 1.5,
+            fontWeight: 400,
+            lineHeight: 1.6,
             color: theme.darkTextPrimary
         },
         button: {
             textTransform: 'none',
-            fontWeight: 650,
+            fontWeight: 600,
             letterSpacing: '0.01em'
         },
         customInput: {
@@ -104,17 +104,17 @@ export default function themeTypography(theme) {
         mainContent: {
             backgroundColor: 'transparent',
             width: '100%',
-            minHeight: 'calc(100vh - 74px)',
+            minHeight: 'calc(100vh - 64px)',
             flexGrow: 1,
             padding: '24px',
-            marginTop: '74px',
-            marginRight: '16px',
+            marginTop: '64px',
+            marginRight: '0px',
             borderRadius: `${theme?.customization?.borderRadius}px`
         },
         menuCaption: {
-            fontSize: '0.78rem',
+            fontSize: '0.6875rem',
             fontWeight: 700,
-            color: theme.heading,
+            color: theme.darkTextSecondary,
             padding: '4px 6px',
             textTransform: 'uppercase',
             letterSpacing: '0.08em',

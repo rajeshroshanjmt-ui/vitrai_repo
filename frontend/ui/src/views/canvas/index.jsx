@@ -66,6 +66,8 @@ const toNumber = (value, fallback = 0) => {
 const normalizeFlowNodes = (rawNodes) => {
     if (!Array.isArray(rawNodes)) return []
 
+    const supportedNodeTypes = new Set(Object.keys(nodeTypes))
+
     return rawNodes
         .filter((node) => node && typeof node === 'object')
         .map((node, index) => {
@@ -91,10 +93,13 @@ const normalizeFlowNodes = (rawNodes) => {
             const nodeName = rawData.name || 'unknownNode'
             const isSticky = nodeName === 'stickyNote' || nodeName === 'stickyNoteAgentflow' || node.type === 'stickyNote'
 
+            const preferredType = node.type || (isSticky ? 'stickyNote' : 'customNode')
+            const normalizedType = supportedNodeTypes.has(preferredType) ? preferredType : isSticky ? 'stickyNote' : 'customNode'
+
             return {
                 ...node,
                 id: nodeId,
-                type: node.type || (isSticky ? 'stickyNote' : 'customNode'),
+                type: normalizedType,
                 position,
                 data: {
                     id: rawData.id || nodeId,
@@ -114,16 +119,44 @@ const normalizeFlowNodes = (rawNodes) => {
 const normalizeFlowEdges = (rawEdges, validNodeIds) => {
     if (!Array.isArray(rawEdges)) return []
     const allowed = new Set(validNodeIds)
+    const supportedEdgeTypes = new Set(Object.keys(edgeTypes))
 
-    return rawEdges.filter(
-        (edge) => edge && typeof edge === 'object' && edge.source && edge.target && allowed.has(edge.source) && allowed.has(edge.target)
-    )
+    return rawEdges
+        .filter((edge) => edge && typeof edge === 'object' && edge.source && edge.target && allowed.has(edge.source) && allowed.has(edge.target))
+        .map((edge) => {
+            const preferredType = edge.type || 'buttonedge'
+            return {
+                ...edge,
+                type: supportedEdgeTypes.has(preferredType) ? preferredType : 'buttonedge'
+            }
+        })
 }
 
 const normalizeFlowDefinition = (flow) => {
     const nodes = normalizeFlowNodes(flow?.nodes)
     const edges = normalizeFlowEdges(flow?.edges, nodes.map((node) => node.id))
     return { nodes, edges }
+}
+
+const parseFlowPayload = (rawFlow) => {
+    if (!rawFlow) return null
+
+    try {
+        const parsed = typeof rawFlow === 'string' ? JSON.parse(rawFlow) : rawFlow
+        if (!parsed || typeof parsed !== 'object') return null
+
+        const hasNodes = Array.isArray(parsed.nodes)
+        const hasEdges = Array.isArray(parsed.edges)
+        if (!hasNodes && !hasEdges) return null
+
+        return {
+            ...parsed,
+            nodes: hasNodes ? parsed.nodes : [],
+            edges: hasEdges ? parsed.edges : []
+        }
+    } catch {
+        return null
+    }
 }
 
 // ==============================|| CANVAS ||============================== //
@@ -173,6 +206,7 @@ const Canvas = () => {
     const [lastUpdatedDateTime, setLasUpdatedDateTime] = useState('')
     const [chatflowName, setChatflowName] = useState('')
     const [flowData, setFlowData] = useState('')
+    const templateAppliedOnEditRef = useRef(false)
 
     // ==============================|| Chatflow API ||============================== //
 
@@ -232,16 +266,13 @@ const Canvas = () => {
     }
 
     const handleLoadFlow = (file) => {
-        try {
-            const flowData = JSON.parse(file)
-            const normalizedFlow = normalizeFlowDefinition(flowData)
+        const flowData = parseFlowPayload(file)
+        if (!flowData) return
 
-            setNodes(normalizedFlow.nodes)
-            setEdges(normalizedFlow.edges)
-            setTimeout(() => setDirty(), 0)
-        } catch (e) {
-            console.error(e)
-        }
+        const normalizedFlow = normalizeFlowDefinition(flowData)
+        setNodes(normalizedFlow.nodes)
+        setEdges(normalizedFlow.edges)
+        setTimeout(() => setDirty(), 0)
     }
 
     const handleDeleteFlow = async () => {
@@ -493,6 +524,14 @@ const Canvas = () => {
             setNodes(normalizedFlow.nodes)
             setEdges(normalizedFlow.edges)
             dispatch({ type: SET_CHATFLOW, chatflow })
+
+            if (chatflowId && !templateAppliedOnEditRef.current) {
+                const templateFlow = parseFlowPayload(templateFlowData)
+                if (templateFlow) {
+                    templateAppliedOnEditRef.current = true
+                    handleLoadFlow(templateFlow)
+                }
+            }
         } else if (getSpecificChatflowApi.error) {
             errorFailed(`Failed to retrieve ${canvasTitle}: ${getSpecificChatflowApi.error.response.data.message}`)
         }
@@ -605,12 +644,14 @@ const Canvas = () => {
     }, [canvas])
 
     useEffect(() => {
+        templateAppliedOnEditRef.current = false
+    }, [chatflowId, templateFlowData])
+
+    useEffect(() => {
         function handlePaste(e) {
             const pasteData = e.clipboardData.getData('text')
-            //TODO: prevent paste event when input focused, temporary fix: catch chatflow syntax
-            if (pasteData.includes('{"nodes":[') && pasteData.includes('],"edges":[')) {
-                handleLoadFlow(pasteData)
-            }
+            const parsedFlow = parseFlowPayload(pasteData)
+            if (parsedFlow) handleLoadFlow(parsedFlow)
         }
 
         window.addEventListener('paste', handlePaste)
@@ -623,12 +664,13 @@ const Canvas = () => {
     }, [])
 
     useEffect(() => {
-        if (templateFlowData && templateFlowData.includes('"nodes":[') && templateFlowData.includes('],"edges":[')) {
-            handleLoadFlow(templateFlowData)
-        }
+        // For edit routes, template application is done after existing flow load completes.
+        if (chatflowId) return
+        const parsedFlow = parseFlowPayload(templateFlowData)
+        if (parsedFlow) handleLoadFlow(parsedFlow)
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [templateFlowData])
+    }, [templateFlowData, chatflowId])
 
     usePrompt('You have unsaved changes! Do you want to navigate away?', canvasDataStore.isDirty)
 

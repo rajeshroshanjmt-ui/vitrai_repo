@@ -70,6 +70,8 @@ const blacklistForChatflowCanvas = {
     Memory: agentMemoryNodes
 }
 
+const normalizeCategory = (category) => String(category || '').split(';')[0].trim()
+
 const AddNodes = ({ nodesData, node, isAgentCanvas, isAgentflowv2, onFlowGenerated }) => {
     const theme = useTheme()
     const customization = useSelector((state) => state.customization)
@@ -104,13 +106,14 @@ const AddNodes = ({ nodesData, node, isAgentCanvas, isAgentflowv2, onFlowGenerat
 
     const addException = (category) => {
         let nodes = []
+        const normalizedCategory = normalizeCategory(category)
         if (category) {
             const nodeNames = exceptionsForAgentCanvas[category] || []
-            nodes = nodesData.filter((nd) => nd.category === category && nodeNames.includes(nd.name))
+            nodes = nodesData.filter((nd) => normalizeCategory(nd.category) === normalizedCategory && nodeNames.includes(nd.name))
         } else {
             for (const category in exceptionsForAgentCanvas) {
                 const nodeNames = exceptionsForAgentCanvas[category]
-                nodes.push(...nodesData.filter((nd) => nd.category === category && nodeNames.includes(nd.name)))
+                nodes.push(...nodesData.filter((nd) => normalizeCategory(nd.category) === category && nodeNames.includes(nd.name)))
             }
         }
         return nodes
@@ -218,11 +221,14 @@ const AddNodes = ({ nodesData, node, isAgentCanvas, isAgentflowv2, onFlowGenerat
 
     const getSearchedNodes = (value) => {
         if (isAgentCanvas) {
-            const nodes = nodesData.filter((nd) => !blacklistCategoriesForAgentCanvas.includes(nd.category))
+            const nodes = nodesData.filter((nd) => !blacklistCategoriesForAgentCanvas.includes(normalizeCategory(nd.category)))
             nodes.push(...addException())
             return scoreAndSortNodes(nodes, value)
         }
-        let nodes = nodesData.filter((nd) => nd.category !== 'Multi Agents' && nd.category !== 'Sequential Agents')
+        let nodes = nodesData.filter((nd) => {
+            const category = normalizeCategory(nd.category)
+            return category !== 'Multi Agents' && category !== 'Sequential Agents'
+        })
 
         for (const category in blacklistForChatflowCanvas) {
             const nodeNames = blacklistForChatflowCanvas[category]
@@ -269,19 +275,24 @@ const AddNodes = ({ nodesData, node, isAgentCanvas, isAgentflowv2, onFlowGenerat
                 return r
             }, Object.create(null))
 
+            const hasAgentFlowsCategory = Object.keys(result).some((category) => normalizeCategory(category) === 'Agent Flows')
+
             const filteredResult = {}
             for (const category in result) {
+                const normalizedCategory = normalizeCategory(category)
                 if (isAgentCanvasV2) {
-                    if (category !== 'Agent Flows') {
+                    // Prefer Agent Flows nodes in V2 canvas.
+                    // If none are available (for fallback registries), show available categories instead of a blank panel.
+                    if (hasAgentFlowsCategory && normalizedCategory !== 'Agent Flows') {
                         continue
                     }
                 } else {
-                    if (category === 'Agent Flows') {
+                    if (normalizedCategory === 'Agent Flows') {
                         continue
                     }
                 }
                 // Filter out blacklisted categories
-                if (!blacklistCategoriesForAgentCanvas.includes(category)) {
+                if (!blacklistCategoriesForAgentCanvas.includes(normalizedCategory)) {
                     // Filter out LlamaIndex nodes
                     const nodes = result[category].filter((nd) => !nd.tags || !nd.tags.includes('LlamaIndex'))
                     if (!nodes.length) continue
@@ -290,8 +301,8 @@ const AddNodes = ({ nodesData, node, isAgentCanvas, isAgentflowv2, onFlowGenerat
                 }
 
                 // Allow exceptionsForAgentCanvas
-                if (Object.keys(exceptionsForAgentCanvas).includes(category)) {
-                    filteredResult[category] = addException(category)
+                if (Object.keys(exceptionsForAgentCanvas).includes(normalizedCategory)) {
+                    filteredResult[category] = addException(normalizedCategory)
                 }
             }
             setNodes(filteredResult)
@@ -401,9 +412,9 @@ const AddNodes = ({ nodesData, node, isAgentCanvas, isAgentflowv2, onFlowGenerat
         setOpenDialog(false)
     }
 
-    const handleConfirmDialog = () => {
+    const handleConfirmDialog = (result) => {
         setOpenDialog(false)
-        onFlowGenerated()
+        onFlowGenerated?.(result)
     }
 
     return (
@@ -607,6 +618,11 @@ const AddNodes = ({ nodesData, node, isAgentCanvas, isAgentflowv2, onFlowGenerat
                                                     }
                                                 }}
                                             >
+                                                {Object.keys(nodes).length === 0 && (
+                                                    <Typography variant='body2' color='text.secondary' sx={{ px: 1, py: 2 }}>
+                                                        No nodes available for this canvas.
+                                                    </Typography>
+                                                )}
                                                 {Object.keys(nodes)
                                                     .sort()
                                                     .map((category) => (

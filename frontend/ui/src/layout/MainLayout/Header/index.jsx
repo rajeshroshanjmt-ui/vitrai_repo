@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 // material-ui
-import { Button, Avatar, Box, ButtonBase, Switch, Typography } from '@mui/material'
+import { Badge, Button, Avatar, Box, ButtonBase, IconButton, Menu, MenuItem, Switch, Tooltip, Typography, Chip } from '@mui/material'
 import { useTheme, styled, darken, alpha } from '@mui/material/styles'
 
 // project imports
@@ -13,9 +13,10 @@ import ProfileSection from './ProfileSection'
 import WorkspaceSwitcher from '@/layout/MainLayout/Header/WorkspaceSwitcher'
 import OrgWorkspaceBreadcrumbs from '@/layout/MainLayout/Header/OrgWorkspaceBreadcrumbs'
 import PricingDialog from '@/ui-component/subscription/PricingDialog'
+import CommandPaletteDialog from './CommandPaletteDialog'
 
 // assets
-import { IconMenu2, IconX, IconSparkles } from '@tabler/icons-react'
+import { IconBell, IconCommand, IconMenu2, IconX, IconSparkles } from '@tabler/icons-react'
 
 // store
 import { store } from '@/store'
@@ -93,7 +94,14 @@ const Header = ({ handleLeftDrawerToggle }) => {
     const { isEnterpriseLicensed, isCloud } = useConfig()
     const currentUser = useSelector((state) => state.auth.user)
     const isAuthenticated = useSelector((state) => state.auth.isAuthenticated)
+    const notifications = useSelector((state) => state.notifier.notifications)
     const [isPricingOpen, setIsPricingOpen] = useState(false)
+    const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
+    const [notificationsAnchorEl, setNotificationsAnchorEl] = useState(null)
+
+    const runtimeEnv = String(import.meta.env.VITE_APP_ENV || import.meta.env.MODE || 'development').toUpperCase()
+    const visibleNotifications = Array.isArray(notifications) ? notifications : []
+    const notificationCount = visibleNotifications.filter((item) => !item.dismissed).length
 
     useNotifier()
 
@@ -133,6 +141,18 @@ const Header = ({ handleLeftDrawerToggle }) => {
         }
     }, [logoutApi.data])
 
+    useEffect(() => {
+        const onKeyDown = (event) => {
+            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+                event.preventDefault()
+                setIsCommandPaletteOpen(true)
+            }
+        }
+
+        document.addEventListener('keydown', onKeyDown)
+        return () => document.removeEventListener('keydown', onKeyDown)
+    }, [])
+
     return (
         <>
             <Box
@@ -148,18 +168,18 @@ const Header = ({ handleLeftDrawerToggle }) => {
                     <LogoSection />
                 </Box>
                 {isAuthenticated && (
-                    <ButtonBase sx={{ borderRadius: '12px', overflow: 'hidden' }}>
+                    <ButtonBase sx={{ borderRadius: '8px', overflow: 'hidden' }}>
                         <Avatar
                             variant='rounded'
                             sx={{
                                 ...theme.typography.commonAvatar,
                                 ...theme.typography.mediumAvatar,
                                 transition: 'all .2s ease-in-out',
-                                background: theme.palette.secondary.light,
-                                color: theme.palette.secondary.dark,
+                                background: 'transparent',
+                                border: `1px solid ${theme.palette.divider}`,
+                                color: theme.palette.text.primary,
                                 '&:hover': {
-                                    background: theme.palette.secondary.dark,
-                                    color: theme.palette.secondary.light
+                                    background: theme.palette.action.hover
                                 }
                             }}
                             onClick={handleLeftDrawerToggle}
@@ -178,18 +198,28 @@ const Header = ({ handleLeftDrawerToggle }) => {
                     alignItems: 'center'
                 }}
             >
-                <Typography
-                    variant='subtitle2'
-                    color='text.secondary'
-                    sx={{
-                        display: { xs: 'none', md: 'block' },
-                        letterSpacing: '0.03em',
-                        textTransform: 'uppercase',
-                        fontWeight: 600
-                    }}
-                >
-                    Vetrai AI Orchestration Platform
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Typography
+                        variant='subtitle2'
+                        color='text.secondary'
+                        sx={{
+                            display: { xs: 'none', md: 'block' },
+                            fontSize: '0.6875rem',
+                            letterSpacing: '0.06em',
+                            textTransform: 'uppercase',
+                            fontWeight: 600
+                        }}
+                    >
+                        Vetrai AI Orchestration Platform
+                    </Typography>
+                    <Chip
+                        size='small'
+                        label={runtimeEnv}
+                        color={runtimeEnv === 'PRODUCTION' ? 'error' : 'warning'}
+                        variant='outlined'
+                        sx={{ height: 20, borderRadius: 1, fontWeight: 700 }}
+                    />
+                </Box>
             </Box>
             {isEnterpriseLicensed && isAuthenticated && <WorkspaceSwitcher />}
             {isCloud && isAuthenticated && <OrgWorkspaceBreadcrumbs />}
@@ -220,6 +250,18 @@ const Header = ({ handleLeftDrawerToggle }) => {
                     Upgrade
                 </Button>
             )}
+            <Tooltip title='Command Palette (Ctrl+K)'>
+                <IconButton sx={{ ml: 1 }} color='inherit' onClick={() => setIsCommandPaletteOpen(true)}>
+                    <IconCommand size={19} />
+                </IconButton>
+            </Tooltip>
+            <Tooltip title='Notifications'>
+                <IconButton sx={{ ml: 0.5 }} color='inherit' onClick={(event) => setNotificationsAnchorEl(event.currentTarget)}>
+                    <Badge badgeContent={notificationCount} color='error'>
+                        <IconBell size={19} />
+                    </Badge>
+                </IconButton>
+            </Tooltip>
             {isPricingOpen && isCloud && (
                 <PricingDialog
                     open={isPricingOpen}
@@ -232,9 +274,36 @@ const Header = ({ handleLeftDrawerToggle }) => {
                     }}
                 />
             )}
+            <Menu
+                anchorEl={notificationsAnchorEl}
+                open={Boolean(notificationsAnchorEl)}
+                onClose={() => setNotificationsAnchorEl(null)}
+                PaperProps={{ sx: { width: 360, maxHeight: 420 } }}
+            >
+                {visibleNotifications.length === 0 ? (
+                    <MenuItem disabled>No notifications</MenuItem>
+                ) : (
+                    visibleNotifications
+                        .slice(-8)
+                        .reverse()
+                        .map((item) => (
+                            <MenuItem key={item.key} onClick={() => setNotificationsAnchorEl(null)} sx={{ whiteSpace: 'normal' }}>
+                                <Box>
+                                    <Typography variant='body2'>
+                                        {typeof item.message === 'string' ? item.message : 'Notification received'}
+                                    </Typography>
+                                    <Typography variant='caption' color='text.secondary'>
+                                        {item.options?.variant || 'info'}
+                                    </Typography>
+                                </Box>
+                            </MenuItem>
+                        ))
+                )}
+            </Menu>
             <MaterialUISwitch checked={isDark} onChange={changeDarkMode} />
             <Box sx={{ ml: 2 }}></Box>
             <ProfileSection handleLogout={signOutClicked} />
+            <CommandPaletteDialog open={isCommandPaletteOpen} onClose={() => setIsCommandPaletteOpen(false)} />
         </>
     )
 }

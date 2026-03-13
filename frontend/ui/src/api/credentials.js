@@ -14,6 +14,60 @@ const COMPONENT_CREDENTIALS = [
         ]
     },
     {
+        name: 'azureOpenAIApi',
+        label: 'Azure OpenAI API',
+        inputs: [
+            {
+                label: 'Azure OpenAI API Key',
+                name: 'azureOpenAIApiKey',
+                type: 'password',
+                optional: false
+            },
+            {
+                label: 'Azure OpenAI Endpoint',
+                name: 'azureOpenAIApiEndpoint',
+                type: 'string',
+                optional: false
+            }
+        ]
+    },
+    {
+        name: 'anthropicApi',
+        label: 'Anthropic API Key',
+        inputs: [
+            {
+                label: 'Anthropic API Key',
+                name: 'anthropicApiKey',
+                type: 'password',
+                optional: false
+            }
+        ]
+    },
+    {
+        name: 'perplexityApi',
+        label: 'Perplexity API Key',
+        inputs: [
+            {
+                label: 'Perplexity API Key',
+                name: 'perplexityApiKey',
+                type: 'password',
+                optional: false
+            }
+        ]
+    },
+    {
+        name: 'googleGenerativeAI',
+        label: 'Google Generative AI API Key',
+        inputs: [
+            {
+                label: 'Google Generative AI API Key',
+                name: 'googleGenerativeAIApiKey',
+                type: 'password',
+                optional: false
+            }
+        ]
+    },
+    {
         name: 'genericApiKey',
         label: 'Generic API Key',
         inputs: [

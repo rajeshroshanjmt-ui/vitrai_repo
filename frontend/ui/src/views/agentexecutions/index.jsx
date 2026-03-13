@@ -1,11 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
+import { useNavigate } from 'react-router-dom'
 
 // material-ui
 import {
     Box,
+    Chip,
     Stack,
+    Typography,
     TextField,
     MenuItem,
     Button,
@@ -20,7 +23,8 @@ import {
     DialogTitle,
     IconButton,
     Tooltip,
-    useTheme
+    useTheme,
+    Paper
 } from '@mui/material'
 
 // project imports
@@ -43,11 +47,13 @@ import { ExecutionsListTable } from '@/ui-component/table/ExecutionsListTable'
 import { ExecutionDetails } from './ExecutionDetails'
 import { omit } from 'lodash'
 import TablePagination, { DEFAULT_ITEMS_PER_PAGE } from '@/ui-component/pagination/TablePagination'
+import { enrichExecutionRow, parseExecutionData, summarizeExecutions } from './executionUtils'
 
 // ==============================|| AGENT EXECUTIONS ||============================== //
 
 const AgentExecutions = () => {
     const theme = useTheme()
+    const navigate = useNavigate()
     const customization = useSelector((state) => state.customization)
     const borderColor = theme.palette.grey[900] + 25
 
@@ -182,7 +188,7 @@ const AgentExecutions = () => {
             try {
                 const { data, total } = getAllExecutions.data
                 if (!Array.isArray(data)) return
-                setExecutions(data)
+                setExecutions(data.map(enrichExecutionRow))
                 setTotal(total)
             } catch (e) {
                 console.error(e)
@@ -214,8 +220,7 @@ const AgentExecutions = () => {
     useEffect(() => {
         if (getExecutionByIdApi.data) {
             const execution = getExecutionByIdApi.data
-            const executionDetails =
-                typeof execution.executionData === 'string' ? JSON.parse(execution.executionData) : execution.executionData
+            const executionDetails = parseExecutionData(execution.executionData)
             setSelectedExecutionData(executionDetails)
             const newMetadata = {
                 ...omit(execution, ['executionData']),
@@ -229,6 +234,8 @@ const AgentExecutions = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [getExecutionByIdApi.data])
 
+    const executionSummary = useMemo(() => summarizeExecutions(executions), [executions])
+
     return (
         <MainCard>
             {error ? (
@@ -236,6 +243,53 @@ const AgentExecutions = () => {
             ) : (
                 <Stack flexDirection='column' sx={{ gap: 3 }}>
                     <ViewHeader title='Agent Executions' description='Monitor and manage agentflows executions' />
+
+                    <Box
+                        sx={{
+                            display: 'grid',
+                            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(5, minmax(0, 1fr))' },
+                            gap: 1.5
+                        }}
+                    >
+                        <Paper variant='outlined' sx={{ p: 1.5 }}>
+                            <Typography variant='caption' color='text.secondary'>
+                                Total Runs
+                            </Typography>
+                            <Typography variant='h4'>{executionSummary.total}</Typography>
+                        </Paper>
+                        <Paper variant='outlined' sx={{ p: 1.5 }}>
+                            <Typography variant='caption' color='text.secondary'>
+                                In Progress
+                            </Typography>
+                            <Stack direction='row' alignItems='center' spacing={1}>
+                                <Typography variant='h4'>{executionSummary.inProgress}</Typography>
+                                <Chip size='small' label='LIVE' color='info' />
+                            </Stack>
+                        </Paper>
+                        <Paper variant='outlined' sx={{ p: 1.5 }}>
+                            <Typography variant='caption' color='text.secondary'>
+                                Completed
+                            </Typography>
+                            <Typography variant='h4'>{executionSummary.finished}</Typography>
+                        </Paper>
+                        <Paper variant='outlined' sx={{ p: 1.5 }}>
+                            <Typography variant='caption' color='text.secondary'>
+                                Failed
+                            </Typography>
+                            <Typography variant='h4' color='error.main'>
+                                {executionSummary.failed}
+                            </Typography>
+                        </Paper>
+                        <Paper variant='outlined' sx={{ p: 1.5 }}>
+                            <Typography variant='caption' color='text.secondary'>
+                                Avg Duration / Total Tokens
+                            </Typography>
+                            <Typography variant='h6'>{executionSummary.avgDurationMs} ms</Typography>
+                            <Typography variant='caption' color='text.secondary'>
+                                {executionSummary.totalTokens.toLocaleString()} tokens
+                            </Typography>
+                        </Paper>
+                    </Box>
 
                     {/* Filter Section */}
                     <Box sx={{ mb: 2, width: '100%' }}>
@@ -383,12 +437,10 @@ const AgentExecutions = () => {
                                 data={executions}
                                 isLoading={isLoading}
                                 onSelectionChange={handleExecutionSelectionChange}
+                                onViewDetails={(execution) => navigate(`/executions/${execution.id}`)}
                                 onExecutionRowClick={(execution) => {
                                     setOpenDrawer(true)
-                                    const executionDetails =
-                                        typeof execution.executionData === 'string'
-                                            ? JSON.parse(execution.executionData)
-                                            : execution.executionData
+                                    const executionDetails = parseExecutionData(execution.executionData)
                                     setSelectedExecutionData(executionDetails)
                                     setSelectedMetadata(omit(execution, ['executionData']))
                                 }}

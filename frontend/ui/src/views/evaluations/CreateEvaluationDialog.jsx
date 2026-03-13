@@ -14,7 +14,6 @@ import {
     OutlinedInput,
     Divider,
     Stack,
-    DialogContentText,
     Button,
     Stepper,
     Step,
@@ -53,6 +52,28 @@ import { evaluators as evaluatorsOptions } from '../evaluators/evaluatorConstant
 
 const steps = ['Datasets', 'Evaluators', 'LLM Graded Metrics']
 
+const parseSelectionValue = (value) => {
+    if (Array.isArray(value)) {
+        return value.filter((item) => typeof item === 'string' && item.length > 0)
+    }
+
+    if (typeof value !== 'string') return []
+    const trimmed = value.trim()
+    if (!trimmed || trimmed === 'choose an option') return []
+
+    try {
+        const parsed = JSON.parse(trimmed)
+        return Array.isArray(parsed) ? parsed.filter((item) => typeof item === 'string' && item.length > 0) : []
+    } catch {
+        return []
+    }
+}
+
+const toSelectionString = (value) => {
+    const parsed = parseSelectionValue(value)
+    return parsed.length > 0 ? JSON.stringify(parsed) : ''
+}
+
 const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
     const portalElement = document.getElementById('portal')
     const theme = useTheme()
@@ -67,7 +88,7 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
     const getModelsApi = useApi(nodesApi.executeNodeLoadMethod)
     const getAssistantsApi = useApi(assistantsApi.getAllAssistants)
 
-    const [chatflow, setChatflow] = useState([])
+    const [chatflow, setChatflow] = useState('')
     const [dataset, setDataset] = useState('')
     const [datasetAsOneConversation, setDatasetAsOneConversation] = useState(false)
     const [flowTypes, setFlowTypes] = useState([])
@@ -78,8 +99,8 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
     const [evaluationName, setEvaluationName] = useState('')
     const [availableSimpleEvaluators, setAvailableSimpleEvaluators] = useState([])
     const [availableLLMEvaluators, setAvailableLLMEvaluators] = useState([])
-    const [selectedSimpleEvaluators, setSelectedSimpleEvaluators] = useState([])
-    const [selectedLLMEvaluators, setSelectedLLMEvaluators] = useState([])
+    const [selectedSimpleEvaluators, setSelectedSimpleEvaluators] = useState('')
+    const [selectedLLMEvaluators, setSelectedLLMEvaluators] = useState('')
 
     const [activeStep, setActiveStep] = useState(0)
     const [useLLM, setUseLLM] = useState(false)
@@ -94,18 +115,14 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
     useEffect(() => {
         if (dialogProps.type === 'NEW' && dialogProps.data) {
             const evaluation = dialogProps.data
-            const evalChatFlows = []
-            JSON.parse(evaluation.chatflowId).map((f) => {
-                evalChatFlows.push(f)
-            })
-            setChatflow(evalChatFlows)
+            setChatflow(toSelectionString(evaluation.chatflowId))
             setDataset(evaluation.datasetId)
             setCredentialId('')
             setSelectedModel('')
             setSelectedLLM('no_grading')
             setEvaluationName('')
-            setSelectedSimpleEvaluators([])
-            setSelectedLLMEvaluators([])
+            setSelectedSimpleEvaluators(toSelectionString(evaluation.selectedSimpleEvaluators))
+            setSelectedLLMEvaluators(toSelectionString(evaluation.selectedLLMEvaluators))
             setActiveStep(0)
             setUseLLM(false)
             setCredentialId('')
@@ -122,10 +139,10 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
         setDataset('')
         setCredentialId('')
         setEvaluationName('')
-        setSelectedSimpleEvaluators([])
-        setSelectedLLMEvaluators([])
+        setSelectedSimpleEvaluators('')
+        setSelectedLLMEvaluators('')
         setActiveStep(0)
-        setChatflow([])
+        setChatflow('')
         setSelectedModel('')
         setSelectedLLM('no_grading')
         setUseLLM(false)
@@ -134,7 +151,7 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
 
     const validate = () => {
         if (activeStep === 0) {
-            return evaluationName && dataset && chatflow.length > 0
+            return evaluationName && dataset && parseSelectionValue(chatflow).length > 0
         } else if (activeStep === 1) {
             return true
         } else if (activeStep === 2) {
@@ -164,7 +181,7 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
     }
 
     const createNewEvaluation = async () => {
-        const selectedChatflows = JSON.parse(chatflow)
+        const selectedChatflows = parseSelectionValue(chatflow)
         const selectedChatflowNames = []
         for (let i = 0; i < selectedChatflows.length; i += 1) {
             selectedChatflowNames.push(flows.find((f) => f.name === selectedChatflows[i])?.label)
@@ -181,11 +198,11 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
             credentialId: credentialId,
             datasetId: dataset,
             datasetName: datasetName,
-            chatflowId: chatflow,
+            chatflowId: JSON.stringify(selectedChatflows),
             chatflowName: chatflowName,
             chatflowType: JSON.stringify(selectedChatflowTypes),
-            selectedSimpleEvaluators: selectedSimpleEvaluators,
-            selectedLLMEvaluators: selectedLLMEvaluators,
+            selectedSimpleEvaluators: parseSelectionValue(selectedSimpleEvaluators),
+            selectedLLMEvaluators: parseSelectionValue(selectedLLMEvaluators),
             model: selectedModel,
             llm: selectedLLM,
             datasetAsOneConversation: datasetAsOneConversation
@@ -195,10 +212,10 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
 
     const disableButton = () => {
         if (activeStep === 0) {
-            return !evaluationName || !dataset || chatflow.length === 0
+            return !evaluationName || !dataset || parseSelectionValue(chatflow).length === 0
         } else if (activeStep === 2) {
             if (useLLM) {
-                if (!selectedModel || !selectedLLM || selectedLLMEvaluators.length === 0) {
+                if (!selectedModel || !selectedLLM || parseSelectionValue(selectedLLMEvaluators).length === 0) {
                     return true
                 }
                 if (chatLLMs.find((llm) => llm.name === selectedLLM)?.credential && !credentialId) {
@@ -434,7 +451,7 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                         </div>
                     )}
                     <EvalWizard />
-                    <DialogContentText align={'center'}>
+                    <Box sx={{ textAlign: 'center' }}>
                         {activeStep === 0 && (
                             <>
                                 <Typography sx={{ mt: 2 }} variant='h4'>
@@ -486,7 +503,7 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                                 </Typography>
                             </>
                         )}
-                    </DialogContentText>
+                    </Box>
                     {activeStep === 0 && (
                         <>
                             <Box>
@@ -559,7 +576,7 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                                     name={'chatflow1'}
                                     options={flows.filter((f) => flowTypes.includes(f.type))}
                                     onSelect={(newValue) => setChatflow(newValue)}
-                                    value={chatflow ?? chatflow ?? 'choose an option'}
+                                    value={chatflow || 'choose an option'}
                                 />
                             </Box>
                         </>
@@ -663,7 +680,7 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                     </IconButton>
                 )}
                 <div style={{ flex: 1 }}></div>
-                {activeStep === 1 && selectedSimpleEvaluators.length === 0 && (
+                {activeStep === 1 && parseSelectionValue(selectedSimpleEvaluators).length === 0 && (
                     <Button
                         title='Skip Evaluators'
                         color='primary'
@@ -674,7 +691,7 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                         {'Skip'}
                     </Button>
                 )}
-                {activeStep === 1 && selectedSimpleEvaluators.length > 0 && (
+                {activeStep === 1 && parseSelectionValue(selectedSimpleEvaluators).length > 0 && (
                     <Button color='primary' sx={{ mr: 2, borderRadius: 25 }} variant='contained' onClick={() => goNext(activeStep)}>
                         {'Next'}
                     </Button>

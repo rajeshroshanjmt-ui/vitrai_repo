@@ -90,7 +90,7 @@ export const theme = (customization) => {
               darkTextPrimary: color.grey900,
               darkTextSecondary: color.grey600,
               textDark: color.grey900,
-              menuSelected: color.brandDark,
+              menuSelected: color.brandMain,
               menuSelectedBack: color.outlineSubtleLight,
               divider: color.outlineSubtleLight,
               customization

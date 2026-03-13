@@ -9,11 +9,11 @@ import { AppBar, Box, CssBaseline, Toolbar, useMediaQuery } from '@mui/material'
 // project imports
 import Header from './Header'
 import Sidebar from './Sidebar'
-import { drawerWidth, headerHeight } from '@/store/constant'
+import { collapsedDrawerWidth, drawerWidth, headerHeight } from '@/store/constant'
 import { SET_MENU } from '@/store/actions'
 
 // styles
-const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(({ theme, open }) => ({
+const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' && prop !== 'drawerwidth' })(({ theme, open, drawerwidth }) => ({
     ...theme.typography.mainContent,
     position: 'relative',
     overflow: 'hidden',
@@ -30,14 +30,7 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(({
         }
     },
     '&::before': {
-        content: "''",
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: 18,
-        height: '100%',
-        pointerEvents: 'none',
-        background: `linear-gradient(90deg, ${theme.palette.glow?.soft || 'transparent'} 0%, transparent 100%)`
+        display: 'none'
     },
     ...(!open && {
         borderBottomLeftRadius: 0,
@@ -48,17 +41,17 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(({
         }),
         marginRight: 0,
         [theme.breakpoints.up('md')]: {
-            marginLeft: -drawerWidth,
-            width: `calc(100% - ${drawerWidth}px)`
+            marginLeft: -drawerwidth,
+            width: `calc(100% - ${drawerwidth}px)`
         },
         [theme.breakpoints.down('md')]: {
             marginLeft: '20px',
-            width: `calc(100% - ${drawerWidth}px)`,
+            width: `calc(100% - ${drawerwidth}px)`,
             padding: '16px'
         },
         [theme.breakpoints.down('sm')]: {
             marginLeft: '10px',
-            width: `calc(100% - ${drawerWidth}px)`,
+            width: `calc(100% - ${drawerwidth}px)`,
             padding: '16px',
             marginRight: '10px'
         }
@@ -72,7 +65,7 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(({
         marginRight: 0,
         borderBottomLeftRadius: 0,
         borderBottomRightRadius: 0,
-        width: `calc(100% - ${drawerWidth}px)`
+        width: `calc(100% - ${drawerwidth}px)`
     })
 }))
 
@@ -84,10 +77,13 @@ const MainLayout = () => {
 
     // Handle left drawer
     const leftDrawerOpened = useSelector((state) => state.customization.opened)
+    const isSidebarCollapsed = useSelector((state) => state.customization.isSidebarCollapsed)
     const dispatch = useDispatch()
     const handleLeftDrawerToggle = () => {
         dispatch({ type: SET_MENU, opened: !leftDrawerOpened })
     }
+
+    const effectiveDrawerWidth = matchDownMd ? drawerWidth : isSidebarCollapsed ? collapsedDrawerWidth : drawerWidth
 
     useEffect(() => {
         setTimeout(() => dispatch({ type: SET_MENU, opened: !matchDownMd }), 0)
@@ -110,15 +106,18 @@ const MainLayout = () => {
                 color='inherit'
                 elevation={0}
                 sx={{
-                    bgcolor: theme.palette.surface?.base || theme.palette.background.default,
-                    backdropFilter: 'blur(10px)',
+                    bgcolor: theme.palette.surface?.raised || theme.palette.background.default,
+                    boxShadow: 'none',
+                    borderBottom: `1px solid ${theme.palette.divider}`,
+                    backdropFilter: 'none',
                     transition: leftDrawerOpened ? theme.transitions.create('width') : 'none'
                 }}
             >
                 <Toolbar
                     sx={{
                         height: `${headerHeight}px`,
-                        boxShadow: `0 8px 24px ${theme.palette.glow?.soft || 'rgba(0,0,0,0.08)'}`,
+                        px: { xs: 2, md: 3 },
+                        boxShadow: 'none',
                         borderBottom: 'none'
                     }}
                 >
@@ -130,7 +129,7 @@ const MainLayout = () => {
             <Sidebar drawerOpen={leftDrawerOpened} drawerToggle={handleLeftDrawerToggle} />
 
             {/* main content */}
-            <Main theme={theme} open={leftDrawerOpened}>
+            <Main theme={theme} open={leftDrawerOpened} drawerwidth={effectiveDrawerWidth}>
                 <Outlet />
             </Main>
         </Box>

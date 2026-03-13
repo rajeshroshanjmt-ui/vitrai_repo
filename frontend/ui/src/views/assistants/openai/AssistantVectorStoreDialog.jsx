@@ -31,7 +31,7 @@ import { formatBytes } from '@/utils/genericHelper'
 // const
 import { HIDE_CANVAS_DIALOG, SHOW_CANVAS_DIALOG } from '@/store/actions'
 
-const AssistantVectorStoreDialog = ({ show, dialogProps, onCancel, onConfirm, onDelete, setError }) => {
+const AssistantVectorStoreDialog = ({ show, dialogProps, onCancel, onConfirm, onDelete, setError, providerType = 'OPENAI' }) => {
     const portalElement = document.getElementById('portal')
 
     const dispatch = useDispatch()
@@ -108,10 +108,10 @@ const AssistantVectorStoreDialog = ({ show, dialogProps, onCancel, onConfirm, on
 
     useEffect(() => {
         if (dialogProps.type === 'EDIT' && dialogProps.data) {
-            getAssistantVectorStoreApi.request(dialogProps.data.id, dialogProps.credential)
-            listAssistantVectorStoreApi.request(dialogProps.credential)
+            getAssistantVectorStoreApi.request(dialogProps.data.id, dialogProps.credential, providerType)
+            listAssistantVectorStoreApi.request(dialogProps.credential, providerType)
         } else if (dialogProps.type === 'ADD') {
-            listAssistantVectorStoreApi.request(dialogProps.credential)
+            listAssistantVectorStoreApi.request(dialogProps.credential, providerType)
         }
 
         return () => {
@@ -134,7 +134,7 @@ const AssistantVectorStoreDialog = ({ show, dialogProps, onCancel, onConfirm, on
     const deleteVectorStore = async () => {
         setLoading(true)
         try {
-            const deleteResp = await assistantsApi.deleteAssistantVectorStore(selectedVectorStore, dialogProps.credential)
+            const deleteResp = await assistantsApi.deleteAssistantVectorStore(selectedVectorStore, dialogProps.credential, providerType)
             if (deleteResp.data) {
                 enqueueSnackbar({
                     message: 'Vector Store deleted',
@@ -180,7 +180,7 @@ const AssistantVectorStoreDialog = ({ show, dialogProps, onCancel, onConfirm, on
                 name: name !== '' ? name : null,
                 expires_after: isExpirationOn ? { anchor: 'last_active_at', days: parseFloat(expirationDays) } : null
             }
-            const createResp = await assistantsApi.createAssistantVectorStore(dialogProps.credential, obj)
+            const createResp = await assistantsApi.createAssistantVectorStore(dialogProps.credential, obj, providerType)
             if (createResp.data) {
                 enqueueSnackbar({
                     message: 'New Vector Store added',
@@ -226,7 +226,7 @@ const AssistantVectorStoreDialog = ({ show, dialogProps, onCancel, onConfirm, on
                 name: name !== '' ? name : null,
                 expires_after: isExpirationOn ? { anchor: 'last_active_at', days: parseFloat(expirationDays) } : null
             }
-            const saveResp = await assistantsApi.updateAssistantVectorStore(selectedVectorStoreId, dialogProps.credential, saveObj)
+            const saveResp = await assistantsApi.updateAssistantVectorStore(selectedVectorStoreId, dialogProps.credential, saveObj, providerType)
             if (saveResp.data) {
                 enqueueSnackbar({
                     message: 'Vector Store saved',
@@ -301,7 +301,7 @@ const AssistantVectorStoreDialog = ({ show, dialogProps, onCancel, onConfirm, on
                                 setExpirationOnOff(false)
                                 setExpirationDays(7)
                             } else {
-                                getAssistantVectorStoreApi.request(newValue, dialogProps.credential)
+                                getAssistantVectorStoreApi.request(newValue, dialogProps.credential, providerType)
                             }
                         }}
                         value={selectedVectorStore ?? 'choose an option'}
@@ -379,7 +379,8 @@ AssistantVectorStoreDialog.propTypes = {
     onCancel: PropTypes.func,
     onConfirm: PropTypes.func,
     onDelete: PropTypes.func,
-    setError: PropTypes.func
+    setError: PropTypes.func,
+    providerType: PropTypes.string
 }
 
 export default AssistantVectorStoreDialog

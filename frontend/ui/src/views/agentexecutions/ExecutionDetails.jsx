@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, forwardRef } from 'react'
+import { useEffect, useState, useCallback, forwardRef, useMemo } from 'react'
 import PropTypes from 'prop-types'
 import moment from 'moment'
 import { useSelector, useDispatch } from 'react-redux'
@@ -48,6 +48,7 @@ import executionsApi from '@/api/executions'
 
 // Hooks
 import useApi from '@/hooks/useApi'
+import { buildExecutionLogs, getExecutionMetrics } from './executionUtils'
 
 const getIconColor = (status) => {
     switch (status) {
@@ -62,6 +63,13 @@ const getIconColor = (status) => {
         case 'INPROGRESS':
             return 'warning.dark'
     }
+}
+
+const getStatusChipColor = (status, hasError) => {
+    if (hasError) return 'error'
+    if (status === 'FINISHED') return 'success'
+    if (status === 'INPROGRESS') return 'warning'
+    return 'default'
 }
 
 const StyledTreeItemRoot = styled(TreeItem2Root)(({ theme }) => ({
@@ -117,7 +125,7 @@ const StyledTreeItemLabelText = styled(Typography)(({ theme }) => ({
     color: theme.palette.text.primary
 }))
 
-function CustomLabel({ icon: Icon, itemStatus, children, name, ...other }) {
+function CustomLabel({ icon: Icon, itemStatus, children, name, expandable: _expandable, ...other }) {
     // Check if this is an iteration node
     const isIterationNode = name === 'iterationAgentflow'
 
@@ -290,7 +298,7 @@ const MIN_DRAWER_WIDTH = 400
 const DEFAULT_DRAWER_WIDTH = window.innerWidth - 400
 const MAX_DRAWER_WIDTH = window.innerWidth
 
-export const ExecutionDetails = ({ open, isPublic, execution, metadata, onClose, onProceedSuccess, onUpdateSharing, onRefresh }) => {
+export const ExecutionDetails = ({ open, isPublic, renderAsPage, execution, metadata, onClose, onProceedSuccess, onUpdateSharing, onRefresh }) => {
     const [drawerWidth, setDrawerWidth] = useState(Math.min(DEFAULT_DRAWER_WIDTH, MAX_DRAWER_WIDTH))
     const [executionTree, setExecution] = useState([])
     const [expandedItems, setExpandedItems] = useState([])
@@ -301,6 +309,8 @@ export const ExecutionDetails = ({ open, isPublic, execution, metadata, onClose,
     const theme = useTheme()
     const customization = useSelector((state) => state.customization)
     const updateExecutionApi = useApi(executionsApi.updateExecution)
+    const executionLogs = useMemo(() => buildExecutionLogs(execution), [execution])
+    const executionMetrics = useMemo(() => getExecutionMetrics(execution), [execution])
 
     const dispatch = useDispatch()
 
@@ -366,15 +376,28 @@ export const ExecutionDetails = ({ open, isPublic, execution, metadata, onClose,
     }
 
     // Transform the execution data into a tree structure
-    const buildTreeData = (nodes) => {
+    const buildTreeData = (rawNodes) => {
+        const nodes = Array.isArray(rawNodes)
+            ? rawNodes.filter(Boolean).map((node) => ({
+                  ...node,
+                  nodeId: node?.nodeId || '',
+                  nodeLabel: node?.nodeLabel || node?.nodeId || 'Unknown Node',
+                  previousNodeIds: Array.isArray(node?.previousNodeIds) ? node.previousNodeIds.filter(Boolean) : [],
+                  data: node?.data && typeof node.data === 'object' ? node.data : {}
+              }))
+            : []
+
+        if (nodes.length === 0) return []
+
         // for each node, loop through each and every nested key of node.data, and remove the key if it is equal to FLOWISE_CREDENTIAL_ID
         nodes.forEach((node) => {
             const removeVetraiCredentialId = (data) => {
+                if (!data || typeof data !== 'object') return
                 for (const key in data) {
                     if (key === FLOWISE_CREDENTIAL_ID) {
                         delete data[key]
                     }
-                    if (typeof data[key] === 'object') {
+                    if (data[key] && typeof data[key] === 'object') {
                         removeVetraiCredentialId(data[key])
                     }
                 }
@@ -437,11 +460,11 @@ export const ExecutionDetails = ({ open, isPublic, execution, metadata, onClose,
 
                 // Determine status based on child nodes
                 const childNodes = nodeIds.map((id) => nodeMap.get(id))
-                const iterationStatus = childNodes.some((n) => n.status === 'ERROR')
+                const iterationStatus = childNodes.some((n) => n?.status === 'ERROR')
                     ? 'ERROR'
-                    : childNodes.some((n) => n.status === 'INPROGRESS')
+                    : childNodes.some((n) => n?.status === 'INPROGRESS')
                     ? 'INPROGRESS'
-                    : childNodes.every((n) => n.status === 'FINISHED')
+                    : childNodes.length > 0 && childNodes.every((n) => n?.status === 'FINISHED')
                     ? 'FINISHED'
                     : 'UNKNOWN'
 
@@ -620,7 +643,7 @@ export const ExecutionDetails = ({ open, isPublic, execution, metadata, onClose,
             name: node.data?.name,
             status: node.status,
             data: node.data,
-            children: node.children.map(transformNode)
+            children: Array.isArray(node.children) ? node.children.map(transformNode) : []
         })
 
         return rootNodes.map(transformNode)
@@ -838,9 +861,30 @@ export const ExecutionDetails = ({ open, isPublic, execution, metadata, onClose,
                 sx={{
                     flex: '1 1 65%',
                     padding: 2,
-                    overflow: 'auto'
+                    overflow: 'auto',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2
                 }}
             >
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    <Chip size='small' label={`Nodes: ${executionLogs.length}`} variant='outlined' />
+                    <Chip size='small' label={`Duration: ${executionMetrics.durationMs.toLocaleString()} ms`} variant='outlined' />
+                    <Chip size='small' label={`Tokens: ${executionMetrics.tokensUsed.toLocaleString()}`} variant='outlined' />
+                    <Chip
+                        size='small'
+                        label={`Errors: ${executionMetrics.errorCount}`}
+                        color={executionMetrics.errorCount > 0 ? 'error' : 'default'}
+                        variant='outlined'
+                    />
+                </Box>
+
+                {executionMetrics.firstError ? (
+                    <Typography variant='body2' color='error.main'>
+                        Error Debug: {executionMetrics.firstError}
+                    </Typography>
+                ) : null}
+
                 {selectedItem && selectedItem.data ? (
                     <NodeExecutionDetails
                         data={selectedItem.data}
@@ -853,6 +897,67 @@ export const ExecutionDetails = ({ open, isPublic, execution, metadata, onClose,
                 ) : (
                     <Typography color='text.secondary'>No data available for this item</Typography>
                 )}
+
+                <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 2 }}>
+                    <Box sx={{ p: 1.5, borderBottom: 1, borderColor: 'divider' }}>
+                        <Typography variant='h5'>Execution Logs</Typography>
+                        <Typography variant='caption' color='text.secondary'>
+                            Node-level trace with timing, token usage, and errors
+                        </Typography>
+                    </Box>
+                    <Box sx={{ maxHeight: 260, overflowY: 'auto' }}>
+                        {executionLogs.length === 0 ? (
+                            <Typography sx={{ p: 1.5 }} color='text.secondary'>
+                                No node logs available for this execution.
+                            </Typography>
+                        ) : (
+                            executionLogs.map((log, index) => (
+                                <Box
+                                    key={log.id}
+                                    sx={{
+                                        display: 'grid',
+                                        gridTemplateColumns: { xs: '1fr', md: '2fr 120px 120px 120px 2fr' },
+                                        gap: 1,
+                                        px: 1.5,
+                                        py: 1.25,
+                                        borderBottom: index === executionLogs.length - 1 ? 'none' : 1,
+                                        borderColor: 'divider',
+                                        alignItems: 'center'
+                                    }}
+                                >
+                                    <Typography variant='body2' sx={{ fontWeight: 500 }}>
+                                        {log.nodeLabel}
+                                    </Typography>
+                                    <Chip
+                                        size='small'
+                                        label={log.status}
+                                        color={getStatusChipColor(log.status, log.hasError)}
+                                        variant='outlined'
+                                        sx={{ width: 'fit-content' }}
+                                    />
+                                    <Typography variant='caption' color='text.secondary'>
+                                        {log.durationMs.toLocaleString()} ms
+                                    </Typography>
+                                    <Typography variant='caption' color='text.secondary'>
+                                        {log.tokensUsed.toLocaleString()} tokens
+                                    </Typography>
+                                    <Typography
+                                        variant='caption'
+                                        color={log.errorMessage ? 'error.main' : 'text.secondary'}
+                                        sx={{
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis'
+                                        }}
+                                        title={log.errorMessage || 'No errors'}
+                                    >
+                                        {log.errorMessage || 'No errors'}
+                                    </Typography>
+                                </Box>
+                            ))
+                        )}
+                    </Box>
+                </Box>
             </Box>
         </Box>
     )
@@ -897,32 +1002,70 @@ export const ExecutionDetails = ({ open, isPublic, execution, metadata, onClose,
         </button>
     )
 
-    // Render as full page component if isPublic is true
-    if (isPublic) {
+    const shareDialog = (
+        <ShareExecutionDialog
+            show={showShareDialog}
+            executionId={localMetadata?.id}
+            onClose={() => setShowShareDialog(false)}
+            onUnshare={() => {
+                updateExecutionApi.request(localMetadata.id, { isPublic: false }).then(() => {
+                    // Update local metadata to reflect the change
+                    setLocalMetadata((prev) => ({
+                        ...prev,
+                        isPublic: false
+                    }))
+                    setShowShareDialog(false)
+
+                    // Notify parent component to refresh data
+                    if (onUpdateSharing) {
+                        onUpdateSharing()
+                    }
+                })
+            }}
+        />
+    )
+
+    // Render as full page component if public or explicitly requested
+    if (isPublic || renderAsPage) {
+        const containerSx = isPublic
+            ? {
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  zIndex: 1300,
+                  backgroundColor: (theme) => theme.palette.background.paper
+              }
+            : {
+                  position: 'relative',
+                  width: '100%',
+                  minHeight: '70vh',
+                  maxHeight: '80vh',
+                  border: 1,
+                  borderColor: 'divider',
+                  borderRadius: 2,
+                  overflow: 'hidden',
+                  backgroundColor: (theme) => theme.palette.background.paper
+              }
+
         return (
-            <Box
-                sx={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    zIndex: 1300,
-                    backgroundColor: (theme) => theme.palette.background.paper
-                }}
-            >
-                <Box
-                    sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        width: '100%',
-                        height: '100%',
-                        position: 'relative'
-                    }}
-                >
-                    {contentComponent}
+            <>
+                <Box sx={containerSx}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            width: '100%',
+                            height: '100%',
+                            position: 'relative'
+                        }}
+                    >
+                        {contentComponent}
+                    </Box>
                 </Box>
-            </Box>
+                {!isPublic && shareDialog}
+            </>
         )
     }
 
@@ -946,26 +1089,7 @@ export const ExecutionDetails = ({ open, isPublic, execution, metadata, onClose,
                 {resizeHandle}
                 {contentComponent}
             </Drawer>
-            <ShareExecutionDialog
-                show={showShareDialog}
-                executionId={localMetadata?.id}
-                onClose={() => setShowShareDialog(false)}
-                onUnshare={() => {
-                    updateExecutionApi.request(localMetadata.id, { isPublic: false }).then(() => {
-                        // Update local metadata to reflect the change
-                        setLocalMetadata((prev) => ({
-                            ...prev,
-                            isPublic: false
-                        }))
-                        setShowShareDialog(false)
-
-                        // Notify parent component to refresh data
-                        if (onUpdateSharing) {
-                            onUpdateSharing()
-                        }
-                    })
-                }}
-            />
+            {shareDialog}
         </>
     )
 }
@@ -973,6 +1097,7 @@ export const ExecutionDetails = ({ open, isPublic, execution, metadata, onClose,
 ExecutionDetails.propTypes = {
     open: PropTypes.bool,
     isPublic: PropTypes.bool,
+    renderAsPage: PropTypes.bool,
     execution: PropTypes.array,
     metadata: PropTypes.object,
     onClose: PropTypes.func,

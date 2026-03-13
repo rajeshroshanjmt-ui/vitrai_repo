@@ -28,17 +28,18 @@ const ChatbotFull = () => {
     const [chatbotOverrideConfig, setChatbotOverrideConfig] = useState({})
 
     const getSpecificChatflowFromPublicApi = useApi(chatflowsApi.getSpecificChatflowFromPublicEndpoint)
-    const getSpecificChatflowApi = useApi(chatflowsApi.getSpecificChatflow)
+    const getPublicChatbotCompatibilityApi = useApi(chatflowsApi.getPublicChatbotCompatibility)
 
     useEffect(() => {
         getSpecificChatflowFromPublicApi.request(chatflowId)
+        getPublicChatbotCompatibilityApi.request(chatflowId)
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     useEffect(() => {
-        if (getSpecificChatflowFromPublicApi.data || getSpecificChatflowApi.data) {
-            const chatflowData = getSpecificChatflowFromPublicApi.data || getSpecificChatflowApi.data
+        if (getSpecificChatflowFromPublicApi.data?.id) {
+            const chatflowData = getSpecificChatflowFromPublicApi.data
             setChatflow(chatflowData)
 
             const chatflowType = chatflowData.type
@@ -58,26 +59,29 @@ const ChatbotFull = () => {
                     if (parsedConfig.generateNewSession) {
                         localStorage.removeItem(`${chatflowData.id}_EXTERNAL`)
                     }
-                } catch (e) {
-                    console.error(e)
+                } catch {
                     setChatbotTheme(parsedConfig)
                     setChatbotOverrideConfig({})
                 }
             } else if (chatflowType === 'MULTIAGENT' || chatflowType === 'AGENTFLOW') {
-                setChatbotTheme({ showAgentMessages: true })
+                    setChatbotTheme({ showAgentMessages: true })
             }
         }
-    }, [getSpecificChatflowFromPublicApi.data, getSpecificChatflowApi.data])
+    }, [getSpecificChatflowFromPublicApi.data])
 
     useEffect(() => {
-        setLoading(getSpecificChatflowFromPublicApi.loading || getSpecificChatflowApi.loading)
-    }, [getSpecificChatflowFromPublicApi.loading, getSpecificChatflowApi.loading])
+        setLoading(getSpecificChatflowFromPublicApi.loading || getPublicChatbotCompatibilityApi.loading)
+    }, [getSpecificChatflowFromPublicApi.loading, getPublicChatbotCompatibilityApi.loading])
+
+    const isPublicChatbotSupported = Boolean(getPublicChatbotCompatibilityApi.data?.supported)
+    const isUnavailable =
+        getSpecificChatflowFromPublicApi.isUnavailable || getPublicChatbotCompatibilityApi.isUnavailable || !isPublicChatbotSupported
 
     return (
         <>
             {!isLoading ? (
                 <>
-                    {!chatflow || chatflow.apikeyid ? (
+                    {!chatflow || chatflow.apikeyid || isUnavailable ? (
                         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
                             <Box sx={{ maxWidth: '500px', width: '100%' }}>
                                 <Card
@@ -92,10 +96,10 @@ const ChatbotFull = () => {
                                     <Stack spacing={2} alignItems='center'>
                                         <IconCircleXFilled size={50} color={theme.palette.error.main} />
                                         <Typography variant='h3' color='error.main' align='center'>
-                                            Invalid Chatbot
+                                            Chatbot Unavailable
                                         </Typography>
                                         <Typography variant='body1' color='text.secondary' align='center'>
-                                            {`The chatbot you're looking for doesn't exist or requires API key authentication.`}
+                                            {`This chatbot is unavailable in the current deployment or requires API key authentication.`}
                                         </Typography>
                                     </Stack>
                                 </Card>

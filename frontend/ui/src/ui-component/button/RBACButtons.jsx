@@ -73,10 +73,12 @@ export const PermissionListItemButton = ({ permissionId, display, ...props }) =>
     return <ListItemButton {...props} />
 }
 
-StyledPermissionButton.propTypes = { permissionId: PropTypes.string, display: PropTypes.array }
-StyledPermissionToggleButton.propTypes = { permissionId: PropTypes.string, display: PropTypes.array }
-PermissionIconButton.propTypes = { permissionId: PropTypes.string, display: PropTypes.array }
-PermissionButton.propTypes = { permissionId: PropTypes.string, display: PropTypes.array }
-PermissionTab.propTypes = { permissionId: PropTypes.string, display: PropTypes.array }
-PermissionMenuItem.propTypes = { permissionId: PropTypes.string, display: PropTypes.array }
-PermissionListItemButton.propTypes = { permissionId: PropTypes.string, display: PropTypes.array }
+const displayPropType = PropTypes.oneOfType([PropTypes.string, PropTypes.arrayOf(PropTypes.string)])
+
+StyledPermissionButton.propTypes = { permissionId: PropTypes.string, display: displayPropType }
+StyledPermissionToggleButton.propTypes = { permissionId: PropTypes.string, display: displayPropType }
+PermissionIconButton.propTypes = { permissionId: PropTypes.string, display: displayPropType }
+PermissionButton.propTypes = { permissionId: PropTypes.string, display: displayPropType }
+PermissionTab.propTypes = { permissionId: PropTypes.string, display: displayPropType }
+PermissionMenuItem.propTypes = { permissionId: PropTypes.string, display: displayPropType }
+PermissionListItemButton.propTypes = { permissionId: PropTypes.string, display: displayPropType }

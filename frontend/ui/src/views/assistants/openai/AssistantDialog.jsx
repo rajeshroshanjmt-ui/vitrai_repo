@@ -116,7 +116,16 @@ const assistantAvailableModels = [
     }
 ]
 
-const AssistantDialog = ({ show, dialogProps, onCancel, onConfirm, setError }) => {
+const AssistantDialog = ({
+    show,
+    dialogProps,
+    onCancel,
+    onConfirm,
+    setError,
+    providerType = 'OPENAI',
+    providerLabel = 'OpenAI',
+    credentialNames = ['openAIApi']
+}) => {
     const portalElement = document.getElementById('portal')
     useNotifier()
     const dispatch = useDispatch()
@@ -266,14 +275,14 @@ const AssistantDialog = ({ show, dialogProps, onCancel, onConfirm, setError }) =
         } else if (dialogProps.type === 'EDIT' && dialogProps.assistantId) {
             // When assistant dialog is opened from OpenAIAssistant node in canvas
             getSpecificAssistantApi.request(dialogProps.assistantId)
-        } else if (dialogProps.type === 'ADD' && dialogProps.selectedOpenAIAssistantId && dialogProps.credential) {
+        } else if (dialogProps.type === 'ADD' && (dialogProps.selectedAssistantId || dialogProps.selectedOpenAIAssistantId) && dialogProps.credential) {
             // When assistant dialog is to add new assistant from existing
             setAssistantId('')
             setAssistantIcon(`https://api.dicebear.com/7.x/bottts/svg?seed=${uuidv4()}`)
             setAssistantCredential(dialogProps.credential)
 
-            getAssistantObjApi.request(dialogProps.selectedOpenAIAssistantId, dialogProps.credential)
-        } else if (dialogProps.type === 'ADD' && !dialogProps.selectedOpenAIAssistantId) {
+            getAssistantObjApi.request(dialogProps.selectedAssistantId || dialogProps.selectedOpenAIAssistantId, dialogProps.credential, providerType)
+        } else if (dialogProps.type === 'ADD' && !dialogProps.selectedAssistantId && !dialogProps.selectedOpenAIAssistantId) {
             // When assistant dialog is to add a blank new assistant
             setAssistantId('')
             setAssistantIcon(`https://api.dicebear.com/7.x/bottts/svg?seed=${uuidv4()}`)
@@ -375,7 +384,7 @@ const AssistantDialog = ({ show, dialogProps, onCancel, onConfirm, setError }) =
                 details: JSON.stringify(assistantDetails),
                 iconSrc: assistantIcon,
                 credential: assistantCredential,
-                type: 'OPENAI'
+                type: providerType
             }
 
             const createResp = await assistantsApi.createNewAssistant(obj)
@@ -473,7 +482,7 @@ const AssistantDialog = ({ show, dialogProps, onCancel, onConfirm, setError }) =
     const onSyncClick = async () => {
         setLoading(true)
         try {
-            const getResp = await assistantsApi.getAssistantObj(openAIAssistantId, assistantCredential)
+            const getResp = await assistantsApi.getAssistantObj(openAIAssistantId, assistantCredential, providerType)
             if (getResp.data) {
                 syncData(getResp.data)
                 enqueueSnackbar({
@@ -514,7 +523,7 @@ const AssistantDialog = ({ show, dialogProps, onCancel, onConfirm, setError }) =
         setLoading(true)
         try {
             const vectorStoreId = toolResources.file_search?.vector_store_ids?.length ? toolResources.file_search.vector_store_ids[0] : ''
-            const uploadResp = await assistantsApi.uploadFilesToAssistantVectorStore(vectorStoreId, assistantCredential, formData)
+            const uploadResp = await assistantsApi.uploadFilesToAssistantVectorStore(vectorStoreId, assistantCredential, formData, providerType)
             if (uploadResp.data) {
                 enqueueSnackbar({
                     message: 'File uploaded successfully!',
@@ -564,7 +573,7 @@ const AssistantDialog = ({ show, dialogProps, onCancel, onConfirm, setError }) =
     const uploadFormDataToCodeInterpreter = async (formData) => {
         setLoading(true)
         try {
-            const uploadResp = await assistantsApi.uploadFilesToAssistant(assistantCredential, formData)
+            const uploadResp = await assistantsApi.uploadFilesToAssistant(assistantCredential, formData, providerType)
             if (uploadResp.data) {
                 enqueueSnackbar({
                     message: 'File uploaded successfully!',
@@ -696,7 +705,7 @@ const AssistantDialog = ({ show, dialogProps, onCancel, onConfirm, setError }) =
                 const vectorStoreId = toolResources.file_search?.vector_store_ids?.length
                     ? toolResources.file_search.vector_store_ids[0]
                     : ''
-                await assistantsApi.deleteFilesFromAssistantVectorStore(vectorStoreId, assistantCredential, { file_ids: [fileId] })
+                await assistantsApi.deleteFilesFromAssistantVectorStore(vectorStoreId, assistantCredential, { file_ids: [fileId] }, providerType)
             } catch (error) {
                 console.error(error)
             }
@@ -723,7 +732,7 @@ const AssistantDialog = ({ show, dialogProps, onCancel, onConfirm, setError }) =
                     <Box>
                         <Stack sx={{ position: 'relative' }} direction='row'>
                             <Typography variant='overline'>
-                                OpenAI Credential
+                                {`${providerLabel} Credential`}
                                 <span style={{ color: 'red' }}>&nbsp;*</span>
                             </Typography>
                         </Stack>
@@ -734,7 +743,7 @@ const AssistantDialog = ({ show, dialogProps, onCancel, onConfirm, setError }) =
                                 label: 'Connect Credential',
                                 name: 'credential',
                                 type: 'credential',
-                                credentialNames: ['openAIApi']
+                                credentialNames
                             }}
                             onSelect={(newValue) => setAssistantCredential(newValue)}
                         />
@@ -1089,6 +1098,7 @@ const AssistantDialog = ({ show, dialogProps, onCancel, onConfirm, setError }) =
                 onCancel={() => setDeleteDialogOpen(false)}
                 onDelete={() => deleteAssistant()}
                 onDeleteBoth={() => deleteAssistant(true)}
+                providerLabel={providerLabel}
             />
             <AssistantVectorStoreDialog
                 show={assistantVectorStoreDialogOpen}
@@ -1118,6 +1128,7 @@ const AssistantDialog = ({ show, dialogProps, onCancel, onConfirm, setError }) =
                     setAssistantVectorStoreDialogOpen(false)
                 }}
                 setError={setError}
+                providerType={providerType}
             />
             {loading && <BackdropLoader open={loading} />}
         </Dialog>
@@ -1130,7 +1141,10 @@ AssistantDialog.propTypes = {
     show: PropTypes.bool,
     dialogProps: PropTypes.object,
     onCancel: PropTypes.func,
-    onConfirm: PropTypes.func
+    onConfirm: PropTypes.func,
+    providerType: PropTypes.string,
+    providerLabel: PropTypes.string,
+    credentialNames: PropTypes.array
 }
 
 export default AssistantDialog

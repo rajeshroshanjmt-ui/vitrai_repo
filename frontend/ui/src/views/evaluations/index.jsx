@@ -692,7 +692,7 @@ function EvaluationRunRow(props) {
                         )}
                     </Stack>
                 </StyledTableCell>
-                <StyledTableCell>{moment(props.item.runDate).format('DD-MMM-YYYY, hh:mm:ss A')}</StyledTableCell>
+                <StyledTableCell>{props.item.runDate}</StyledTableCell>
                 <StyledTableCell>
                     <Stack flexDirection='row' sx={{ gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
                         {props.item?.usedFlows?.map((usedFlow, index) => (
@@ -786,7 +786,7 @@ function EvaluationRunRow(props) {
                                                             </StyledTableCell>
                                                             <StyledTableCell>{childItem.version}</StyledTableCell>
                                                             <StyledTableCell>
-                                                                {moment(childItem.runDate).format('DD-MMM-YYYY, hh:mm:ss A')}
+                                                                {childItem.runDate}
                                                             </StyledTableCell>
                                                             <StyledTableCell>
                                                                 <Stack

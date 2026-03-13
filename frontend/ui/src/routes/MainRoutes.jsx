@@ -26,6 +26,7 @@ const Tools = Loadable(lazy(() => import('@/views/tools')))
 // assistants routing
 const Assistants = Loadable(lazy(() => import('@/views/assistants')))
 const OpenAIAssistantLayout = Loadable(lazy(() => import('@/views/assistants/openai/OpenAIAssistantLayout')))
+const AzureAssistantLayout = Loadable(lazy(() => import('@/views/assistants/azure/AzureAssistantLayout')))
 const CustomAssistantLayout = Loadable(lazy(() => import('@/views/assistants/custom/CustomAssistantLayout')))
 const CustomAssistantConfigurePreview = Loadable(lazy(() => import('@/views/assistants/custom/CustomAssistantConfigurePreview')))
 
@@ -63,6 +64,7 @@ const Logs = Loadable(lazy(() => import('@/views/serverlogs')))
 
 // executions routing
 const Executions = Loadable(lazy(() => import('@/views/agentexecutions')))
+const ExecutionDetailsPage = Loadable(lazy(() => import('@/views/agentexecutions/ExecutionDetailsPage')))
 
 // enterprise features
 const UsersPage = Loadable(lazy(() => import('@/views/users')))
@@ -108,6 +110,14 @@ const MainRoutes = {
             element: (
                 <RequireAuth permission={'executions:view'}>
                     <Executions />
+                </RequireAuth>
+            )
+        },
+        {
+            path: '/executions/:id',
+            element: (
+                <RequireAuth permission={'executions:view'}>
+                    <ExecutionDetailsPage />
                 </RequireAuth>
             )
         },
@@ -164,6 +174,14 @@ const MainRoutes = {
             element: (
                 <RequireAuth permission={'assistants:view'}>
                     <OpenAIAssistantLayout />
+                </RequireAuth>
+            )
+        },
+        {
+            path: '/assistants/azure',
+            element: (
+                <RequireAuth permission={'assistants:view'}>
+                    <AzureAssistantLayout />
                 </RequireAuth>
             )
         },

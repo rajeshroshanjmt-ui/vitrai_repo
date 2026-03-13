@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import {
     Accordion,
@@ -35,6 +35,7 @@ import useApi from '@/hooks/useApi'
 import chatflowsApi from '@/api/chatflows'
 import configApi from '@/api/config'
 import variablesApi from '@/api/variables'
+import { toList } from '@/api/responseAdapter'
 
 // utils
 
@@ -141,6 +142,7 @@ const OverrideConfig = ({ dialogProps }) => {
 
     const getConfigApi = useApi(configApi.getConfig)
     const getAllVariablesApi = useApi(variablesApi.getAllVariables)
+    const normalizedVariables = useMemo(() => toList(getAllVariablesApi.data), [getAllVariablesApi.data])
 
     const handleAccordionChange = (nodeLabel) => (event, isExpanded) => {
         const accordianNodes = { ...nodeConfigExpanded }
@@ -260,6 +262,11 @@ const OverrideConfig = ({ dialogProps }) => {
     }
 
     const groupByVariableLabel = (variables) => {
+        if (!Array.isArray(variables)) {
+            setVariableOverrides([])
+            return
+        }
+
         const newVariables = []
         const seenVariables = new Set()
 
@@ -352,11 +359,9 @@ const OverrideConfig = ({ dialogProps }) => {
     }, [getConfigApi.data])
 
     useEffect(() => {
-        if (getAllVariablesApi.data) {
-            groupByVariableLabel(getAllVariablesApi.data)
-        }
+        groupByVariableLabel(normalizedVariables)
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [getAllVariablesApi.data])
+    }, [normalizedVariables])
 
     return (
         <Stack direction='column' spacing={2} sx={{ alignItems: 'start' }}>

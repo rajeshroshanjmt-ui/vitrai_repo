@@ -62,6 +62,36 @@ docker exec -it vetrai-ollama-1 ollama pull llama3.2
 docker exec -it vetrai-ollama-1 ollama pull nomic-embed-text
 ```
 
+## Production Pre-Flight Checklist
+
+Before deploying to production, run the pre-flight validation script to check:
+- Environment variables (JWT_SECRET, API keys, database config)
+- Service connectivity (backend, worker, Redis, database, vector DB)
+- LLM provider health (Ollama, OpenAI, Anthropic, Azure)
+- Security configuration (HTTPS, strong credentials, etc.)
+
+**Bash (Linux/Unix):**
+
+```bash
+./scripts/production_preflight_check.sh
+```
+
+Optional flags:
+```bash
+./scripts/production_preflight_check.sh \
+  -b http://myhost/api \
+  -l http://myhost:8001 \
+  -r redis-host:6379
+```
+
+**PowerShell (Windows):**
+
+```powershell
+.\scripts\production_preflight_check.ps1 -BaseUrl "http://myhost/api" -LanggraphUrl "http://myhost:8001"
+```
+
+The script returns exit code 1 if critical checks fail, 0 otherwise.
+
 ## Smoke Test
 
 Run an end-to-end gated flow test:
@@ -106,6 +136,24 @@ Fast PR workflow: `.github/workflows/fast-check.yml`
 Phase 1 production-hardening scope and SLO targets are tracked in:
 
 - `docs/PHASE1_PRODUCTION_HARDENING.md`
+
+## Product Roadmap
+
+Full product roadmap (March 2026 - February 2027):
+
+- `docs/PRODUCT_ROADMAP.md`
+
+## Role-Based Runbook
+
+Operational runbook by role (Admin, Builder, QA, Integrator, Ops):
+
+- `docs/ROLE_BASED_RUNBOOK.md`
+
+## User Manual
+
+End-user guide for creating and using flows, assistants, RAG, tools, and integrations:
+
+- `docs/USER_MANUAL.md`
 
 ## Core API paths
 
@@ -154,13 +202,35 @@ The worker only retrieves from the requesting tenant collection.
 
 `POST /api/flows/{flow_id}/execute` accepts optional LLM selectors:
 
-- `llm_provider` (`ollama` or `openai`)
+- `llm_provider` (`ollama`, `openai`, `anthropic`, or `azure_openai`)
 - `llm_model` (provider-specific model name)
 
 If omitted, the worker uses `DEFAULT_LLM_PROVIDER` (defaults to `ollama`) and then provider defaults:
 
-- `OLLAMA_LLM_MODEL` (default `llama3.2`)
-- `OPENAI_MODEL` (default `gpt-4o-mini`)
+- **Ollama:** `OLLAMA_LLM_MODEL` (default `llama3.2`), `OLLAMA_EMBED_MODEL` (default `nomic-embed-text`), `OLLAMA_API_PREFIX` (auto-detected or default `/api`)
+- **OpenAI:** `OPENAI_MODEL` (default `gpt-4o-mini`), `OPENAI_BASE_URL` (optional; uses OpenAI default if empty)
+- **Anthropic:** `ANTHROPIC_MODEL` (default `claude-3-5-sonnet-latest`), `ANTHROPIC_BASE_URL` (default `https://api.anthropic.com`)
+- **Azure OpenAI:** `AZURE_OPENAI_DEPLOYMENT`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_VERSION` (default `2024-02-15-preview`)
+
+
+### Provider endpoint flexibility
+
+All LLM providers now support configurable base URLs, making it easy to:
+
+- Route requests through corporate proxies or VPNs.
+- Use alternative/self-hosted instances (e.g. local Ollama, Azure, Anthropic proxy).
+- Support future provider migrations without code changes.
+
+For **Ollama specifically**, the worker also includes automatic API prefix detection
+(`/api` vs `/v1`) – set `OLLAMA_API_PREFIX` explicitly if auto-detection isn't desired.
+For other providers, set the corresponding `*_BASE_URL` environment variable:
+
+```bash
+export OPENAI_BASE_URL=https://proxy.corp.com/openai          # custom OpenAI endpoint
+export ANTHROPIC_BASE_URL=https://anthropic-gateway:8000      # on-prem Anthropic gateway
+export AZURE_OPENAI_ENDPOINT=https://myazure.openai.azure.com  # your Azure instance
+```
+
 
 ## Retries And Dead-Letter Queues
 

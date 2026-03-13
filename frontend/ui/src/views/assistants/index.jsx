@@ -28,7 +28,7 @@ const cards = [
         gradient: 'linear-gradient(135deg, #c9ffd85f 0%, #a0f0b567 100%)'
     },
     {
-        title: 'Azure Assistant (Coming Soon)',
+        title: 'Azure Assistant',
         description: 'Create assistant using Azure Assistant API',
         icon: <IconBrandAzure />,
         iconText: 'Azure',
@@ -66,7 +66,7 @@ const FeatureCards = () => {
     const onCardClick = (index) => {
         if (index === 0) navigate('/assistants/custom')
         if (index === 1) navigate('/assistants/openai')
-        if (index === 2) alert('Under Development')
+        if (index === 2) navigate('/assistants/azure')
     }
 
     return (
@@ -93,13 +93,13 @@ const FeatureCards = () => {
                         borderColor: theme.palette.grey[900] + 25,
                         borderRadius: 2,
                         color: customization.isDarkMode ? theme.palette.common.white : '#333333',
-                        cursor: index === 2 ? 'not-allowed' : 'pointer',
-                        opacity: index === 2 ? 0.6 : 1,
+                        cursor: 'pointer',
+                        opacity: 1,
                         '&:hover': {
-                            boxShadow: index === 2 ? 'none' : '0 4px 20px rgba(0, 0, 0, 0.1)'
+                            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
                         }
                     }}
-                    onClick={() => index !== 2 && onCardClick(index)}
+                    onClick={() => onCardClick(index)}
                 >
                     <CardContent className='h-full relative z-10'>
                         <FeatureIcon>

@@ -21,25 +21,23 @@ export default function componentStyleOverrides(theme) {
                 },
                 body: {
                     backgroundColor: surfaceBase,
-                    backgroundImage: isDark
-                        ? `radial-gradient(1200px 420px at 8% -10%, ${alpha(theme?.colors?.darkBrandMain || '#6aa5ff', 0.22)}, transparent 55%), radial-gradient(900px 320px at 100% 0%, ${alpha(theme?.colors?.darkSecondaryMain || '#3aa9cd', 0.16)}, transparent 60%)`
-                        : `radial-gradient(1000px 360px at 5% -8%, ${alpha(theme?.colors?.brandMain || '#2a6fe8', 0.12)}, transparent 52%), radial-gradient(900px 280px at 95% 0%, ${alpha(theme?.colors?.secondaryMain || '#129ccf', 0.1)}, transparent 58%)`,
+                    backgroundImage: 'none',
                     color: theme?.darkTextPrimary,
                     scrollbarWidth: 'thin',
-                    scrollbarColor: `${alpha(theme?.colors?.primaryMain || '#2a6fe8', 0.5)} ${surfaceSunken}`,
+                    scrollbarColor: `${alpha(theme?.colors?.primaryMain || '#2563eb', 0.5)} ${surfaceSunken}`,
                     transition: 'background-color 220ms ease, color 220ms ease',
                     '&::-webkit-scrollbar, & *::-webkit-scrollbar': {
-                        width: 12,
-                        height: 12,
+                        width: 8,
+                        height: 8,
                         backgroundColor: surfaceSunken
                     },
                     '&::-webkit-scrollbar-thumb, & *::-webkit-scrollbar-thumb': {
                         borderRadius: 999,
-                        backgroundColor: alpha(theme?.colors?.primaryMain || '#2a6fe8', isDark ? 0.5 : 0.34),
+                        backgroundColor: alpha(theme?.colors?.primaryMain || '#2563eb', isDark ? 0.5 : 0.34),
                         border: `3px solid ${surfaceSunken}`
                     },
                     '&::-webkit-scrollbar-thumb:hover, & *::-webkit-scrollbar-thumb:hover': {
-                        backgroundColor: alpha(theme?.colors?.primaryMain || '#2a6fe8', isDark ? 0.62 : 0.46)
+                        backgroundColor: alpha(theme?.colors?.primaryMain || '#2563eb', isDark ? 0.62 : 0.46)
                     },
                     '&::-webkit-scrollbar-corner, & *::-webkit-scrollbar-corner': {
                         backgroundColor: surfaceSunken
@@ -57,19 +55,19 @@ export default function componentStyleOverrides(theme) {
         MuiButton: {
             styleOverrides: {
                 root: {
-                    fontWeight: 650,
-                    borderRadius: 10,
+                    fontWeight: 600,
+                    borderRadius: 8,
                     transition: 'transform 150ms ease, box-shadow 150ms ease, background-color 180ms ease',
                     '&:hover': {
                         transform: 'translateY(-1px)'
                     }
                 },
                 containedPrimary: {
-                    boxShadow: `0 8px 24px ${glowSoft}`,
-                    backgroundImage: `linear-gradient(135deg, ${theme?.colors?.primaryMain || '#2a6fe8'} 0%, ${theme?.colors?.secondaryMain || '#129ccf'} 100%)`,
+                    backgroundColor: theme?.colors?.primaryMain || '#2563eb',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06)',
                     '&:hover': {
-                        boxShadow: `0 12px 28px ${glowElevated}`,
-                        backgroundImage: `linear-gradient(135deg, ${theme?.colors?.primaryDark || '#1b4ea8'} 0%, ${theme?.colors?.secondaryDark || '#0f6b91'} 100%)`
+                        backgroundColor: theme?.colors?.primaryDark || '#1d4ed8',
+                        boxShadow: '0 4px 8px rgba(0,0,0,0.15)'
                     }
                 },
                 outlined: {
@@ -108,11 +106,12 @@ export default function componentStyleOverrides(theme) {
                 root: {
                     backgroundColor: surfaceRaised,
                     border: `1px solid ${outlineSubtle}`,
-                    boxShadow: `0 8px 30px ${alpha('#020617', isDark ? 0.34 : 0.08)}`,
+                    boxShadow: `0 1px 3px ${alpha('#020617', isDark ? 0.34 : 0.08)}`,
                     transition: 'transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease',
                     '&:hover': {
+                        transform: 'translateY(-1px)',
                         borderColor: outlineStrong,
-                        boxShadow: `0 16px 34px ${alpha('#020617', isDark ? 0.4 : 0.14)}`
+                        boxShadow: `0 4px 12px ${alpha('#020617', isDark ? 0.4 : 0.14)}`
                     }
                 }
             }
@@ -153,18 +152,16 @@ export default function componentStyleOverrides(theme) {
                     transition: 'background-color 160ms ease, color 160ms ease, transform 140ms ease',
                     '&.Mui-selected': {
                         color: theme?.menuSelected,
-                        backgroundColor: alpha(theme?.menuSelected || '#2a6fe8', 0.14),
-                        boxShadow: `inset 0 0 0 1px ${outlineStrong}`,
+                        backgroundColor: alpha(theme?.menuSelected || '#2563eb', 0.08),
                         '&:hover': {
-                            backgroundColor: alpha(theme?.menuSelected || '#2a6fe8', 0.18)
+                            backgroundColor: alpha(theme?.menuSelected || '#2563eb', 0.12)
                         },
                         '& .MuiListItemIcon-root': {
                             color: theme?.menuSelected
                         }
                     },
                     '&:hover': {
-                        transform: 'translateX(2px)',
-                        backgroundColor: alpha(theme?.menuSelected || '#2a6fe8', 0.1),
+                        backgroundColor: alpha(theme?.menuSelected || '#2563eb', 0.06),
                         color: theme?.menuSelected,
                         '& .MuiListItemIcon-root': {
                             color: theme?.menuSelected
@@ -228,7 +225,7 @@ export default function componentStyleOverrides(theme) {
                 input: {
                     fontWeight: 500,
                     background: surfaceSunken,
-                    padding: '14px 14px',
+                    padding: '12px 14px',
                     borderRadius: `${theme?.customization?.borderRadius}px`,
                     '&.MuiInputBase-inputSizeSmall': {
                         padding: '10px 12px',
@@ -280,7 +277,7 @@ export default function componentStyleOverrides(theme) {
         MuiChip: {
             styleOverrides: {
                 root: {
-                    borderRadius: 8,
+                    borderRadius: 6,
                     border: `1px solid ${outlineSubtle}`,
                     '&.MuiChip-deletable .MuiChip-deleteIcon': {
                         color: 'inherit'
@@ -320,7 +317,7 @@ export default function componentStyleOverrides(theme) {
                 head: {
                     color: theme?.darkTextSecondary,
                     fontWeight: 650,
-                    backgroundColor: alpha(theme?.menuSelected || '#2a6fe8', 0.07)
+                    backgroundColor: theme?.colors?.grey50
                 }
             }
         },
@@ -336,9 +333,18 @@ export default function componentStyleOverrides(theme) {
         MuiDrawer: {
             styleOverrides: {
                 paper: {
-                    backgroundImage: isDark
-                        ? `linear-gradient(180deg, ${alpha('#0d2d4d', 0.24)} 0%, ${surfaceRaised} 70%)`
-                        : `linear-gradient(180deg, ${alpha('#eaf2ff', 0.86)} 0%, ${surfaceRaised} 75%)`
+                    backgroundImage: 'none',
+                    borderRight: `1px solid ${outlineSubtle}`,
+                    overflow: 'hidden'
+                }
+            }
+        },
+        MuiAppBar: {
+            styleOverrides: {
+                root: {
+                    backgroundColor: surfaceRaised,
+                    boxShadow: 'none',
+                    borderBottom: `1px solid ${outlineSubtle}`
                 }
             }
         }

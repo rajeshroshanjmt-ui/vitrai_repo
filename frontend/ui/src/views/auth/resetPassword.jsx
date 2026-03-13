@@ -4,13 +4,12 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 // material-ui
 import { Alert, Box, Button, OutlinedInput, Stack, Typography, useTheme } from '@mui/material'
+import { LoadingButton } from '@mui/lab'
 
 // project imports
 import { closeSnackbar as closeSnackbarAction, enqueueSnackbar as enqueueSnackbarAction } from '@/store/actions'
-import { StyledButton } from '@/ui-component/button/StyledButton'
 import MainCard from '@/ui-component/cards/MainCard'
 import { Input } from '@/ui-component/input/Input'
-import { BackdropLoader } from '@/ui-component/loading/BackdropLoader'
 
 // API
 import accountApi from '@/api/account.api'
@@ -24,6 +23,7 @@ import { useError } from '@/store/context/ErrorContext'
 
 // Icons
 import { IconExclamationCircle, IconX } from '@tabler/icons-react'
+import VetraiLogo from '@/assets/images/logo.png'
 
 // ==============================|| ResetPasswordPage ||============================== //
 
@@ -56,12 +56,6 @@ const ResetPasswordPage = () => {
         placeholder: '********'
     }
 
-    const resetPasswordInput = {
-        label: 'Reset Token',
-        name: 'resetToken',
-        type: 'text'
-    }
-
     const [params] = useSearchParams()
     const token = params.get('token')
 
@@ -72,6 +66,7 @@ const ResetPasswordPage = () => {
 
     const [loading, setLoading] = useState(false)
     const [authErrors, setAuthErrors] = useState([])
+    const isFormValid = Boolean(emailVal.trim() && tokenVal.trim() && newPasswordVal && confirmPasswordVal)
 
     const { authRateLimitError, setAuthRateLimitError } = useError()
 
@@ -131,7 +126,7 @@ const ResetPasswordPage = () => {
             }
         } catch (error) {
             setLoading(false)
-            setAuthErrors([typeof error.response.data === 'object' ? error.response.data.message : error.response.data])
+            setAuthErrors([typeof error?.response?.data === 'object' ? error?.response?.data?.message : error?.response?.data || error?.message])
             enqueueSnackbar({
                 message: `Failed to reset password!`,
                 options: {
@@ -157,6 +152,9 @@ const ResetPasswordPage = () => {
         <>
             <MainCard>
                 <Stack flexDirection='column' sx={{ maxWidth: '480px', gap: 3 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                        <img src={VetraiLogo} alt='Vetrai' style={{ width: '100%', maxWidth: '65px', height: 'auto' }} />
+                    </Box>
                     {authErrors && authErrors.length > 0 && (
                         <Alert icon={<IconExclamationCircle />} variant='filled' severity='error'>
                             <ul style={{ margin: 0 }}>
@@ -210,7 +208,6 @@ const ResetPasswordPage = () => {
                                     placeholder='Paste in the reset token.'
                                     multiline={true}
                                     rows={3}
-                                    inputParam={resetPasswordInput}
                                     onChange={(e) => setTokenVal(e.target.value)}
                                     value={tokenVal}
                                     sx={{ mt: '8px' }}
@@ -258,14 +255,19 @@ const ResetPasswordPage = () => {
                                 </Typography>
                             </Box>
 
-                            <StyledButton variant='contained' style={{ borderRadius: 12, height: 40, marginRight: 5 }} type='submit'>
+                            <LoadingButton
+                                loading={loading}
+                                variant='contained'
+                                style={{ borderRadius: 12, height: 40, marginRight: 5 }}
+                                type='submit'
+                                disabled={!isFormValid}
+                            >
                                 Update Password
-                            </StyledButton>
+                            </LoadingButton>
                         </Stack>
                     </form>
                 </Stack>
             </MainCard>
-            {loading && <BackdropLoader open={loading} />}
         </>
     )
 }

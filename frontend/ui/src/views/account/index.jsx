@@ -20,6 +20,8 @@ import {
     Skeleton,
     Stack,
     TextField,
+    ToggleButton,
+    ToggleButtonGroup,
     Typography
 } from '@mui/material'
 import { darken, useTheme } from '@mui/material/styles'
@@ -29,10 +31,11 @@ import ViewHeader from '@/layout/MainLayout/ViewHeader'
 import { StyledButton } from '@/ui-component/button/StyledButton'
 import MainCard from '@/ui-component/cards/MainCard'
 import SettingsSection from '@/ui-component/form/settings'
+import { Available } from '@/ui-component/rbac/available'
 import PricingDialog from '@/ui-component/subscription/PricingDialog'
 
 // Icons
-import { IconAlertCircle, IconCreditCard, IconExternalLink, IconSparkles, IconX } from '@tabler/icons-react'
+import { IconAlertCircle, IconCreditCard, IconExternalLink, IconRefresh, IconSparkles, IconX } from '@tabler/icons-react'
 
 // API
 import accountApi from '@/api/account.api'
@@ -44,7 +47,7 @@ import useApi from '@/hooks/useApi'
 
 // Store
 import { store } from '@/store'
-import { closeSnackbar as closeSnackbarAction, enqueueSnackbar as enqueueSnackbarAction } from '@/store/actions'
+import { SET_DARKMODE, closeSnackbar as closeSnackbarAction, enqueueSnackbar as enqueueSnackbarAction } from '@/store/actions'
 import { gridSpacing } from '@/store/constant'
 import { useConfig } from '@/store/context/ConfigContext'
 import { logoutSuccess, userProfileUpdated } from '@/store/reducers/authSlice'
@@ -53,6 +56,13 @@ import { logoutSuccess, userProfileUpdated } from '@/store/reducers/authSlice'
 
 const calculatePercentage = (count, total) => {
     return Math.min((count / total) * 100, 100)
+}
+
+const getApiErrorMessage = (error, fallback) => {
+    const responseData = error?.response?.data
+    if (typeof responseData === 'object') return responseData?.message || fallback
+    if (typeof responseData === 'string' && responseData) return responseData
+    return error?.message || fallback
 }
 
 const AccountSettings = () => {
@@ -103,6 +113,15 @@ const AccountSettings = () => {
     const updateAdditionalSeatsApi = useApi(userApi.updateAdditionalSeats)
     const getCurrentUsageApi = useApi(userApi.getCurrentUsage)
     const logoutApi = useApi(accountApi.logout)
+
+    const profileChanged = useMemo(() => {
+        const initialName = getUserByIdApi.data?.name || ''
+        const initialEmail = getUserByIdApi.data?.email || ''
+        return profileName.trim() !== initialName.trim() || email.trim() !== initialEmail.trim()
+    }, [email, getUserByIdApi.data?.email, getUserByIdApi.data?.name, profileName])
+    const isEmailValid = useMemo(() => /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim()), [email])
+    const canSaveProfile = Boolean(profileName.trim() && isEmailValid && profileChanged && !isLoading)
+    const canSavePassword = Boolean(oldPassword && newPassword && confirmPassword && newPassword === confirmPassword)
 
     useEffect(() => {
         if (currentUser) {
@@ -214,11 +233,13 @@ const AccountSettings = () => {
     }
 
     const saveProfileData = async () => {
+        if (!canSaveProfile) return
+
         try {
             const obj = {
                 id: currentUser.id,
-                name: profileName,
-                email: email
+                name: profileName.trim(),
+                email: email.trim()
             }
             const saveProfileResp = await userApi.updateUser(obj)
             if (saveProfileResp.data) {
@@ -238,9 +259,7 @@ const AccountSettings = () => {
             }
         } catch (error) {
             enqueueSnackbar({
-                message: `Failed to update profile: ${
-                    typeof error.response.data === 'object' ? error.response.data.message : error.response.data
-                }`,
+                message: `Failed to update profile: ${getApiErrorMessage(error, 'Unable to update profile')}`,
                 options: {
                     key: new Date().getTime() + Math.random(),
                     variant: 'error',
@@ -313,9 +332,7 @@ const AccountSettings = () => {
             }
         } catch (error) {
             enqueueSnackbar({
-                message: `Failed to update password: ${
-                    typeof error.response.data === 'object' ? error.response.data.message : error.response.data
-                }`,
+                message: `Failed to update password: ${getApiErrorMessage(error, 'Unable to update password')}`,
                 options: {
                     key: new Date().getTime() + Math.random(),
                     variant: 'error',
@@ -360,9 +377,7 @@ const AccountSettings = () => {
         } catch (error) {
             console.error('Error updating seats:', error)
             enqueueSnackbar({
-                message: `Failed to update seats: ${
-                    typeof error.response.data === 'object' ? error.response.data.message : error.response.data
-                }`,
+                message: `Failed to update seats: ${getApiErrorMessage(error, 'Unable to update seats')}`,
                 options: {
                     key: new Date().getTime() + Math.random(),
                     variant: 'error',
@@ -406,6 +421,18 @@ const AccountSettings = () => {
             setOpenAddSeatsDialog(false)
             setSeatsQuantity(0)
         }
+    }
+
+    const handleThemePreferenceChange = (_, mode) => {
+        if (!mode) return
+        const isDarkMode = mode === 'dark'
+        dispatch({ type: SET_DARKMODE, isDarkMode })
+        localStorage.setItem('isDarkMode', String(isDarkMode))
+    }
+
+    const refreshUsage = () => {
+        if (!isCloud) return
+        getCurrentUsageApi.request()
     }
 
     // Calculate empty seats
@@ -620,7 +647,20 @@ const AccountSettings = () => {
                                         </Box>
                                     </Box>
                                 </SettingsSection>
-                                <SettingsSection title='Usage'>
+                                <SettingsSection
+                                    title='Usage'
+                                    action={
+                                        <Button
+                                            variant='outlined'
+                                            size='small'
+                                            startIcon={<IconRefresh size={16} />}
+                                            onClick={refreshUsage}
+                                            disabled={getCurrentUsageApi.loading}
+                                        >
+                                            Refresh
+                                        </Button>
+                                    }
+                                >
                                     <Box
                                         sx={{
                                             width: '100%',
@@ -696,9 +736,82 @@ const AccountSettings = () => {
                                 </SettingsSection>
                             </>
                         )}
+                        {!isCloud && (
+                            <SettingsSection title='Usage'>
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 1,
+                                        px: 2.5,
+                                        py: 2
+                                    }}
+                                >
+                                    <Typography variant='body2' color='text.secondary'>
+                                        Usage statistics are available when running Vetrai Cloud billing and metering services.
+                                    </Typography>
+                                </Box>
+                            </SettingsSection>
+                        )}
+                        <SettingsSection title='Appearance'>
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 2,
+                                    px: 2.5,
+                                    py: 2
+                                }}
+                            >
+                                <Typography variant='body2' color='text.secondary'>
+                                    Theme Preference
+                                </Typography>
+                                <ToggleButtonGroup
+                                    exclusive
+                                    size='small'
+                                    value={customization.isDarkMode ? 'dark' : 'light'}
+                                    onChange={handleThemePreferenceChange}
+                                >
+                                    <ToggleButton value='light'>Light</ToggleButton>
+                                    <ToggleButton value='dark'>Dark</ToggleButton>
+                                </ToggleButtonGroup>
+                                <Typography variant='caption' color='text.secondary'>
+                                    Your theme preference is applied globally across Vetrai.
+                                </Typography>
+                            </Box>
+                        </SettingsSection>
+                        <SettingsSection
+                            title='API Keys'
+                            action={
+                                <Available permission='apikeys:view'>
+                                    <StyledButton onClick={() => navigate('/apikey')} sx={{ borderRadius: 2, height: 40 }} variant='contained'>
+                                        Manage API Keys
+                                    </StyledButton>
+                                </Available>
+                            }
+                        >
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 1,
+                                    px: 2.5,
+                                    py: 2
+                                }}
+                            >
+                                <Typography variant='body2' color='text.secondary'>
+                                    Create, rotate, and revoke API keys from a dedicated access-control workspace.
+                                </Typography>
+                            </Box>
+                        </SettingsSection>
                         <SettingsSection
                             action={
-                                <StyledButton onClick={saveProfileData} sx={{ borderRadius: 2, height: 40 }} variant='contained'>
+                                <StyledButton
+                                    onClick={saveProfileData}
+                                    sx={{ borderRadius: 2, height: 40 }}
+                                    variant='contained'
+                                    disabled={!canSaveProfile}
+                                >
                                     Save
                                 </StyledButton>
                             }
@@ -736,14 +849,19 @@ const AccountSettings = () => {
                                         onChange={(e) => setEmail(e.target.value)}
                                         value={email}
                                     />
+                                    {!isEmailValid && email ? (
+                                        <Typography variant='caption' color='error.main'>
+                                            Please enter a valid email address.
+                                        </Typography>
+                                    ) : null}
                                 </Box>
                             </Box>
                         </SettingsSection>
-                        {!currentUser.isSSO && (
+                        {!currentUser.isSSO ? (
                             <SettingsSection
                                 action={
                                     <StyledButton
-                                        disabled={!oldPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword}
+                                        disabled={!canSavePassword}
                                         onClick={savePassword}
                                         sx={{ borderRadius: 2, height: 40 }}
                                         variant='contained'
@@ -825,6 +943,22 @@ const AccountSettings = () => {
                                             value={confirmPassword}
                                         />
                                     </Box>
+                                </Box>
+                            </SettingsSection>
+                        ) : (
+                            <SettingsSection title='Security'>
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 1,
+                                        px: 2.5,
+                                        py: 2
+                                    }}
+                                >
+                                    <Typography variant='body2' color='text.secondary'>
+                                        Password changes are managed by your SSO identity provider.
+                                    </Typography>
                                 </Box>
                             </SettingsSection>
                         )}

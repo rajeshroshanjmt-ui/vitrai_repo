@@ -8,20 +8,29 @@ import { StyledButton } from '@/ui-component/button/StyledButton'
 import assistantsApi from '@/api/assistants'
 import useApi from '@/hooks/useApi'
 
-const LoadAssistantDialog = ({ show, dialogProps, onCancel, onAssistantSelected, setError }) => {
+const LoadAssistantDialog = ({
+    show,
+    dialogProps,
+    onCancel,
+    onAssistantSelected,
+    setError,
+    providerType = 'OPENAI',
+    providerLabel = 'OpenAI',
+    credentialNames = ['openAIApi']
+}) => {
     const portalElement = document.getElementById('portal')
 
     const getAllAvailableAssistantsApi = useApi(assistantsApi.getAllAvailableAssistants)
 
     const [credentialId, setCredentialId] = useState('')
     const [availableAssistantsOptions, setAvailableAssistantsOptions] = useState([])
-    const [selectedOpenAIAssistantId, setSelectedOpenAIAssistantId] = useState('')
+    const [selectedAssistantId, setSelectedAssistantId] = useState('')
 
     useEffect(() => {
         return () => {
             setCredentialId('')
             setAvailableAssistantsOptions([])
-            setSelectedOpenAIAssistantId('')
+            setSelectedAssistantId('')
         }
     }, [dialogProps])
 
@@ -61,10 +70,10 @@ const LoadAssistantDialog = ({ show, dialogProps, onCancel, onAssistantSelected,
             <DialogContent>
                 <Box sx={{ p: 2 }}>
                     <Stack sx={{ position: 'relative' }} direction='row'>
-                        <Typography variant='overline'>
-                            OpenAI Credential
-                            <span style={{ color: 'red' }}>&nbsp;*</span>
-                        </Typography>
+                            <Typography variant='overline'>
+                                {`${providerLabel} Credential`}
+                                <span style={{ color: 'red' }}>&nbsp;*</span>
+                            </Typography>
                     </Stack>
                     <CredentialInputHandler
                         key={credentialId}
@@ -73,11 +82,11 @@ const LoadAssistantDialog = ({ show, dialogProps, onCancel, onAssistantSelected,
                             label: 'Connect Credential',
                             name: 'credential',
                             type: 'credential',
-                            credentialNames: ['openAIApi']
+                            credentialNames
                         }}
                         onSelect={(newValue) => {
                             setCredentialId(newValue)
-                            if (newValue) getAllAvailableAssistantsApi.request(newValue)
+                            if (newValue) getAllAvailableAssistantsApi.request(newValue, providerType)
                         }}
                     />
                 </Box>
@@ -90,17 +99,17 @@ const LoadAssistantDialog = ({ show, dialogProps, onCancel, onAssistantSelected,
                             </Typography>
                         </Stack>
                         <Dropdown
-                            name={selectedOpenAIAssistantId}
+                            name={selectedAssistantId}
                             options={availableAssistantsOptions}
-                            onSelect={(newValue) => setSelectedOpenAIAssistantId(newValue)}
-                            value={selectedOpenAIAssistantId ?? 'choose an option'}
+                            onSelect={(newValue) => setSelectedAssistantId(newValue)}
+                            value={selectedAssistantId ?? 'choose an option'}
                         />
                     </Box>
                 )}
             </DialogContent>
-            {selectedOpenAIAssistantId && (
+            {selectedAssistantId && (
                 <DialogActions>
-                    <StyledButton variant='contained' onClick={() => onAssistantSelected(selectedOpenAIAssistantId, credentialId)}>
+                    <StyledButton variant='contained' onClick={() => onAssistantSelected(selectedAssistantId, credentialId)}>
                         Load
                     </StyledButton>
                 </DialogActions>
@@ -116,7 +125,10 @@ LoadAssistantDialog.propTypes = {
     dialogProps: PropTypes.object,
     onCancel: PropTypes.func,
     onAssistantSelected: PropTypes.func,
-    setError: PropTypes.func
+    setError: PropTypes.func,
+    providerType: PropTypes.string,
+    providerLabel: PropTypes.string,
+    credentialNames: PropTypes.array
 }
 
 export default LoadAssistantDialog

@@ -15,7 +15,7 @@ import LogoSection from '../LogoSection'
 import CloudMenuList from '@/layout/MainLayout/Sidebar/CloudMenuList'
 
 // store
-import { drawerWidth, headerHeight } from '@/store/constant'
+import { collapsedDrawerWidth, drawerWidth, headerHeight } from '@/store/constant'
 
 // ==============================|| SIDEBAR DRAWER ||============================== //
 
@@ -23,13 +23,18 @@ const Sidebar = ({ drawerOpen, drawerToggle, window }) => {
     const theme = useTheme()
     const matchUpMd = useMediaQuery(theme.breakpoints.up('md'))
     const isAuthenticated = useSelector((state) => state.auth.isAuthenticated)
+    const isSidebarCollapsed = useSelector((state) => state.customization.isSidebarCollapsed)
+    const resolvedDrawerWidth = matchUpMd && isSidebarCollapsed ? collapsedDrawerWidth : drawerWidth
+    const isCollapsed = matchUpMd && isSidebarCollapsed
 
     const drawer = (
         <>
             <Box
                 sx={{
                     display: { xs: 'block', md: 'none' },
-                    height: '80px'
+                    height: '64px',
+                    borderBottom: '1px solid',
+                    borderColor: 'divider'
                 }}
             >
                 <Box sx={{ display: 'flex', p: 2, mx: 'auto' }}>
@@ -45,14 +50,14 @@ const Sidebar = ({ drawerOpen, drawerToggle, window }) => {
                         flexDirection: 'column'
                     }}
                 >
-                    <MenuList />
-                    <CloudMenuList />
+                    <MenuList isCollapsed={isCollapsed} />
+                    <CloudMenuList isCollapsed={isCollapsed} />
                 </PerfectScrollbar>
             </BrowserView>
             <MobileView>
                 <Box sx={{ px: 2 }}>
-                    <MenuList />
-                    <CloudMenuList />
+                    <MenuList isCollapsed={false} />
+                    <CloudMenuList isCollapsed={false} />
                 </Box>
             </MobileView>
         </>
@@ -65,7 +70,7 @@ const Sidebar = ({ drawerOpen, drawerToggle, window }) => {
             component='nav'
             sx={{
                 flexShrink: { md: 0 },
-                width: matchUpMd ? drawerWidth : 'auto'
+                width: matchUpMd ? resolvedDrawerWidth : 'auto'
             }}
             aria-label='mailbox folders'
         >
@@ -78,25 +83,15 @@ const Sidebar = ({ drawerOpen, drawerToggle, window }) => {
                     onClose={drawerToggle}
                     sx={{
                         '& .MuiDrawer-paper': {
-                            width: drawerWidth,
+                            width: resolvedDrawerWidth,
                             background: theme.palette.surface?.raised || theme.palette.background.default,
                             color: theme.palette.text.primary,
                             [theme.breakpoints.up('md')]: {
                                 top: `${headerHeight}px`
                             },
-                            borderRight: 'none',
-                            boxShadow: drawerOpen ? `8px 0 28px ${theme.palette.glow?.soft || 'rgba(0,0,0,0.08)'}` : 'none',
-                            overflow: 'visible',
-                            '&::after': {
-                                content: drawerOpen ? "''" : 'none',
-                                position: 'absolute',
-                                top: 0,
-                                right: -16,
-                                width: 16,
-                                height: '100%',
-                                pointerEvents: 'none',
-                                background: `linear-gradient(90deg, ${theme.palette.glow?.soft || 'transparent'} 0%, transparent 100%)`
-                            }
+                            borderRight: `1px solid ${theme.palette.divider}`,
+                            boxShadow: 'none',
+                            overflow: 'hidden'
                         }
                     }}
                     ModalProps={{ keepMounted: true }}

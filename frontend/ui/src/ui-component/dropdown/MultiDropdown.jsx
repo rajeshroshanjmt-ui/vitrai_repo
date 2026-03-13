@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSelector } from 'react-redux'
 
-import { Popper, FormControl, TextField, Box, Typography } from '@mui/material'
+import { Popper, FormControl, TextField, Box, Typography, Chip } from '@mui/material'
 import Autocomplete, { autocompleteClasses } from '@mui/material/Autocomplete'
 import { useTheme, styled } from '@mui/material/styles'
 import PropTypes from 'prop-types'
@@ -20,15 +20,39 @@ const StyledPopper = styled(Popper)({
 
 export const MultiDropdown = ({ name, value, options, onSelect, formControlSx = {}, disabled = false, disableClearable = false }) => {
     const customization = useSelector((state) => state.customization)
-    const findMatchingOptions = (options = [], internalValue) => {
-        let values = []
-        if ('choose an option' !== internalValue && internalValue && typeof internalValue === 'string') values = JSON.parse(internalValue)
-        else values = internalValue
-        return options.filter((option) => values.includes(option.name))
+    const getSelectedNames = (rawValue) => {
+        if (Array.isArray(rawValue)) {
+            return rawValue
+                .map((item) => (typeof item === 'string' ? item : item?.name))
+                .filter((item) => typeof item === 'string' && item.length > 0)
+        }
+
+        if (typeof rawValue !== 'string') return []
+        const trimmed = rawValue.trim()
+        if (!trimmed || trimmed === 'choose an option') return []
+
+        try {
+            const parsed = JSON.parse(trimmed)
+            if (!Array.isArray(parsed)) return []
+            return parsed.map((item) => (typeof item === 'string' ? item : item?.name)).filter(Boolean)
+        } catch {
+            return [trimmed]
+        }
     }
-    const getDefaultOptionValue = () => []
-    let [internalValue, setInternalValue] = useState(value ?? [])
+
+    const [internalValue, setInternalValue] = useState(value ?? '')
     const theme = useTheme()
+    const normalizedOptions = Array.isArray(options) ? options : []
+
+    useEffect(() => {
+        setInternalValue(value ?? '')
+    }, [value])
+
+    const selectedOptionNames = useMemo(() => getSelectedNames(internalValue), [internalValue])
+    const selectedOptions = useMemo(
+        () => normalizedOptions.filter((option) => selectedOptionNames.includes(option.name)),
+        [normalizedOptions, selectedOptionNames]
+    )
 
     return (
         <FormControl sx={{ mt: 1, width: '100%', ...formControlSx }} size='small'>
@@ -39,25 +63,18 @@ export const MultiDropdown = ({ name, value, options, onSelect, formControlSx = 
                 size='small'
                 multiple
                 filterSelectedOptions
-                options={options || []}
-                value={findMatchingOptions(options, internalValue) || getDefaultOptionValue()}
+                options={normalizedOptions}
+                value={selectedOptions}
                 onChange={(e, selections) => {
-                    let value = ''
-                    if (selections.length) {
-                        const selectionNames = []
-                        for (let i = 0; i < selections.length; i += 1) {
-                            selectionNames.push(selections[i].name)
-                        }
-                        value = JSON.stringify(selectionNames)
-                    }
-                    setInternalValue(value)
-                    onSelect(value)
+                    const selectionNames = selections.map((selection) => selection?.name).filter(Boolean)
+                    const nextValue = selectionNames.length > 0 ? JSON.stringify(selectionNames) : ''
+                    setInternalValue(nextValue)
+                    onSelect?.(nextValue)
                 }}
                 PopperComponent={StyledPopper}
                 renderInput={(params) => (
                     <TextField
                         {...params}
-                        value={internalValue}
                         sx={{
                             height: '100%',
                             '& .MuiInputBase-root': {
@@ -79,6 +96,12 @@ export const MultiDropdown = ({ name, value, options, onSelect, formControlSx = 
                         </div>
                     </Box>
                 )}
+                renderTags={(tagValue, getTagProps) =>
+                    tagValue.map((option, index) => {
+                        const { key, ...chipProps } = getTagProps({ index })
+                        return <Chip key={key} label={option?.label || option?.name || ''} {...chipProps} />
+                    })
+                }
                 sx={{ height: '100%' }}
             />
         </FormControl>
@@ -87,7 +110,7 @@ export const MultiDropdown = ({ name, value, options, onSelect, formControlSx = 
 
 MultiDropdown.propTypes = {
     name: PropTypes.string,
-    value: PropTypes.string,
+    value: PropTypes.oneOfType([PropTypes.string, PropTypes.array]),
     options: PropTypes.array,
     onSelect: PropTypes.func,
     disabled: PropTypes.bool,

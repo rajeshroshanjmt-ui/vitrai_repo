@@ -1556,7 +1556,10 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
         if (open && chatflowid) {
             // Agentflow chat history is sourced from executions, not chatmessage endpoints.
             if (!isAgentCanvas) {
-                getChatmessageApi.request(chatflowid)
+                const savedChatId = getLocalStorageChatflow(chatflowid)?.chatId
+                if (savedChatId) {
+                    getChatmessageApi.request(chatflowid, { chatId: savedChatId })
+                }
             }
             getIsChatflowStreamingApi.request(chatflowid)
             getAllowChatFlowUploads.request(chatflowid)
