@@ -69,14 +69,6 @@ const badges = ['POPULAR', 'NEW']
 const types = ['Chatflow', 'AgentflowV2', 'Assistant', 'Tool']
 const framework = ['Langchain', 'Langgraph', 'LlamaIndex', 'Assistant Runtime']
 const difficulties = ['Beginner', 'Intermediate', 'Advanced']
-
-const CATEGORY_TILES = [
-    { key: 'all',        label: 'All Templates', icon: IconLayoutGrid,        color: '#059669' },
-    { key: 'Chatflow',   label: 'Chatflows',      icon: IconMessageCircleFilled, color: '#2563eb' },
-    { key: 'Agentflow',  label: 'Agentflows',     icon: IconRobot,            color: '#0891b2' },
-    { key: 'Assistant',  label: 'Assistants',     icon: IconSparkles,         color: '#7c3aed' },
-]
-
 const MenuProps = {
     PaperProps: {
         style: {
@@ -146,6 +138,13 @@ const Marketplace = () => {
     const [difficultyFilter, setDifficultyFilter] = useState([])
 
     // Flowise-style hero & category tiles
+    const CATEGORY_TILES = [
+        { key: 'all',        label: 'All Templates', icon: IconLayoutGrid,        color: '#059669' },
+        { key: 'Chatflow',   label: 'Chatflows',      icon: IconMessageCircleFilled, color: '#2563eb' },
+        { key: 'Agentflow',  label: 'Agentflows',     icon: IconRobot,            color: '#0891b2' },
+        { key: 'Assistant',  label: 'Assistants',     icon: IconSparkles,         color: '#7c3aed' },
+    ]
+
     const noFiltersActive = !search && activeTabValue === 0 && !typeFilter && !difficultyFilter
 
     const categoryCountMap = React.useMemo(() => {
