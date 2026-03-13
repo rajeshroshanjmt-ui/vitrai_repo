@@ -1,5 +1,6 @@
 import client from './client'
 import { createResource, deleteResource, listResource, toResourceBody } from './vetraiResources'
+import marketplaceTemplatesApi from './marketplaceTemplates'
 
 const DEFAULT_CHAT_TEMPLATE_FLOW_DATA = JSON.stringify({
     __meta: { flowType: 'CHATFLOW', source: 'frontend-default' },
@@ -366,10 +367,38 @@ const getAllToolsMarketplaces = async () => {
     }
 }
 
+const convertPrebuiltTemplateToNormalized = (template) => {
+    // Convert 1000+ marketplace templates to existing marketplace format
+    const typeMap = {
+        'Chatflow': 'Chatflow',
+        'Agentflow': 'AgentflowV2',
+        'Assistant': 'Assistant'
+    }
+
+    return {
+        id: template.id,
+        templateName: template.name,
+        type: typeMap[template.type] || template.type,
+        description: template.description || template.preview || '',
+        badge: template.tags?.includes('popular') ? 'POPULAR' : template.tags?.includes('new') ? 'NEW' : '',
+        framework: [template.framework] || ['Langchain'],
+        usecases: template.usecases || [],
+        categories: [template.category] || [],
+        difficulty: template.difficulty,
+        tags: template.tags || [],
+        thumbnail: template.thumbnail,
+        isPrebuiltLibrary: true,
+        // Use empty flow data - actual templates load from backend
+        flowData: null,
+        assistantData: null
+    }
+}
+
 const getAllTemplatesFromMarketplaces = async () => {
-    const [toolsResp, marketplaceResp] = await Promise.all([
+    const [toolsResp, marketplaceResp, newTemplatesResp] = await Promise.all([
         fetchAllResourcePages('tool'),
-        fetchAllResourcePages('marketplace')
+        fetchAllResourcePages('marketplace'),
+        marketplaceTemplatesApi.getAllTemplates({ limit: 1000 }).catch(() => ({ data: [] }))
     ])
 
     const backendTemplates = (marketplaceResp || [])
@@ -380,9 +409,12 @@ const getAllTemplatesFromMarketplaces = async () => {
         })
         .map((item) => normalizeTemplateResource(item))
 
-    const hasChatflowTemplate = backendTemplates.some((template) => template.type === 'Chatflow')
-    const hasAgentflowTemplate = backendTemplates.some((template) => template.type === 'AgentflowV2' || template.type === 'Agentflow')
-    const hasAssistantTemplate = backendTemplates.some((template) => template.type === 'Assistant')
+    // Convert and integrate 1000+ prebuilt templates
+    const prebuiltLibraryTemplates = (newTemplatesResp?.data || []).map(convertPrebuiltTemplateToNormalized)
+
+    const hasChatflowTemplate = backendTemplates.some((template) => template.type === 'Chatflow') || prebuiltLibraryTemplates.some((t) => t.type === 'Chatflow')
+    const hasAgentflowTemplate = backendTemplates.some((template) => template.type === 'AgentflowV2' || template.type === 'Agentflow') || prebuiltLibraryTemplates.some((t) => t.type === 'AgentflowV2')
+    const hasAssistantTemplate = backendTemplates.some((template) => template.type === 'Assistant') || prebuiltLibraryTemplates.some((t) => t.type === 'Assistant')
 
     const fallbackStarterTemplates = [
         {
@@ -444,7 +476,8 @@ const getAllTemplatesFromMarketplaces = async () => {
         toolData: tool.payload || {}
     }))
 
-    const merged = [...backendTemplates, ...localTemplates, ...toolTemplates]
+    // Merge all templates: backend + prebuilt library + local + tools
+    const merged = [...backendTemplates, ...prebuiltLibraryTemplates, ...localTemplates, ...toolTemplates]
     const deduped = dedupeByTypeAndName(merged)
 
     return { data: deduped }

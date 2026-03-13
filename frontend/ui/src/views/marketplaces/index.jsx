@@ -63,11 +63,38 @@ import { useError } from '@/store/context/ErrorContext'
 const badges = ['POPULAR', 'NEW']
 const types = ['Chatflow', 'AgentflowV2', 'Assistant', 'Tool']
 const framework = ['Langchain', 'Langgraph', 'LlamaIndex', 'Assistant Runtime']
+const difficulties = ['Beginner', 'Intermediate', 'Advanced']
 const MenuProps = {
     PaperProps: {
         style: {
             width: 160
         }
+    }
+}
+
+// Helper to get featured templates (POPULAR badge and Beginner difficulty)
+const getFeaturedTemplates = (templates) => {
+    return templates
+        .filter((t) => t.badge === 'POPULAR' || t.difficulty === 'Beginner')
+        .sort((a, b) => {
+            if (a.badge === 'POPULAR' && b.badge !== 'POPULAR') return -1
+            if (b.badge === 'POPULAR' && a.badge !== 'POPULAR') return 1
+            return 0
+        })
+        .slice(0, 6)
+}
+
+// Helper to get difficulty color
+const getDifficultyColor = (difficulty, theme) => {
+    switch (difficulty) {
+        case 'Beginner':
+            return theme.palette.success.main
+        case 'Intermediate':
+            return theme.palette.warning.main
+        case 'Advanced':
+            return theme.palette.error.main
+        default:
+            return theme.palette.grey[500]
     }
 }
 
@@ -98,6 +125,7 @@ const Marketplace = () => {
     const [badgeFilter, setBadgeFilter] = useState([])
     const [typeFilter, setTypeFilter] = useState([])
     const [frameworkFilter, setFrameworkFilter] = useState([])
+    const [difficultyFilter, setDifficultyFilter] = useState([])
 
     const getAllCustomTemplatesApi = useApi(marketplacesApi.getAllCustomTemplates)
     const [activeTabValue, setActiveTabValue] = useState(0)
@@ -203,6 +231,15 @@ const Marketplace = () => {
         })
     }
 
+    const handleDifficultyFilterChange = (event) => {
+        const {
+            target: { value }
+        } = event
+        setDifficultyFilter(
+            typeof value === 'string' ? value.split(',') : value
+        )
+    }
+
     const handleViewChange = (event, nextView) => {
         if (nextView === null) return
         localStorage.setItem('mpDisplayStyle', nextView)
@@ -283,6 +320,10 @@ const Marketplace = () => {
         return frameworkFilter.length > 0 ? (data.framework || []).some((item) => frameworkFilter.includes(item)) : true
     }
 
+    function filterByDifficulty(data) {
+        return difficultyFilter.length > 0 ? difficultyFilter.includes(data.difficulty) : true
+    }
+
     function filterByUsecases(data) {
         if (activeTabValue === 0)
             return selectedUsecases.length > 0 ? (data.usecases || []).some((item) => selectedUsecases.includes(item)) : true
@@ -300,6 +341,8 @@ const Marketplace = () => {
         if (filter.typeFilter.length > 0) filteredData = filteredData.filter((data) => filter.typeFilter.includes(data.type))
         if (filter.frameworkFilter.length > 0)
             filteredData = filteredData.filter((data) => (data.framework || []).some((item) => filter.frameworkFilter.includes(item)))
+        if (filter.difficultyFilter && filter.difficultyFilter.length > 0)
+            filteredData = filteredData.filter((data) => filter.difficultyFilter.includes(data.difficulty))
         if (filter.search) {
             filteredData = filteredData.filter(
                 (data) =>
@@ -629,6 +672,42 @@ const Marketplace = () => {
                                             ))}
                                         </Select>
                                     </FormControl>
+                                    <FormControl
+                                        sx={{
+                                            borderRadius: 2,
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            justifyContent: 'end',
+                                            minWidth: 120
+                                        }}
+                                    >
+                                        <InputLabel size='small' id='type-difficulty-label'>
+                                            Difficulty
+                                        </InputLabel>
+                                        <Select
+                                            size='small'
+                                            labelId='type-difficulty-label'
+                                            id='type-difficulty-checkbox'
+                                            multiple
+                                            value={difficultyFilter}
+                                            onChange={handleDifficultyFilterChange}
+                                            input={<OutlinedInput label='Difficulty' />}
+                                            renderValue={(selected) => selected.join(', ')}
+                                            MenuProps={MenuProps}
+                                            sx={getSelectStyles(theme.palette.grey[900] + 25, theme?.customization?.isDarkMode)}
+                                        >
+                                            {difficulties.map((name) => (
+                                                <MenuItem
+                                                    key={name}
+                                                    value={name}
+                                                    sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1 }}
+                                                >
+                                                    <Checkbox checked={difficultyFilter.indexOf(name) > -1} sx={{ p: 0 }} />
+                                                    <ListItemText primary={name} />
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
                                 </>
                             }
                             onSearchChange={onSearchChange}
@@ -766,6 +845,7 @@ const Marketplace = () => {
                                                     .filter(filterByType)
                                                     .filter(filterFlows)
                                                     .filter(filterByFramework)
+                                                    .filter(filterByDifficulty)
                                                     .filter(filterByUsecases)
                                                     .map((data, index) => (
                                                         <Box key={index}>
@@ -809,6 +889,7 @@ const Marketplace = () => {
                                         filterByType={filterByType}
                                         filterByBadge={filterByBadge}
                                         filterByFramework={filterByFramework}
+                                        filterByDifficulty={filterByDifficulty}
                                         filterByUsecases={filterByUsecases}
                                         goToTool={goToTool}
                                         goToCanvas={goToCanvas}

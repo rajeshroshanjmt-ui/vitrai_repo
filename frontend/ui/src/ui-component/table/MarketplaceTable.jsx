@@ -45,6 +45,7 @@ export const MarketplaceTable = ({
     filterByBadge,
     filterByType,
     filterByFramework,
+    filterByDifficulty,
     filterByUsecases,
     goToCanvas,
     goToTool,
@@ -153,6 +154,7 @@ export const MarketplaceTable = ({
                                     .filter(filterByType)
                                     .filter(filterFunction)
                                     .filter(filterByFramework)
+                                    .filter(filterByDifficulty)
                                     .filter(filterByUsecases)
                                     .map((row, index) => (
                                         <StyledTableRow key={index}>
