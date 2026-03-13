@@ -147,4 +147,43 @@ $summary = [ordered]@{
     completed_filter_count = $completedAudit.total_count
 }
 
+# Check for flow lifecycle, DLQ, evaluation, and user audit actions
+Write-Host "Checking for flow lifecycle, DLQ, evaluation, and user audit coverage..." -ForegroundColor Cyan
+
+$allAuditResp = Invoke-JsonApi -Method "GET" -Uri "$BaseUrl/flows/audit?limit=100" -Headers $headers
+$allAuditItems = @($allAuditResp.data)
+
+$expectedFlowActions = @(
+    "flow.published",
+    "flow.executed",
+    "dlq_replay",
+    "dlq_delete",
+    "evaluation.created",
+    "ingestion.started",
+    "user.invited",
+    "user.deleted",
+    "user.role_changed"
+)
+
+Write-Host "Total audit records found: $($allAuditResp.total)" -ForegroundColor Gray
+if ($allAuditResp.total -gt 0) {
+    $foundActions = @($allAuditItems | Select-Object -ExpandProperty action -Unique)
+    Write-Host "Sample actions found in audit log: $([string]::Join(', ', $foundActions[0..5]))" -ForegroundColor Gray
+
+    $missingActions = @()
+    foreach ($action in $expectedFlowActions) {
+        $found = $foundActions -contains $action
+        if (-not $found) {
+            $missingActions += $action
+        } else {
+            Write-Host "✓ Found audit action: $action" -ForegroundColor Green
+        }
+    }
+
+    if ($missingActions.Count -gt 0) {
+        Write-Host "⚠ Missing audit actions (may not be triggered yet): $([string]::Join(', ', $missingActions))" -ForegroundColor Yellow
+    }
+}
+
+$summary['flow_lifecycle_coverage'] = $missingActions.Count -eq 0 -or $allAuditResp.total -lt 1 ? "unchecked" : ($missingActions.Count -eq 0 ? "complete" : "partial")
 $summary | ConvertTo-Json -Depth 10
