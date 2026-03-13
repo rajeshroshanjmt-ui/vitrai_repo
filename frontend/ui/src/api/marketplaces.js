@@ -398,7 +398,10 @@ const getAllTemplatesFromMarketplaces = async () => {
     const [toolsResp, marketplaceResp, newTemplatesResp] = await Promise.all([
         fetchAllResourcePages('tool'),
         fetchAllResourcePages('marketplace'),
-        marketplaceTemplatesApi.getAllTemplates({ limit: 1000 }).catch(() => ({ data: [] }))
+        marketplaceTemplatesApi.getAllTemplates({ limit: 1000 }).catch((err) => {
+            console.warn('Failed to load marketplace templates:', err)
+            return { data: [] }
+        })
     ])
 
     const backendTemplates = (marketplaceResp || [])
@@ -410,7 +413,8 @@ const getAllTemplatesFromMarketplaces = async () => {
         .map((item) => normalizeTemplateResource(item))
 
     // Convert and integrate 1000+ prebuilt templates
-    const prebuiltLibraryTemplates = (newTemplatesResp?.data || []).map(convertPrebuiltTemplateToNormalized)
+    const templateData = newTemplatesResp?.data || []
+    const prebuiltLibraryTemplates = (Array.isArray(templateData) ? templateData : []).map(convertPrebuiltTemplateToNormalized).filter(t => t)
 
     const hasChatflowTemplate = backendTemplates.some((template) => template.type === 'Chatflow') || prebuiltLibraryTemplates.some((t) => t.type === 'Chatflow')
     const hasAgentflowTemplate = backendTemplates.some((template) => template.type === 'AgentflowV2' || template.type === 'Agentflow') || prebuiltLibraryTemplates.some((t) => t.type === 'AgentflowV2')
