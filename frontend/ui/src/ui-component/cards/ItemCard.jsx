@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux'
 
 // material-ui
 import { styled } from '@mui/material/styles'
-import { Box, Grid, Tooltip, Typography, useTheme } from '@mui/material'
+import { Box, Grid, Tooltip, Typography, useTheme, Chip, Stack } from '@mui/material'
 
 // project imports
 import MainCard from '@/ui-component/cards/MainCard'
@@ -30,14 +30,29 @@ const CardWrapper = styled(MainCard)(({ theme }) => ({
 
 // ===========================|| CONTRACT CARD ||=========================== //
 
+const getDifficultyColor = (difficulty, theme) => {
+    switch (difficulty) {
+        case 'Beginner':
+            return { bg: theme.palette.success.lighter, color: theme.palette.success.dark }
+        case 'Intermediate':
+            return { bg: theme.palette.warning.lighter, color: theme.palette.warning.dark }
+        case 'Advanced':
+            return { bg: theme.palette.error.lighter, color: theme.palette.error.dark }
+        default:
+            return { bg: theme.palette.grey[200], color: theme.palette.grey[700] }
+    }
+}
+
 const ItemCard = ({ data, images, icons, onClick }) => {
     const theme = useTheme()
     const customization = useSelector((state) => state.customization)
 
+    const difficultyColor = data.difficulty ? getDifficultyColor(data.difficulty, theme) : null
+
     return (
         <CardWrapper content={false} onClick={onClick} sx={{ border: 1, borderColor: theme.palette.grey[900] + 25, borderRadius: 2 }}>
-            <Box sx={{ height: '100%', p: 2.25 }}>
-                <Grid container justifyContent='space-between' direction='column' sx={{ height: '100%', gap: 3 }}>
+            <Box sx={{ height: '100%', p: 2.25, display: 'flex', flexDirection: 'column' }}>
+                <Grid container justifyContent='space-between' direction='column' sx={{ height: '100%', gap: 1, flex: 1 }}>
                     <Box display='flex' flexDirection='column' sx={{ width: '100%' }}>
                         <div
                             style={{
@@ -176,6 +191,34 @@ const ItemCard = ({ data, images, icons, onClick }) => {
                                 </MoreItemsTooltip>
                             )}
                         </Box>
+                    )}
+                    {(data.difficulty || data.framework) && (
+                        <Stack direction='row' sx={{ gap: 1, mt: 'auto', pt: 1, flexWrap: 'wrap' }}>
+                            {data.difficulty && (
+                                <Chip
+                                    label={data.difficulty}
+                                    size='small'
+                                    sx={{
+                                        backgroundColor: difficultyColor?.bg,
+                                        color: difficultyColor?.color,
+                                        fontWeight: 600,
+                                        fontSize: '0.75rem'
+                                    }}
+                                />
+                            )}
+                            {data.framework && Array.isArray(data.framework) && data.framework.length > 0 && (
+                                <Chip
+                                    label={data.framework[0]}
+                                    size='small'
+                                    variant='outlined'
+                                    sx={{
+                                        fontSize: '0.75rem',
+                                        borderColor: theme.palette.primary.lighter,
+                                        color: theme.palette.primary.main
+                                    }}
+                                />
+                            )}
+                        </Stack>
                     )}
                 </Grid>
             </Box>
