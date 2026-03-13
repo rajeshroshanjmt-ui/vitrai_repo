@@ -295,8 +295,21 @@ const Marketplace = () => {
             setSearchSuggestions([])
         }
 
-        getEligibleUsecases(data, { typeFilter, badgeFilter, frameworkFilter, difficultyFilter, search: value })
+        // Debounced filter update
+        clearTimeout(window.searchDebounceTimer)
+        window.searchDebounceTimer = setTimeout(() => {
+            getEligibleUsecases(data, { typeFilter, badgeFilter, frameworkFilter, difficultyFilter, search: value })
+        }, 300) // 300ms debounce delay
     }
+
+    // Cleanup debounce timer on unmount
+    useEffect(() => {
+        return () => {
+            if (window.searchDebounceTimer) {
+                clearTimeout(window.searchDebounceTimer)
+            }
+        }
+    }, [])
 
     const handleSearchSelect = (selectedValue) => {
         setSearch(selectedValue)
