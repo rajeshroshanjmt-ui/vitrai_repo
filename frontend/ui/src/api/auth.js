@@ -10,7 +10,7 @@ const DEFAULT_FEATURES = {
     'feat:account': true,
     'feat:sso-config': false,
     'feat:roles': false,
-    'feat:users': false,
+    'feat:users': true,
     'feat:workspaces': true,
     'feat:login-activity': false
 }
@@ -70,8 +70,8 @@ const DEFAULT_PERMISSIONS = [
     'evaluations:create',
     'evaluations:update',
     'evaluations:delete',
-    'logs:view'
-    ,
+    'logs:view',
+    'users:manage',
     'workspace:view',
     'workspace:create',
     'workspace:update',
