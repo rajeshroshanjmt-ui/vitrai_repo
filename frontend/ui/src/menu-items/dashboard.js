@@ -201,6 +201,22 @@ const dashboard = {
             ]
         },
         {
+            id: 'admin',
+            title: 'ADMIN',
+            type: 'group',
+            children: [
+                {
+                    id: 'users',
+                    title: 'Users',
+                    type: 'item',
+                    url: '/users',
+                    icon: icons.IconUsersGroup,
+                    display: 'feat:users',
+                    permission: 'users:manage'
+                }
+            ]
+        },
+        {
             id: 'account-group',
             title: 'ACCOUNT',
             type: 'group',
