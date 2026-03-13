@@ -830,6 +830,57 @@ const Marketplace = () => {
                         )}
                         <Available permission='templates:marketplace'>
                             <TabPanel value={activeTabValue} index={0}>
+                                {!isLoading && getAllTemplatesMarketplacesApi.data && (
+                                    <Stack sx={{ mb: 3, gap: 2 }}>
+                                        <Box>
+                                            <Typography variant='h6' sx={{ mb: 2, fontWeight: 700 }}>
+                                                Marketplace Overview
+                                            </Typography>
+                                            <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ gap: 2, flexWrap: 'wrap' }}>
+                                                <MainCard sx={{ flex: { xs: '1 1 100%', sm: '1 1 auto' }, minWidth: 150 }}>
+                                                    <Stack sx={{ gap: 1 }}>
+                                                        <Typography variant='body2' sx={{ color: theme.palette.grey[600] }}>
+                                                            Total Templates
+                                                        </Typography>
+                                                        <Typography variant='h4' sx={{ fontWeight: 700, color: theme.palette.primary.main }}>
+                                                            {getAllTemplatesMarketplacesApi.data?.length || 0}
+                                                        </Typography>
+                                                    </Stack>
+                                                </MainCard>
+                                                <MainCard sx={{ flex: { xs: '1 1 100%', sm: '1 1 auto' }, minWidth: 150 }}>
+                                                    <Stack sx={{ gap: 1 }}>
+                                                        <Typography variant='body2' sx={{ color: theme.palette.grey[600] }}>
+                                                            Beginner Templates
+                                                        </Typography>
+                                                        <Typography variant='h4' sx={{ fontWeight: 700, color: theme.palette.success.main }}>
+                                                            {getAllTemplatesMarketplacesApi.data?.filter((t) => t.difficulty === 'Beginner').length || 0}
+                                                        </Typography>
+                                                    </Stack>
+                                                </MainCard>
+                                                <MainCard sx={{ flex: { xs: '1 1 100%', sm: '1 1 auto' }, minWidth: 150 }}>
+                                                    <Stack sx={{ gap: 1 }}>
+                                                        <Typography variant='body2' sx={{ color: theme.palette.grey[600] }}>
+                                                            Intermediate Templates
+                                                        </Typography>
+                                                        <Typography variant='h4' sx={{ fontWeight: 700, color: theme.palette.warning.main }}>
+                                                            {getAllTemplatesMarketplacesApi.data?.filter((t) => t.difficulty === 'Intermediate').length || 0}
+                                                        </Typography>
+                                                    </Stack>
+                                                </MainCard>
+                                                <MainCard sx={{ flex: { xs: '1 1 100%', sm: '1 1 auto' }, minWidth: 150 }}>
+                                                    <Stack sx={{ gap: 1 }}>
+                                                        <Typography variant='body2' sx={{ color: theme.palette.grey[600] }}>
+                                                            Advanced Templates
+                                                        </Typography>
+                                                        <Typography variant='h4' sx={{ fontWeight: 700, color: theme.palette.error.main }}>
+                                                            {getAllTemplatesMarketplacesApi.data?.filter((t) => t.difficulty === 'Advanced').length || 0}
+                                                        </Typography>
+                                                    </Stack>
+                                                </MainCard>
+                                            </Stack>
+                                        </Box>
+                                    </Stack>
+                                )}
                                 {!view || view === 'card' ? (
                                     <>
                                         {isLoading ? (
