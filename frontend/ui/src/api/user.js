@@ -82,22 +82,26 @@ const updateUser = async (body) => {
 
 // organization users
 const getAllUsersByOrganizationId = async () => {
-    const user = await buildUserFromMe()
-    return {
-        data: [
-            {
-                id: user.id,
-                userId: user.id,
+    try {
+        const response = await client.get('/users')
+        const users = response?.data?.data || []
+        return {
+            data: users.map(u => ({
+                id: u.id,
+                userId: u.id,
                 user: {
-                    id: user.id,
-                    name: user.name,
-                    email: user.email,
-                    status: 'active'
+                    id: u.id,
+                    name: u.email,
+                    email: u.email,
+                    status: u.status
                 },
-                role: { name: user.role || 'admin' },
-                isOrgOwner: true
-            }
-        ]
+                role: { name: u.role },
+                isOrgOwner: u.role === 'admin'
+            }))
+        }
+    } catch (err) {
+        console.error('Failed to fetch organization users:', err.message)
+        return { data: [] }
     }
 }
 const getUserByUserIdOrganizationId = async () => ({ data: [] })
@@ -116,8 +120,28 @@ const getOrganizationsByUserId = async () => {
         ]
     }
 }
-const updateOrganizationUser = async () => ({ data: { status: 'ok' } })
-const deleteOrganizationUser = async () => ({ data: { status: 'ok' } })
+const updateOrganizationUser = async (body) => {
+    try {
+        const userId = body?.id || body?.userId
+        const response = await client.put(`/users/${userId}`, {
+            role: body?.role?.name || body?.role || 'viewer'
+        })
+        return { data: response?.data }
+    } catch (err) {
+        console.error('Failed to update organization user:', err.message)
+        return { data: { status: 'error' } }
+    }
+}
+const deleteOrganizationUser = async (body) => {
+    try {
+        const userId = body?.id || body?.userId
+        await client.delete(`/users/${userId}`)
+        return { data: { status: 'ok' } }
+    } catch (err) {
+        console.error('Failed to delete organization user:', err.message)
+        return { data: { status: 'error' } }
+    }
+}
 
 const getAdditionalSeatsQuantity = async () => ({
     data: {
@@ -146,24 +170,48 @@ const getCurrentUsage = async () => ({
 
 // workspace users
 const getAllUsersByWorkspaceId = async (workspaceId) => {
-    const user = await buildUserFromMe()
-    return {
-        data: [
-            {
-                id: user.id,
-                userId: user.id,
+    try {
+        // For now, return all users assigned to the workspace
+        // This will be updated when workspace-user association is implemented
+        const response = await client.get(`/workspace/${workspaceId}/users`)
+        const users = response?.data?.data || []
+        return {
+            data: users.map(u => ({
+                id: u.id,
+                userId: u.id,
                 workspaceId,
                 user: {
-                    id: user.id,
-                    name: user.name,
-                    email: user.email,
-                    status: 'active'
+                    id: u.id,
+                    name: u.email,
+                    email: u.email,
+                    status: u.status
                 },
-                role: { name: user.role || 'admin' },
-                isOrgOwner: true,
-                status: 'active'
-            }
-        ]
+                role: { name: u.role },
+                isOrgOwner: u.role === 'admin',
+                status: u.status
+            }))
+        }
+    } catch (err) {
+        // Fallback: return current user if endpoint not available
+        const user = await buildUserFromMe()
+        return {
+            data: [
+                {
+                    id: user.id,
+                    userId: user.id,
+                    workspaceId,
+                    user: {
+                        id: user.id,
+                        name: user.name,
+                        email: user.email,
+                        status: 'active'
+                    },
+                    role: { name: user.role || 'admin' },
+                    isOrgOwner: true,
+                    status: 'active'
+                }
+            ]
+        }
     }
 }
 const getUserByRoleId = async () => ({ data: [] })
@@ -199,7 +247,17 @@ const getWorkspacesByOrganizationIdUserId = async (organizationId) => {
         }))
     }
 }
-const deleteWorkspaceUser = async () => ({ data: { status: 'ok' } })
+const deleteWorkspaceUser = async (body) => {
+    try {
+        const workspaceId = body?.workspaceId
+        const userId = body?.userId || body?.id
+        await client.delete(`/workspace/${workspaceId}/users/${userId}`)
+        return { data: { status: 'ok' } }
+    } catch (err) {
+        console.error('Failed to delete workspace user:', err.message)
+        return { data: { status: 'error' } }
+    }
+}
 
 export default {
     getUserById,

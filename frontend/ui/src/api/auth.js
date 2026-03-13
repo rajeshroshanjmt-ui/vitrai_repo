@@ -156,7 +156,7 @@ const resolveLogin = async () => {
     return { data: { redirectUrl: '/signin' } }
 }
 
-const buildLoginPayload = (token, meData, tenantId) => {
+const buildLoginPayload = (token, meData, tenantId, permissions = DEFAULT_PERMISSIONS, features = DEFAULT_FEATURES) => {
     const role = meData?.role || 'admin'
     const userEmail = meData?.email || 'admin@vetrai.com'
     const userId = meData?.user_id || meData?.id || tenantId
@@ -169,8 +169,8 @@ const buildLoginPayload = (token, meData, tenantId) => {
         role,
         isSSO: false,
         token,
-        permissions: DEFAULT_PERMISSIONS,
-        features: DEFAULT_FEATURES,
+        permissions,
+        features,
         isOrganizationAdmin: role === 'admin',
         activeOrganizationId: tenantId,
         activeOrganizationSubscriptionId: null,
@@ -205,16 +205,36 @@ const login = async (body) => {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
     })
 
+    // Fetch permissions from backend
+    let permissions = DEFAULT_PERMISSIONS
+    let features = DEFAULT_FEATURES
+    try {
+        const permissionsResponse = await axios.get(`${baseURL}/api/auth/permissions`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+        })
+        permissions = permissionsResponse?.data?.permissions || DEFAULT_PERMISSIONS
+        features = permissionsResponse?.data?.features || DEFAULT_FEATURES
+    } catch (err) {
+        // Fallback to defaults if backend permissions endpoint fails
+        console.warn('Failed to fetch permissions from backend, using defaults:', err.message)
+    }
+
     const role = meResponse?.data?.role || 'admin'
     if (token) {
         localStorage.setItem('vetrai_access_token', token)
         localStorage.setItem('vetrai_tenant_id', tenant_id)
         localStorage.setItem('vetrai_email', email)
         localStorage.setItem('vetrai_role', role)
+        localStorage.setItem('vetrai_permissions', JSON.stringify(permissions))
+        localStorage.setItem('vetrai_features', JSON.stringify(features))
     }
 
     return {
-        data: buildLoginPayload(token, meResponse?.data, tenant_id)
+        data: {
+            ...buildLoginPayload(token, meResponse?.data, tenant_id),
+            permissions,
+            features
+        }
     }
 }
 
