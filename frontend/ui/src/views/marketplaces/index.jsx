@@ -154,7 +154,20 @@ const Marketplace = () => {
         sparkle: IconSparkles
     }), [])
 
-    const noFiltersActive = !search && activeTabValue === 0 && !typeFilter && !difficultyFilter
+    const getAllCustomTemplatesApi = useApi(marketplacesApi.getAllCustomTemplates)
+    const [activeTabValue, setActiveTabValue] = useState(0)
+    const [templateImages, setTemplateImages] = useState({})
+    const [templateIcons, setTemplateIcons] = useState({})
+    const [templateUsecases, setTemplateUsecases] = useState([])
+    const [eligibleTemplateUsecases, setEligibleTemplateUsecases] = useState([])
+    const [selectedTemplateUsecases, setSelectedTemplateUsecases] = useState([])
+    const enqueueSnackbar = (...args) => dispatch(enqueueSnackbarAction(...args))
+    const closeSnackbar = (...args) => dispatch(closeSnackbarAction(...args))
+    const { confirm } = useConfirm()
+    const { hasPermission } = useAuth()
+
+    // Flowise-style hero & category tiles - state-dependent calculations
+    const noFiltersActive = !search && activeTabValue === 0 && !typeFilter.length && !difficultyFilter.length
 
     const categoryCountMap = React.useMemo(() => {
         const data = getAllTemplatesMarketplacesApi.data || []
@@ -178,18 +191,6 @@ const Marketplace = () => {
             setDifficultyFilter([difficulty])
         }
     }
-
-    const getAllCustomTemplatesApi = useApi(marketplacesApi.getAllCustomTemplates)
-    const [activeTabValue, setActiveTabValue] = useState(0)
-    const [templateImages, setTemplateImages] = useState({})
-    const [templateIcons, setTemplateIcons] = useState({})
-    const [templateUsecases, setTemplateUsecases] = useState([])
-    const [eligibleTemplateUsecases, setEligibleTemplateUsecases] = useState([])
-    const [selectedTemplateUsecases, setSelectedTemplateUsecases] = useState([])
-    const enqueueSnackbar = (...args) => dispatch(enqueueSnackbarAction(...args))
-    const closeSnackbar = (...args) => dispatch(closeSnackbarAction(...args))
-    const { confirm } = useConfirm()
-    const { hasPermission } = useAuth()
 
     const [showShareTemplateDialog, setShowShareTemplateDialog] = useState(false)
     const [shareTemplateDialogProps, setShareTemplateDialogProps] = useState({})
