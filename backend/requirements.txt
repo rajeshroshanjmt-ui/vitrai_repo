@@ -8,3 +8,6 @@ pydantic[email]==2.10.6
 python-multipart==0.0.20
 passlib==1.7.4
 bcrypt==4.0.1
+httpx==0.27.0
+beautifulsoup4==4.12.2
+qdrant-client==2.7.0
