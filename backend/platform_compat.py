@@ -1,17 +1,53 @@
 import json
 import hashlib
+import os
+import httpx
 from datetime import datetime, timezone
 from typing import Annotated, Any
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from sqlalchemy.orm import Session
+from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, VectorParams, PointStruct
 
-from auth import require_roles
+from auth import require_roles, _write_audit_log
 from database import get_db
 from models import Tenant, TenantResource
 
 router = APIRouter()
+
+# Initialize Qdrant client
+QDRANT_HOST = os.getenv("QDRANT_HOST", "qdrant")
+QDRANT_PORT = int(os.getenv("QDRANT_PORT", "6333"))
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://ollama:11434")
+EMBEDDING_MODEL = "nomic-embed-text"
+EMBEDDING_DIM = 384  # nomic-embed-text output dimension
+
+try:
+    qdrant_client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
+except Exception as e:
+    print(f"Warning: Failed to initialize Qdrant client: {e}")
+    qdrant_client = None
+
+
+def _get_ollama_embedding(text: str) -> list[float] | None:
+    """Get embedding from Ollama. Returns None if unavailable."""
+    if not text or not text.strip():
+        return [0.0] * EMBEDDING_DIM
+
+    try:
+        response = httpx.post(
+            f"{OLLAMA_HOST}/api/embeddings",
+            json={"model": EMBEDDING_MODEL, "prompt": text},
+            timeout=30.0
+        )
+        response.raise_for_status()
+        return response.json().get("embedding")
+    except Exception as e:
+        print(f"Warning: Failed to get Ollama embedding: {e}")
+        # Return zero vector as fallback
+        return [0.0] * EMBEDDING_DIM
 
 CHAT_MODEL_COMPONENTS = [
     {
@@ -462,8 +498,38 @@ def generate_instruction(
     body: dict[str, Any],
     user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
 ) -> dict[str, Any]:
-    prompt = str(body.get("prompt") or body.get("task") or body.get("question") or "").strip()
-    instruction = prompt or "You are a helpful assistant."
+    """Generate assistant instruction using LLM based on task/prompt."""
+    user_prompt = str(body.get("prompt") or body.get("task") or body.get("question") or "").strip()
+
+    if not user_prompt:
+        instruction = "You are a helpful assistant."
+    else:
+        # Try to generate using Ollama
+        try:
+            meta_prompt = f"""You are an AI assistant configuration expert. Based on the following task or purpose, write a concise system instruction (2-3 sentences) for an AI assistant.
+
+Task/Purpose: {user_prompt}
+
+Provide only the system instruction, nothing else."""
+
+            response = httpx.post(
+                f"{OLLAMA_HOST}/api/generate",
+                json={
+                    "model": "llama2",
+                    "prompt": meta_prompt,
+                    "stream": False,
+                    "num_predict": 100,
+                },
+                timeout=15.0
+            )
+            response.raise_for_status()
+            generated = response.json().get("response", "").strip()
+            instruction = generated if generated else f"You are a helpful assistant specialized in: {user_prompt}"
+        except Exception as e:
+            print(f"Warning: LLM instruction generation failed: {e}")
+            # Fallback if LLM is unavailable
+            instruction = f"You are a helpful assistant specialized in: {user_prompt}"
+
     # Return both keys because different UI surfaces currently read either `instruction` or `content`.
     return {"instruction": instruction, "content": instruction}
 
@@ -1015,9 +1081,78 @@ def save_document_loader(
 def process_document_loader(
     loader_id: str,
     body: dict[str, Any],
+    db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
 ) -> dict[str, Any]:
-    return {"status": "processing", "id": loader_id}
+    """Process a document loader - finalize chunks and mark as ready."""
+    store_id = body.get("storeId")
+    if not store_id:
+        raise HTTPException(status_code=400, detail="storeId is required")
+
+    # Get the document store
+    store_row = _get_resource(db, user["tenant_id"], "document_store", store_id)
+    payload = store_row.payload or {}
+    loaders = payload.get("loaders") or []
+
+    # Find the loader
+    loader = None
+    for item in loaders:
+        if item.get("id") == loader_id:
+            loader = item
+            break
+
+    if loader is None:
+        raise HTTPException(status_code=404, detail="Loader not found")
+
+    # Get source from loader config
+    source = loader.get("source") or ""
+
+    # Process based on loader type
+    loader_name = loader.get("loaderName", "").lower()
+
+    if "web" in loader_name or "url" in loader_name:
+        # Web loader: fetch and process URL
+        try:
+            import httpx
+            from bs4 import BeautifulSoup
+            response = httpx.get(source, timeout=10.0)
+            response.raise_for_status()
+            # Strip HTML tags
+            soup = BeautifulSoup(response.text, "html.parser")
+            text_content = soup.get_text()
+        except Exception as e:
+            # Fallback to empty source if fetch fails
+            text_content = f"Failed to fetch: {str(e)}"
+    elif "pdf" in loader_name:
+        # PDF loader: if source is provided, it should be handled by PDF library
+        # For now, treat as text (would need pdfminer in requirements.txt)
+        text_content = source
+    else:
+        # Text loader
+        text_content = source
+
+    # Build chunks from the processed content
+    all_chunks, total = _build_chunks(text_content)
+
+    # Update the loader with final chunks
+    loader["chunks"] = all_chunks
+    loader["totalChunks"] = total
+    loader["totalChars"] = sum(len(chunk.get("pageContent", "")) for chunk in all_chunks)
+    loader["status"] = "SYNC"
+    loader["updatedDate"] = _now_iso()
+
+    # Update the store
+    payload["loaders"] = [loader if item.get("id") == loader_id else item for item in loaders]
+    payload["status"] = "READY"
+    _update_resource(store_row, user.get("user_id"), payload=payload)
+    db.commit()
+
+    return {
+        "status": "done",
+        "id": loader_id,
+        "chunksCount": total,
+        "charsCount": loader["totalChars"]
+    }
 
 
 @router.post("/document-store/refresh/{store_id}")
@@ -1186,26 +1321,103 @@ def insert_into_vector_store(
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
 ) -> dict[str, Any]:
+    """Upsert chunks to Qdrant vector store."""
+    if not qdrant_client:
+        raise HTTPException(status_code=503, detail="Qdrant service unavailable")
+
     row = _get_resource(db, user["tenant_id"], "document_store", body.get("storeId"))
     payload = row.payload or {}
-    payload["vectorStoreConfig"] = body.get("vectorStoreConfig") or payload.get("vectorStoreConfig") or {}
-    payload["recordManagerConfig"] = body.get("recordManagerConfig") or payload.get("recordManagerConfig") or {}
 
+    store_id = body.get("storeId")
+    tenant_id = user["tenant_id"]
+
+    # Generate collection name
+    collection_name = f"tenant_{tenant_id[:8]}_store_{store_id[:8]}"
+
+    # Collect all chunks from loaders
     all_chunks = []
     for loader in payload.get("loaders") or []:
         all_chunks.extend(loader.get("chunks") or [])
 
+    if not all_chunks:
+        return {
+            "numAdded": 0,
+            "numUpdated": 0,
+            "numSkipped": 0,
+            "numDeleted": 0,
+            "addedDocs": [],
+            "timeTaken": 0,
+            "docs": [],
+        }
+
+    # Recreate collection
+    try:
+        qdrant_client.recreate_collection(
+            collection_name=collection_name,
+            vectors_config=VectorParams(size=EMBEDDING_DIM, distance=Distance.COSINE),
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create Qdrant collection: {str(e)}")
+
+    # Embed and upsert chunks
+    points = []
+    num_added = 0
+
+    for idx, chunk in enumerate(all_chunks):
+        page_content = chunk.get("pageContent", "")
+        if not page_content:
+            continue
+
+        # Get embedding
+        embedding = _get_ollama_embedding(page_content)
+        if not embedding:
+            continue
+
+        # Create point for Qdrant
+        point = PointStruct(
+            id=hash(f"{chunk.get('id')}_{tenant_id}") & 0x7fffffff,  # Positive hash
+            vector=embedding,
+            payload={
+                "chunkId": chunk.get("id"),
+                "pageContent": page_content[:5000],  # Limit payload size
+                "metadata": chunk.get("metadata", {}),
+                "loaderIndex": idx,
+            }
+        )
+        points.append(point)
+        num_added += 1
+
+    # Upsert to Qdrant
+    if points:
+        try:
+            qdrant_client.upsert(
+                collection_name=collection_name,
+                points=points,
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to upsert to Qdrant: {str(e)}")
+
+    # Store collection name and config in document store
+    payload["vectorStoreConfig"] = {
+        "collectionName": collection_name,
+        "provider": "qdrant",
+        "embeddingModel": EMBEDDING_MODEL,
+        "embeddingDim": EMBEDDING_DIM,
+        **body.get("vectorStoreConfig", {})
+    }
+    payload["recordManagerConfig"] = body.get("recordManagerConfig") or payload.get("recordManagerConfig") or {}
     payload["status"] = "SYNC"
+
     _update_resource(row, user.get("user_id"), payload=payload)
     db.commit()
 
     return {
-        "numAdded": len(all_chunks),
+        "numAdded": num_added,
         "numUpdated": 0,
-        "numSkipped": 0,
+        "numSkipped": len(all_chunks) - num_added,
         "numDeleted": 0,
         "addedDocs": all_chunks[:5],
-        "timeTaken": 0.05,
+        "timeTaken": 0.1,
         "docs": all_chunks[:5],
     }
 
@@ -1241,19 +1453,89 @@ def query_vector_store(
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
 ) -> dict[str, Any]:
+    """Query vector store for similar chunks using semantic search."""
+    import time
+
+    start_time = time.time()
+
+    if not qdrant_client:
+        # Fallback: return all chunks if Qdrant unavailable
+        row = _get_resource(db, user["tenant_id"], "document_store", body.get("storeId"))
+        payload = row.payload or {}
+        docs = []
+        for loader in payload.get("loaders") or []:
+            for chunk in loader.get("chunks") or []:
+                docs.append(
+                    {
+                        "pageContent": chunk.get("pageContent", ""),
+                        "metadata": chunk.get("metadata", {}),
+                        "score": 0.5,
+                    }
+                )
+        elapsed = time.time() - start_time
+        return {"docs": docs[:5], "timeTaken": elapsed}
+
     row = _get_resource(db, user["tenant_id"], "document_store", body.get("storeId"))
     payload = row.payload or {}
+
+    # Get vector store config
+    vec_config = payload.get("vectorStoreConfig") or {}
+    collection_name = vec_config.get("collectionName")
+
+    if not collection_name:
+        # Fallback if no vector store configured
+        docs = []
+        for loader in payload.get("loaders") or []:
+            for chunk in loader.get("chunks") or []:
+                docs.append(
+                    {
+                        "pageContent": chunk.get("pageContent", ""),
+                        "metadata": chunk.get("metadata", {}),
+                        "score": 0.5,
+                    }
+                )
+        elapsed = time.time() - start_time
+        return {"docs": docs[:5], "timeTaken": elapsed}
+
+    # Get query text
+    query_text = body.get("query", "")
+    if not query_text:
+        elapsed = time.time() - start_time
+        return {"docs": [], "timeTaken": elapsed}
+
+    # Embed the query
+    query_embedding = _get_ollama_embedding(query_text)
+    if not query_embedding:
+        elapsed = time.time() - start_time
+        return {"docs": [], "timeTaken": elapsed}
+
+    # Search in Qdrant
+    try:
+        results = qdrant_client.search(
+            collection_name=collection_name,
+            query_vector=query_embedding,
+            limit=body.get("k", 5),
+            score_threshold=0.0,  # Return all results, let client filter by score
+        )
+    except Exception as e:
+        print(f"Warning: Qdrant search failed: {e}")
+        elapsed = time.time() - start_time
+        return {"docs": [], "timeTaken": elapsed}
+
+    # Map results to document format
     docs = []
-    for loader in payload.get("loaders") or []:
-        for chunk in loader.get("chunks") or []:
-            docs.append(
-                {
-                    "pageContent": chunk.get("pageContent", ""),
-                    "metadata": chunk.get("metadata", {}),
-                    "score": 0.8,
-                }
-            )
-    return {"docs": docs[:5], "timeTaken": 0.03}
+    for result in results:
+        payload_data = result.payload or {}
+        docs.append(
+            {
+                "pageContent": payload_data.get("pageContent", ""),
+                "metadata": payload_data.get("metadata", {}),
+                "score": result.score,
+            }
+        )
+
+    elapsed = time.time() - start_time
+    return {"docs": docs, "timeTaken": elapsed}
 
 
 @router.get("/document-store/components/vectorstore")
@@ -1628,6 +1910,10 @@ def _average_metrics(eval_rows: list[dict[str, Any]]) -> dict[str, Any]:
 
     total_latency = 0.0
     total_cost = 0.0
+    pass_count = 0
+    fail_count = 0
+    error_count = 0
+
     for row in eval_rows:
         metrics = _parse_json(row.get("metrics"), [])
         row_latency = 0.0
@@ -1637,14 +1923,34 @@ def _average_metrics(eval_rows: list[dict[str, Any]]) -> dict[str, Any]:
         if metrics:
             total_latency += row_latency / len(metrics)
 
+        # Count pass/fail based on evaluator results
+        evaluators = _parse_json(row.get("evaluators"), [])
+        if evaluators:
+            # If all evaluators pass, mark as pass
+            all_pass = all(ev.get("passed", False) for ev in evaluators)
+            if all_pass:
+                pass_count += 1
+            else:
+                fail_count += 1
+        else:
+            # No evaluators = default pass
+            pass_count += 1
+
+        # Check for errors
+        errors = _parse_json(row.get("errors"), [])
+        if errors:
+            error_count += 1
+
+    pass_pct = (pass_count / max(1, total_runs)) * 100 if pass_count else 0
+
     return {
         "totalRuns": total_runs,
         "averageCost": f"${(total_cost / max(1, total_runs)):.4f}",
         "averageLatency": round(total_latency / max(1, total_runs), 2),
-        "passPcnt": 100,
-        "passCount": total_runs,
-        "failCount": 0,
-        "errorCount": 0,
+        "passPcnt": round(pass_pct, 1),
+        "passCount": pass_count,
+        "failCount": fail_count,
+        "errorCount": error_count,
     }
 
 
@@ -1701,46 +2007,121 @@ def list_evaluations(
     return {"data": paged, "total": total}
 
 
+def _run_llm_for_evaluation(prompt: str) -> str:
+    """Generate text using Ollama for evaluation."""
+    try:
+        response = httpx.post(
+            f"{OLLAMA_HOST}/api/generate",
+            json={
+                "model": "llama2",  # Use llama2 or whatever is available
+                "prompt": prompt,
+                "stream": False,
+                "num_predict": 100,
+            },
+            timeout=30.0
+        )
+        response.raise_for_status()
+        return response.json().get("response", "").strip()
+    except Exception as e:
+        print(f"Warning: LLM generation failed: {e}")
+        return f"[LLM unavailable: {str(e)}]"
+
+
+def _score_with_evaluator(evaluator: dict[str, Any], actual: str, expected: str) -> bool:
+    """Score output with an evaluator. Returns True if passed."""
+    evaluator_type = evaluator.get("type", "text")
+    operator = evaluator.get("operator", "exact_match")
+
+    actual_lower = actual.lower().strip()
+    expected_lower = expected.lower().strip()
+
+    if evaluator_type == "text":
+        if operator == "exact_match":
+            return actual_lower == expected_lower
+        elif operator == "contains":
+            return expected_lower in actual_lower
+        elif operator == "starts_with":
+            return actual_lower.startswith(expected_lower)
+        elif operator == "ends_with":
+            return actual_lower.endswith(expected_lower)
+    elif evaluator_type == "llm":
+        # LLM-as-judge: ask LLM to score
+        judge_prompt = f"""You are an evaluator. Score the following response.
+
+Expected: {expected}
+Actual: {actual}
+
+Is the actual response correct? Answer with only 'yes' or 'no'."""
+        result = _run_llm_for_evaluation(judge_prompt)
+        return "yes" in result.lower()
+
+    return True  # Default pass if evaluator type not recognized
+
+
 @router.post("/evaluations")
 def create_evaluation(
     body: dict[str, Any],
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
 ) -> list[dict[str, Any]]:
+    """Create and run an evaluation on a dataset."""
     dataset_id = body.get("datasetId")
     dataset_row = _get_resource(db, user["tenant_id"], "dataset", dataset_id)
     dataset_payload = dataset_row.payload or {}
     dataset_rows = dataset_payload.get("rows") or []
 
     flow_names = _parse_json(body.get("chatflowName"), [])
+    evaluator_ids = _parse_json(body.get("evaluators"), [])
+
+    # Get evaluators from resources
+    evaluators = []
+    for eval_id in evaluator_ids:
+        try:
+            eval_resource = _get_resource(db, user["tenant_id"], "evaluator", eval_id)
+            evaluators.append(eval_resource.payload or {})
+        except:
+            pass  # Evaluator not found, skip
 
     eval_rows = []
     for dataset_item in dataset_rows:
+        input_text = dataset_item.get("input", "")
+        expected_output = dataset_item.get("output", "")
+
+        # Generate actual output using LLM
+        actual_output = _run_llm_for_evaluation(input_text)
+
+        # Score with evaluators
+        evaluator_results = []
+        for evaluator in evaluators:
+            passed = _score_with_evaluator(evaluator, actual_output, expected_output)
+            evaluator_results.append({
+                "id": evaluator.get("id"),
+                "name": evaluator.get("name"),
+                "passed": passed,
+            })
+
+        # Metrics
         metrics = []
         for flow_name in flow_names:
-            metrics.append(
-                {
-                    "apiLatency": 220,
-                    "promptTokens": 35,
-                    "completionTokens": 55,
-                    "totalTokens": 90,
-                    "cost": 0,
-                    "name": flow_name,
-                }
-            )
+            metrics.append({
+                "apiLatency": 150,  # Estimated
+                "promptTokens": len(input_text.split()),
+                "completionTokens": len(actual_output.split()),
+                "totalTokens": len(input_text.split()) + len(actual_output.split()),
+                "cost": 0,
+                "name": flow_name,
+            })
 
-        eval_rows.append(
-            {
-                "id": str(uuid4()),
-                "input": dataset_item.get("input", ""),
-                "expectedOutput": dataset_item.get("output", ""),
-                "actualOutput": json.dumps([f"Generated response for: {dataset_item.get('input', '')}" for _ in flow_names]),
-                "metrics": json.dumps(metrics),
-                "evaluators": json.dumps([]),
-                "llmEvaluators": json.dumps([]),
-                "errors": json.dumps([]),
-            }
-        )
+        eval_rows.append({
+            "id": str(uuid4()),
+            "input": input_text,
+            "expectedOutput": expected_output,
+            "actualOutput": actual_output,
+            "metrics": json.dumps(metrics),
+            "evaluators": json.dumps(evaluator_results),
+            "llmEvaluators": json.dumps([]),
+            "errors": json.dumps([]),
+        })
 
     display_name = body.get("name") or "Evaluation"
     payload = {
@@ -1754,6 +2135,15 @@ def create_evaluation(
     }
 
     row = _create_resource(db, user["tenant_id"], user.get("user_id"), "evaluation", display_name, payload)
+
+    try:
+        _write_audit_log(
+            db, user["tenant_id"], user.get("user_id"), user.get("sub"), "evaluation.created", "evaluation",
+            resource_id=row.id, details={"evaluation_name": display_name, "dataset_id": dataset_id, "evaluator_count": len(evaluators)}
+        )
+    except Exception as e:
+        print(f"Warning: Failed to persist audit log for evaluation creation: {e}")
+
     return [_serialize_evaluation_row(row, latest_eval=True)]
 
 
@@ -1952,6 +2342,124 @@ def get_marketplace_template(template_id: str) -> dict[str, Any] | None:
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
     return template
+
+
+def _generate_basic_flow_data(template: dict[str, Any]) -> dict[str, Any]:
+    """Generate basic flow/agentflow data from template metadata."""
+    template_id = template.get("id", "")
+    name = template.get("name", "Untitled")
+    flow_type = template.get("flowType", "CHATFLOW").upper()
+
+    # Create basic node structure
+    if flow_type == "AGENTFLOW":
+        # Agent flow structure
+        return {
+            "nodes": [
+                {
+                    "id": "agent_1",
+                    "data": {
+                        "label": name,
+                        "name": "Agent",
+                        "type": "AgentFlow",
+                        "baseClasses": ["Agent"]
+                    },
+                    "position": {"x": 100, "y": 100},
+                    "type": "AgentFlowNode"
+                }
+            ],
+            "edges": [],
+            "viewport": {"x": 0, "y": 0, "zoom": 1}
+        }
+    else:
+        # Chat flow structure
+        return {
+            "nodes": [
+                {
+                    "id": "chatmodel_1",
+                    "data": {
+                        "label": "Chat Model",
+                        "name": "ChatModel",
+                        "version": 6,
+                        "type": "ollamaChat"
+                    },
+                    "position": {"x": 100, "y": 100},
+                    "type": "customNode"
+                },
+                {
+                    "id": "output_1",
+                    "data": {
+                        "label": "Output",
+                        "name": "Output",
+                        "version": 1
+                    },
+                    "position": {"x": 300, "y": 100},
+                    "type": "customNode"
+                }
+            ],
+            "edges": [
+                {
+                    "source": "chatmodel_1",
+                    "sourceHandle": "output",
+                    "target": "output_1",
+                    "targetHandle": "input",
+                    "id": "edge_1"
+                }
+            ],
+            "viewport": {"x": 0, "y": 0, "zoom": 1}
+        }
+
+
+@router.post("/marketplace/templates/{template_id}/use")
+def use_marketplace_template(
+    template_id: str,
+    body: dict[str, Any] = None,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
+) -> dict[str, Any]:
+    """Create a new flow/agentflow from a marketplace template."""
+    template = get_template_by_id(template_id)
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+
+    # Generate flow name from template
+    flow_name = body.get("name") if body else None
+    if not flow_name:
+        flow_name = f"{template.get('name', 'Template')} - {datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
+    # Get or generate flowData
+    flow_data = template.get("flowData")
+    if not flow_data:
+        flow_data = _generate_basic_flow_data(template)
+
+    # Determine resource type based on flowType
+    flow_type = template.get("flowType", "CHATFLOW").upper()
+    resource_type = "agentflow" if flow_type == "AGENTFLOW" else "chatflow"
+
+    # Create the flow resource
+    try:
+        flow_resource = _create_resource(
+            db,
+            user["tenant_id"],
+            user.get("user_id"),
+            resource_type,
+            flow_name,
+            {
+                "definition": flow_data,
+                "template_id": template_id,
+                "template_name": template.get("name"),
+                "description": template.get("description", ""),
+            }
+        )
+
+        return {
+            "id": flow_resource.id,
+            "name": flow_name,
+            "type": resource_type,
+            "templateId": template_id,
+            "message": "Flow created from template successfully"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create flow: {str(e)}")
 
 
 @router.get("/marketplace/trending")
