@@ -159,7 +159,7 @@ const Marketplace = () => {
     }, [getAllTemplatesMarketplacesApi.data])
 
     const handleCategoryTileClick = (key) => {
-        if (key === 'all') { setTypeFilter(''); setActiveTabValue(0) }
+        if (key === 'all') { setTypeFilter([]); setActiveTabValue(0) }
         else { setTypeFilter([key]); setActiveTabValue(0) }
     }
 
