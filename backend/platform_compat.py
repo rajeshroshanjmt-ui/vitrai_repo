@@ -1895,3 +1895,97 @@ def delete_evaluations(
 def get_default_login_methods() -> dict:
     """Return default login methods (empty list for self-hosted)."""
     return {"providers": []}
+
+
+# Marketplace Templates Endpoints
+from marketplace_templates import (
+    get_all_templates,
+    get_template_by_id,
+    get_trending_templates,
+    get_new_templates,
+    MARKETPLACE_STATS
+)
+
+
+@router.get("/marketplace/templates")
+def list_marketplace_templates(
+    category: str | None = None,
+    tags: str | None = None,
+    search: str | None = None,
+    page: int = 1,
+    limit: int = 20,
+) -> dict[str, Any]:
+    """
+    List marketplace templates with filtering and pagination.
+
+    Args:
+        category: Filter by category (chatflows, agentflows, assistants)
+        tags: Comma-separated tags to filter by
+        search: Search query for name/description
+        page: Page number (1-indexed)
+        limit: Number of templates per page
+
+    Returns:
+        Paginated list of templates
+    """
+    tags_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else None
+    templates = get_all_templates(category=category, tags=tags_list, search=search)
+
+    total = len(templates)
+    start = (page - 1) * limit
+    end = start + limit
+    paginated = templates[start:end]
+
+    return {
+        "data": paginated,
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "pages": (total + limit - 1) // limit
+    }
+
+
+@router.get("/marketplace/templates/{template_id}")
+def get_marketplace_template(template_id: str) -> dict[str, Any] | None:
+    """Get a single template by ID."""
+    template = get_template_by_id(template_id)
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return template
+
+
+@router.get("/marketplace/trending")
+def get_marketplace_trending(limit: int = 10) -> dict[str, Any]:
+    """Get trending/popular templates."""
+    trending = get_trending_templates(limit=limit)
+    return {
+        "templates": trending,
+        "total": len(trending)
+    }
+
+
+@router.get("/marketplace/new")
+def get_marketplace_new(limit: int = 10) -> dict[str, Any]:
+    """Get new templates."""
+    new = get_new_templates(limit=limit)
+    return {
+        "templates": new,
+        "total": len(new)
+    }
+
+
+@router.get("/marketplace/stats")
+def get_marketplace_stats() -> dict[str, Any]:
+    """Get marketplace statistics."""
+    return MARKETPLACE_STATS
+
+
+@router.get("/marketplace/categories")
+def get_marketplace_categories(category: str | None = None) -> dict[str, Any]:
+    """Get available categories."""
+    if category and category in MARKETPLACE_STATS["categories"]:
+        return {
+            "category": category,
+            "items": MARKETPLACE_STATS["categories"][category]
+        }
+    return {"categories": MARKETPLACE_STATS["categories"]}
