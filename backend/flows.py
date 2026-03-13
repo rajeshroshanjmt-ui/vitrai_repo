@@ -519,6 +519,18 @@ def publish_flow(
     target.is_published = True
     db.commit()
 
+    try:
+        _append_audit_log(
+            db=db,
+            user=user,
+            action="flow.published",
+            resource_type="flow",
+            resource_id=flow_id,
+            details={"flow_name": flow.name, "version": target.version},
+        )
+    except Exception:
+        logger.exception("Failed to persist audit log for flow publish")
+
     return _success_payload({"flow_id": flow.id, "published_version": target.version, "flow_version_id": target.id})
 
 
@@ -596,6 +608,18 @@ def execute_flow(
     }
     redis_client.rpush(EXECUTION_QUEUE, json.dumps(job))
 
+    try:
+        _append_audit_log(
+            db=db,
+            user=user,
+            action="flow.executed",
+            resource_type="flow",
+            resource_id=flow_id,
+            details={"flow_name": flow.name, "execution_id": execution.id, "version": published.version},
+        )
+    except Exception:
+        logger.exception("Failed to persist audit log for flow execute")
+
     return _success_payload({"execution_log_id": execution.id, "status": "queued"})
 
 
@@ -630,6 +654,18 @@ def ingest_documents(
         "documents": [doc.model_dump() for doc in body.documents],
     }
     redis_client.rpush(INGEST_QUEUE, json.dumps(job))
+
+    try:
+        _append_audit_log(
+            db=db,
+            user=user,
+            action="ingestion.started",
+            resource_type="flow",
+            resource_id=flow_id,
+            details={"flow_name": flow.name, "ingestion_id": ingestion.id, "document_count": len(body.documents)},
+        )
+    except Exception:
+        logger.exception("Failed to persist audit log for ingestion start")
 
     return _success_payload({
         "status": "queued",

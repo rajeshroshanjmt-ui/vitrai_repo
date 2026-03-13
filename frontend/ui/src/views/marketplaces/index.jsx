@@ -526,6 +526,47 @@ const Marketplace = () => {
         }
     }
 
+    const useMarketplaceTemplate = async (template) => {
+        try {
+            const response = await marketplacesApi.useTemplate(template.id, { name: `${template.name} (Copy)` })
+            const flowId = response?.data?.id
+            if (!flowId) throw new Error('Template import did not return flow id')
+
+            enqueueSnackbar({
+                message: `${template.name || 'Template'} imported successfully`,
+                options: {
+                    key: new Date().getTime() + Math.random(),
+                    variant: 'success',
+                    action: (key) => (
+                        <Button style={{ color: 'white' }} onClick={() => closeSnackbar(key)}>
+                            <IconX />
+                        </Button>
+                    )
+                }
+            })
+
+            // Navigate to the canvas to edit the new flow
+            if (template.type === 'AgentflowV2') {
+                navigate(`/v2/agentcanvas/${flowId}`)
+            } else {
+                navigate(`/canvas/${flowId}`)
+            }
+        } catch (err) {
+            enqueueSnackbar({
+                message: `Failed to use template: ${err.message || 'Unknown error'}`,
+                options: {
+                    key: new Date().getTime() + Math.random(),
+                    variant: 'error',
+                    action: (key) => (
+                        <Button style={{ color: 'white' }} onClick={() => closeSnackbar(key)}>
+                            <IconX />
+                        </Button>
+                    )
+                }
+            })
+        }
+    }
+
     const goToAssistant = async (selectedAssistantTemplate) => {
         try {
             const response = await marketplacesApi.importAssistantTemplate(selectedAssistantTemplate)

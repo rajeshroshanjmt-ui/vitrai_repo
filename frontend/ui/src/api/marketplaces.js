@@ -520,6 +520,11 @@ const saveAsCustomTemplate = async (body) => {
 
 const deleteCustomTemplate = (id) => deleteResource('marketplace', id)
 
+const useTemplate = async (templateId, options = {}) => {
+    const response = await client.post(`/marketplace/templates/${templateId}/use`, options)
+    return { data: response?.data }
+}
+
 export default {
     getAllChatflowsMarketplaces,
     getAllToolsMarketplaces,
@@ -528,5 +533,6 @@ export default {
 
     getAllCustomTemplates,
     saveAsCustomTemplate,
-    deleteCustomTemplate
+    deleteCustomTemplate,
+    useTemplate
 }
