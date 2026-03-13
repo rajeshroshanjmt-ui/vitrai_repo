@@ -42,5 +42,16 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, 'src')
     }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'mui-core': ['@mui/material', '@mui/icons-material'],
+          'react-flow': ['react-flow-renderer'],
+          'tabler-icons': ['@tabler/icons-react']
+        }
+      }
+    }
   }
 })
