@@ -69,6 +69,15 @@ const badges = ['POPULAR', 'NEW']
 const types = ['Chatflow', 'AgentflowV2', 'Assistant', 'Tool']
 const framework = ['Langchain', 'Langgraph', 'LlamaIndex', 'Assistant Runtime']
 const difficulties = ['Beginner', 'Intermediate', 'Advanced']
+
+// Category configuration - icon references resolved at render time
+const getCategoryTiles = (icons) => [
+    { key: 'all',        label: 'All Templates', icon: icons.grid,    color: '#059669' },
+    { key: 'Chatflow',   label: 'Chatflows',      icon: icons.message, color: '#2563eb' },
+    { key: 'Agentflow',  label: 'Agentflows',     icon: icons.robot,   color: '#0891b2' },
+    { key: 'Assistant',  label: 'Assistants',     icon: icons.sparkle, color: '#7c3aed' },
+]
+
 const MenuProps = {
     PaperProps: {
         style: {
@@ -138,12 +147,12 @@ const Marketplace = () => {
     const [difficultyFilter, setDifficultyFilter] = useState([])
 
     // Flowise-style hero & category tiles
-    const CATEGORY_TILES = [
-        { key: 'all',        label: 'All Templates', icon: IconLayoutGrid,        color: '#059669' },
-        { key: 'Chatflow',   label: 'Chatflows',      icon: IconMessageCircleFilled, color: '#2563eb' },
-        { key: 'Agentflow',  label: 'Agentflows',     icon: IconRobot,            color: '#0891b2' },
-        { key: 'Assistant',  label: 'Assistants',     icon: IconSparkles,         color: '#7c3aed' },
-    ]
+    const CATEGORY_TILES = React.useMemo(() => getCategoryTiles({
+        grid: IconLayoutGrid,
+        message: IconMessageCircleFilled,
+        robot: IconRobot,
+        sparkle: IconSparkles
+    }), [])
 
     const noFiltersActive = !search && activeTabValue === 0 && !typeFilter && !difficultyFilter
 
@@ -155,7 +164,7 @@ const Marketplace = () => {
             counts[tile.key] = data.filter(t => t.type === tile.key || t.badge === tile.key).length
         })
         return counts
-    }, [getAllTemplatesMarketplacesApi.data])
+    }, [getAllTemplatesMarketplacesApi.data, CATEGORY_TILES])
 
     const handleCategoryTileClick = (key) => {
         if (key === 'all') { setTypeFilter([]); setActiveTabValue(0) }
