@@ -26,10 +26,13 @@ import {
     Chip,
     Tooltip,
     Typography,
-    Divider
+    Divider,
+    Grid
 } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
-import { IconLayoutGrid, IconList, IconX } from '@tabler/icons-react'
+import { alpha } from '@mui/material/styles'
+import { IconLayoutGrid, IconList, IconX, IconMessageCircleFilled, IconRobot, IconSparkles } from '@tabler/icons-react'
+import vetraiLogo from '@/assets/images/logo.png'
 
 // project imports
 import MainCard from '@/ui-component/cards/MainCard'
@@ -66,6 +69,14 @@ const badges = ['POPULAR', 'NEW']
 const types = ['Chatflow', 'AgentflowV2', 'Assistant', 'Tool']
 const framework = ['Langchain', 'Langgraph', 'LlamaIndex', 'Assistant Runtime']
 const difficulties = ['Beginner', 'Intermediate', 'Advanced']
+
+const CATEGORY_TILES = [
+    { key: 'all',        label: 'All Templates', icon: IconLayoutGrid,        color: '#059669' },
+    { key: 'Chatflow',   label: 'Chatflows',      icon: IconMessageCircleFilled, color: '#2563eb' },
+    { key: 'Agentflow',  label: 'Agentflows',     icon: IconRobot,            color: '#0891b2' },
+    { key: 'Assistant',  label: 'Assistants',     icon: IconSparkles,         color: '#7c3aed' },
+]
+
 const MenuProps = {
     PaperProps: {
         style: {
@@ -133,6 +144,32 @@ const Marketplace = () => {
     const [typeFilter, setTypeFilter] = useState([])
     const [frameworkFilter, setFrameworkFilter] = useState([])
     const [difficultyFilter, setDifficultyFilter] = useState([])
+
+    // Flowise-style hero & category tiles
+    const noFiltersActive = !search && activeTabValue === 0 && !typeFilter && !difficultyFilter
+
+    const categoryCountMap = React.useMemo(() => {
+        const data = getAllTemplatesMarketplacesApi.data || []
+        const all = data.length
+        const counts = { all }
+        CATEGORY_TILES.slice(1).forEach(tile => {
+            counts[tile.key] = data.filter(t => t.type === tile.key || t.badge === tile.key).length
+        })
+        return counts
+    }, [getAllTemplatesMarketplacesApi.data])
+
+    const handleCategoryTileClick = (key) => {
+        if (key === 'all') { setTypeFilter(''); setActiveTabValue(0) }
+        else { setTypeFilter([key]); setActiveTabValue(0) }
+    }
+
+    const handleDifficultyChipClick = (difficulty) => {
+        if (difficultyFilter.includes(difficulty)) {
+            setDifficultyFilter(difficultyFilter.filter(d => d !== difficulty))
+        } else {
+            setDifficultyFilter([difficulty])
+        }
+    }
 
     const getAllCustomTemplatesApi = useApi(marketplacesApi.getAllCustomTemplates)
     const [activeTabValue, setActiveTabValue] = useState(0)
@@ -989,119 +1026,125 @@ const Marketplace = () => {
                             <TabPanel value={activeTabValue} index={0}>
                                 {!isLoading && getAllTemplatesMarketplacesApi.data && (
                                     <Stack sx={{ mb: 3, gap: 3 }}>
-                                        <Box>
-                                            <Typography variant='h6' sx={{ mb: 2, fontWeight: 700 }}>
-                                                Marketplace Overview
-                                            </Typography>
-                                            <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ gap: 2, flexWrap: 'wrap' }}>
-                                                <MainCard sx={{ flex: { xs: '1 1 100%', sm: '1 1 auto' }, minWidth: 150 }}>
-                                                    <Stack sx={{ gap: 1 }}>
-                                                        <Typography variant='body2' sx={{ color: theme.palette.grey[600] }}>
-                                                            Total Templates
-                                                        </Typography>
-                                                        <Typography variant='h4' sx={{ fontWeight: 700, color: theme.palette.primary.main }}>
-                                                            {getAllTemplatesMarketplacesApi.data?.length || 0}
-                                                        </Typography>
-                                                    </Stack>
-                                                </MainCard>
-                                                <MainCard sx={{ flex: { xs: '1 1 100%', sm: '1 1 auto' }, minWidth: 150 }}>
-                                                    <Stack sx={{ gap: 1 }}>
-                                                        <Typography variant='body2' sx={{ color: theme.palette.grey[600] }}>
-                                                            Beginner Templates
-                                                        </Typography>
-                                                        <Typography variant='h4' sx={{ fontWeight: 700, color: theme.palette.success.main }}>
-                                                            {getAllTemplatesMarketplacesApi.data?.filter((t) => t.difficulty === 'Beginner').length || 0}
-                                                        </Typography>
-                                                    </Stack>
-                                                </MainCard>
-                                                <MainCard sx={{ flex: { xs: '1 1 100%', sm: '1 1 auto' }, minWidth: 150 }}>
-                                                    <Stack sx={{ gap: 1 }}>
-                                                        <Typography variant='body2' sx={{ color: theme.palette.grey[600] }}>
-                                                            Intermediate Templates
-                                                        </Typography>
-                                                        <Typography variant='h4' sx={{ fontWeight: 700, color: theme.palette.warning.main }}>
-                                                            {getAllTemplatesMarketplacesApi.data?.filter((t) => t.difficulty === 'Intermediate').length || 0}
-                                                        </Typography>
-                                                    </Stack>
-                                                </MainCard>
-                                                <MainCard sx={{ flex: { xs: '1 1 100%', sm: '1 1 auto' }, minWidth: 150 }}>
-                                                    <Stack sx={{ gap: 1 }}>
-                                                        <Typography variant='body2' sx={{ color: theme.palette.grey[600] }}>
-                                                            Advanced Templates
-                                                        </Typography>
-                                                        <Typography variant='h4' sx={{ fontWeight: 700, color: theme.palette.error.main }}>
-                                                            {getAllTemplatesMarketplacesApi.data?.filter((t) => t.difficulty === 'Advanced').length || 0}
-                                                        </Typography>
-                                                    </Stack>
-                                                </MainCard>
-                                            </Stack>
-                                        </Box>
-                                        <Box>
-                                            <Typography variant='body2' sx={{ mb: 1.5, color: theme.palette.grey[600], fontWeight: 600 }}>
-                                                Quick Filters
-                                            </Typography>
-                                            <Stack direction='row' sx={{ gap: 1, flexWrap: 'wrap' }}>
-                                                {['Beginner', 'Intermediate', 'Advanced'].map((level) => (
-                                                    <Chip
-                                                        key={level}
-                                                        label={level}
-                                                        onClick={() => handleQuickFilter('difficulty', level)}
-                                                        variant={difficultyFilter.includes(level) ? 'filled' : 'outlined'}
-                                                        color={
-                                                            level === 'Beginner' ? 'success' : level === 'Intermediate' ? 'warning' : 'error'
-                                                        }
-                                                        sx={{ cursor: 'pointer' }}
-                                                    />
-                                                ))}
-                                                <Divider sx={{ my: 1, width: '100%' }} />
-                                                {['Chatflow', 'AgentflowV2', 'Assistant'].map((type) => (
-                                                    <Chip
-                                                        key={type}
-                                                        label={type}
-                                                        onClick={() => handleQuickFilter('type', type)}
-                                                        variant={typeFilter.includes(type) ? 'filled' : 'outlined'}
-                                                        sx={{ cursor: 'pointer' }}
-                                                    />
-                                                ))}
-                                            </Stack>
-                                        </Box>
-                                        {selectedUsecases.length === 0 && badgeFilter.length === 0 && typeFilter.length === 0 && difficultyFilter.length === 0 && search === '' && (
-                                            <Box>
-                                                <Typography variant='h6' sx={{ mb: 2, fontWeight: 700 }}>
-                                                    Popular Templates
+                                        {/* Hero Banner — shown when no filters active */}
+                                        {noFiltersActive && (
+                                            <Box sx={{
+                                                background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #1e1b4b 100%)',
+                                                borderRadius: 3,
+                                                p: { xs: 3, md: 5 },
+                                                mb: 1,
+                                                color: '#fff',
+                                                position: 'relative',
+                                                overflow: 'hidden'
+                                            }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                                                    <img src={vetraiLogo} alt='Vetrai' style={{ height: 36, objectFit: 'contain' }} />
+                                                    <Typography variant='h3' sx={{ color: '#f9fafb', fontWeight: 700, letterSpacing: '-0.02em' }}>
+                                                        Marketplace
+                                                    </Typography>
+                                                </Box>
+                                                <Typography sx={{ color: '#94a3b8', fontSize: '1rem', mb: 3, maxWidth: 520 }}>
+                                                    {getAllTemplatesMarketplacesApi.data?.length || 0}+ ready-to-use AI templates — deploy in seconds.
                                                 </Typography>
-                                                <Box display='grid' gridTemplateColumns='repeat(auto-fill, minmax(250px, 1fr))' gap={gridSpacing}>
-                                                    {getFeaturedTemplates(getAllTemplatesMarketplacesApi.data).map((template, index) => (
-                                                        <Box key={index}>
-                                                            {template.badge && (
-                                                                <Badge
-                                                                    sx={{
-                                                                        width: '100%',
-                                                                        height: '100%',
-                                                                        '& .MuiBadge-badge': { right: 20 }
-                                                                    }}
-                                                                    badgeContent={template.badge}
-                                                                    color={template.badge === 'POPULAR' ? 'primary' : 'error'}
-                                                                >
-                                                                    <ItemCard
-                                                                        onClick={() => openTemplate(template)}
-                                                                        data={template}
-                                                                        images={template.flowData ? images[template.id] : []}
-                                                                        icons={template.flowData ? icons[template.id] : []}
-                                                                    />
-                                                                </Badge>
-                                                            )}
-                                                            {!template.badge && (
+                                                <Stack direction='row' spacing={1} flexWrap='wrap' useFlexGap>
+                                                    {['Beginner', 'Intermediate', 'Advanced'].map(d => (
+                                                        <Chip
+                                                            key={d}
+                                                            label={d}
+                                                            size='small'
+                                                            onClick={() => handleDifficultyChipClick(d)}
+                                                            sx={{
+                                                                bgcolor: 'rgba(255,255,255,0.10)',
+                                                                color: '#e2e8f0',
+                                                                border: '1px solid rgba(255,255,255,0.15)',
+                                                                cursor: 'pointer',
+                                                                '&:hover': { bgcolor: 'rgba(255,255,255,0.18)' }
+                                                            }}
+                                                        />
+                                                    ))}
+                                                </Stack>
+                                            </Box>
+                                        )}
+
+                                        {/* Category Tiles — always visible on main tab */}
+                                        <Grid container spacing={2} sx={{ mb: 2 }}>
+                                            {CATEGORY_TILES.map(tile => {
+                                                const TileIcon = tile.icon
+                                                const isActive = tile.key === 'all' ? !typeFilter || typeFilter.length === 0 : typeFilter?.includes(tile.key)
+                                                const count = categoryCountMap[tile.key] || 0
+                                                return (
+                                                    <Grid key={tile.key} item xs={6} sm={3}>
+                                                        <Box
+                                                            onClick={() => handleCategoryTileClick(tile.key)}
+                                                            sx={{
+                                                                p: 2,
+                                                                borderRadius: 2,
+                                                                cursor: 'pointer',
+                                                                border: `1px solid ${isActive ? tile.color : theme.palette.divider}`,
+                                                                bgcolor: isActive ? alpha(tile.color, 0.08) : 'background.paper',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: 1.5,
+                                                                transition: 'all 0.15s ease',
+                                                                '&:hover': {
+                                                                    border: `1px solid ${tile.color}`,
+                                                                    bgcolor: alpha(tile.color, 0.06)
+                                                                }
+                                                            }}
+                                                        >
+                                                            <Box sx={{ bgcolor: alpha(tile.color, 0.12), borderRadius: 1.5, p: 0.75 }}>
+                                                                <TileIcon size={20} color={tile.color} />
+                                                            </Box>
+                                                            <Box>
+                                                                <Typography variant='body2' fontWeight={600}>{tile.label}</Typography>
+                                                                <Typography variant='caption' sx={{ color: 'text.secondary' }}>{count}</Typography>
+                                                            </Box>
+                                                        </Box>
+                                                    </Grid>
+                                                )
+                                            })}
+                                        </Grid>
+
+                                        {/* Featured Templates heading — shown when no filters */}
+                                        {noFiltersActive && (
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                                                <IconSparkles size={18} color={theme.palette.warning.main} />
+                                                <Typography variant='h5' fontWeight={600}>Featured Templates</Typography>
+                                            </Box>
+                                        )}
+
+                                        {noFiltersActive && (
+                                            <Box display='grid' gridTemplateColumns='repeat(auto-fill, minmax(250px, 1fr))' gap={gridSpacing}>
+                                                {getFeaturedTemplates(getAllTemplatesMarketplacesApi.data).map((template, index) => (
+                                                    <Box key={index}>
+                                                        {template.badge && (
+                                                            <Badge
+                                                                sx={{
+                                                                    width: '100%',
+                                                                    height: '100%',
+                                                                    '& .MuiBadge-badge': { right: 20 }
+                                                                }}
+                                                                badgeContent={template.badge}
+                                                                color={template.badge === 'POPULAR' ? 'primary' : 'error'}
+                                                            >
                                                                 <ItemCard
                                                                     onClick={() => openTemplate(template)}
                                                                     data={template}
                                                                     images={template.flowData ? images[template.id] : []}
                                                                     icons={template.flowData ? icons[template.id] : []}
                                                                 />
-                                                            )}
-                                                        </Box>
-                                                    ))}
-                                                </Box>
+                                                            </Badge>
+                                                        )}
+                                                        {!template.badge && (
+                                                            <ItemCard
+                                                                onClick={() => openTemplate(template)}
+                                                                data={template}
+                                                                images={template.flowData ? images[template.id] : []}
+                                                                icons={template.flowData ? icons[template.id] : []}
+                                                            />
+                                                        )}
+                                                    </Box>
+                                                ))}
                                             </Box>
                                         )}
                                     </Stack>

@@ -2,8 +2,11 @@ import PropTypes from 'prop-types'
 import { useSelector } from 'react-redux'
 
 // material-ui
-import { styled } from '@mui/material/styles'
+import { styled, alpha } from '@mui/material/styles'
 import { Box, Grid, Tooltip, Typography, useTheme, Chip, Stack } from '@mui/material'
+
+// icons
+import { IconMessageCircleFilled, IconRobot, IconSparkles } from '@tabler/icons-react'
 
 // project imports
 import MainCard from '@/ui-component/cards/MainCard'
@@ -40,6 +43,15 @@ const getDifficultyColor = (difficulty, theme) => {
             return { bg: theme.palette.error.lighter, color: theme.palette.error.dark }
         default:
             return { bg: theme.palette.grey[200], color: theme.palette.grey[700] }
+    }
+}
+
+const getCategoryIcon = (type) => {
+    switch (type) {
+        case 'Chatflow':  return { icon: IconMessageCircleFilled, color: '#2563eb' }
+        case 'Agentflow': return { icon: IconRobot,            color: '#0891b2' }
+        case 'Assistant': return { icon: IconSparkles,         color: '#7c3aed' }
+        default:          return null
     }
 }
 
@@ -92,6 +104,26 @@ const ItemCard = ({ data, images, icons, onClick }) => {
                                     }}
                                 ></div>
                             )}
+                            {!data.iconSrc && !data.color && (() => {
+                                const cat = getCategoryIcon(data.type || data.badge)
+                                if (!cat) return null
+                                const CatIcon = cat.icon
+                                return (
+                                    <Box sx={{
+                                        width: 35,
+                                        height: 35,
+                                        display: 'flex',
+                                        flexShrink: 0,
+                                        marginRight: 10,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        bgcolor: alpha(cat.color, 0.10),
+                                        borderRadius: '50%'
+                                    }}>
+                                        <CatIcon size={18} color={cat.color} />
+                                    </Box>
+                                )
+                            })()}
                             <Typography
                                 sx={{
                                     display: '-webkit-box',
