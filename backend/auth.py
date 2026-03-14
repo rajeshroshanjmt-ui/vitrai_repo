@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Annotated
+from typing import Annotated, Any
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -507,7 +507,7 @@ def update_sso_config(
 @router.post("/sso-config/{provider}/test")
 def test_sso_config(
     provider: str,
-    payload: dict[str, any],
+    payload: dict[str, Any],
     user: Annotated[dict, Depends(require_roles("admin"))],
     db: Session = Depends(get_db)
 ) -> dict:

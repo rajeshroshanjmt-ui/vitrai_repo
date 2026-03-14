@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Annotated
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -91,8 +91,8 @@ def list_files(
 
 @router.post("/files/upload")
 async def upload_file(
+    user: Annotated[dict, Depends(get_current_user)],
     file: UploadFile = File(...),
-    user: Annotated[dict, Depends(get_current_user)] = Depends(),
     db: Session = Depends(get_db)
 ) -> dict:
     """Upload a file to the tenant's upload directory."""
@@ -159,8 +159,8 @@ async def upload_file(
 
 @router.delete("/files")
 def delete_file(
-    path: str,
-    user: Annotated[dict, Depends(get_current_user)] = Depends(),
+    user: Annotated[dict, Depends(get_current_user)],
+    path: Annotated[str, Query(...)],
     db: Session = Depends(get_db)
 ) -> dict:
     """Delete an uploaded file by path."""
