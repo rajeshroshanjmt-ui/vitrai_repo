@@ -43,7 +43,7 @@ import useConfirm from '@/hooks/useConfirm'
 import useNotifier from '@/utils/useNotifier'
 
 // Icons
-import { IconTrash, IconEdit, IconX, IconPlus, IconUser, IconEyeOff, IconEye, IconUserStar, IconMail } from '@tabler/icons-react'
+import { IconTrash, IconEdit, IconX, IconPlus, IconUser, IconEyeOff, IconEye, IconUserStar, IconMail, IconArrowUp, IconArrowDown } from '@tabler/icons-react'
 import users_emptySVG from '@/assets/images/users_empty.svg'
 
 // store
@@ -268,6 +268,22 @@ const Users = () => {
     const [users, setUsers] = useState([])
     const [search, setSearch] = useState('')
     const [deletingUserId, setDeletingUserId] = useState(null)
+    const [sortBy, setSortBy] = useState('email')
+    const [sortOrder, setSortOrder] = useState('asc')
+
+    // Load sort preferences from localStorage on mount
+    React.useEffect(() => {
+        const saved = localStorage.getItem('users_sort_preferences')
+        if (saved) {
+            try {
+                const { sortBy: savedSortBy, sortOrder: savedSortOrder } = JSON.parse(saved)
+                setSortBy(savedSortBy)
+                setSortOrder(savedSortOrder)
+            } catch (err) {
+                console.warn('Failed to load sort preferences:', err)
+            }
+        }
+    }, [])
 
     const { confirm } = useConfirm()
 
@@ -282,6 +298,70 @@ const Users = () => {
             data?.user?.name?.toLowerCase().indexOf(search.toLowerCase()) > -1 ||
             data?.user?.email?.toLowerCase().indexOf(search.toLowerCase()) > -1
         )
+    }
+
+    const handleSort = (column) => {
+        let newOrder = 'asc'
+        if (sortBy === column && sortOrder === 'asc') {
+            newOrder = 'desc'
+        }
+        setSortBy(column)
+        setSortOrder(newOrder)
+        // Save to localStorage
+        localStorage.setItem('users_sort_preferences', JSON.stringify({ sortBy: column, sortOrder: newOrder }))
+    }
+
+    const sortUsers = (usersToSort) => {
+        return usersToSort.sort((a, b) => {
+            let aVal, bVal
+
+            switch (sortBy) {
+                case 'email':
+                    aVal = a?.user?.email || ''
+                    bVal = b?.user?.email || ''
+                    break
+                case 'name':
+                    aVal = a?.user?.name || ''
+                    bVal = b?.user?.name || ''
+                    break
+                case 'role':
+                    aVal = a?.role?.name || ''
+                    bVal = b?.role?.name || ''
+                    break
+                case 'status':
+                    aVal = a?.status || ''
+                    bVal = b?.status || ''
+                    break
+                case 'lastLogin':
+                    aVal = a?.lastLogin ? new Date(a.lastLogin).getTime() : 0
+                    bVal = b?.lastLogin ? new Date(b.lastLogin).getTime() : 0
+                    break
+                case 'createdAt':
+                    aVal = a?.createdDate ? new Date(a.createdDate).getTime() : 0
+                    bVal = b?.createdDate ? new Date(b.createdDate).getTime() : 0
+                    break
+                default:
+                    return 0
+            }
+
+            // String comparison
+            if (typeof aVal === 'string') {
+                aVal = aVal.toLowerCase()
+                bVal = bVal.toLowerCase()
+                if (sortOrder === 'asc') {
+                    return aVal.localeCompare(bVal)
+                } else {
+                    return bVal.localeCompare(aVal)
+                }
+            }
+
+            // Number comparison
+            if (sortOrder === 'asc') {
+                return aVal > bVal ? 1 : aVal < bVal ? -1 : 0
+            } else {
+                return aVal < bVal ? 1 : aVal > bVal ? -1 : 0
+            }
+        })
     }
 
     const addNew = () => {
@@ -497,10 +577,70 @@ const Users = () => {
                                                 >
                                                     <TableRow>
                                                         <StyledTableCell>&nbsp;</StyledTableCell>
-                                                        <StyledTableCell>Email/Name</StyledTableCell>
-                                                        <StyledTableCell>Assigned Roles</StyledTableCell>
-                                                        <StyledTableCell>Status</StyledTableCell>
-                                                        <StyledTableCell>Last Login</StyledTableCell>
+                                                        <StyledTableCell
+                                                            onClick={() => handleSort('email')}
+                                                            sx={{
+                                                                cursor: 'pointer',
+                                                                userSelect: 'none',
+                                                                '&:hover': { backgroundColor: 'rgba(0,0,0,0.05)' },
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '4px'
+                                                            }}
+                                                        >
+                                                            Email/Name
+                                                            {sortBy === 'email' && (
+                                                                sortOrder === 'asc' ? <IconArrowUp size={16} /> : <IconArrowDown size={16} />
+                                                            )}
+                                                        </StyledTableCell>
+                                                        <StyledTableCell
+                                                            onClick={() => handleSort('role')}
+                                                            sx={{
+                                                                cursor: 'pointer',
+                                                                userSelect: 'none',
+                                                                '&:hover': { backgroundColor: 'rgba(0,0,0,0.05)' },
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '4px'
+                                                            }}
+                                                        >
+                                                            Assigned Roles
+                                                            {sortBy === 'role' && (
+                                                                sortOrder === 'asc' ? <IconArrowUp size={16} /> : <IconArrowDown size={16} />
+                                                            )}
+                                                        </StyledTableCell>
+                                                        <StyledTableCell
+                                                            onClick={() => handleSort('status')}
+                                                            sx={{
+                                                                cursor: 'pointer',
+                                                                userSelect: 'none',
+                                                                '&:hover': { backgroundColor: 'rgba(0,0,0,0.05)' },
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '4px'
+                                                            }}
+                                                        >
+                                                            Status
+                                                            {sortBy === 'status' && (
+                                                                sortOrder === 'asc' ? <IconArrowUp size={16} /> : <IconArrowDown size={16} />
+                                                            )}
+                                                        </StyledTableCell>
+                                                        <StyledTableCell
+                                                            onClick={() => handleSort('lastLogin')}
+                                                            sx={{
+                                                                cursor: 'pointer',
+                                                                userSelect: 'none',
+                                                                '&:hover': { backgroundColor: 'rgba(0,0,0,0.05)' },
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '4px'
+                                                            }}
+                                                        >
+                                                            Last Login
+                                                            {sortBy === 'lastLogin' && (
+                                                                sortOrder === 'asc' ? <IconArrowUp size={16} /> : <IconArrowDown size={16} />
+                                                            )}
+                                                        </StyledTableCell>
                                                         <StyledTableCell> </StyledTableCell>
                                                     </TableRow>
                                                 </TableHead>
@@ -547,7 +687,7 @@ const Users = () => {
                                                         </>
                                                     ) : (
                                                         <>
-                                                            {users.filter(filterUsers).map((item, index) => (
+                                                            {sortUsers(users.filter(filterUsers)).map((item, index) => (
                                                                 <ShowUserRow
                                                                     key={index}
                                                                     row={item}
