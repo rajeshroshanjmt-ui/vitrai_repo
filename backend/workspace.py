@@ -230,13 +230,14 @@ def delete_workspace(
     return {"status": "ok", "message": "Workspace deleted"}
 
 
-@router.post("/workspaces/switch")
+@router.post("/switch")
 def switch_workspace(
-    workspace_id: str,
+    id: str,
     user: Annotated[dict, Depends(get_current_user)],
     db: Session = Depends(get_db)
 ) -> dict:
     """Switch the user's active workspace."""
+    workspace_id = id
     tenant_id = user.get("tenant_id")
     user_id = user.get("user_id")
     actor_email = user.get("sub")
