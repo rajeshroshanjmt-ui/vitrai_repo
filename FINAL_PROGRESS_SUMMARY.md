@@ -1,8 +1,32 @@
 # Vetrai Application Gaps Analysis - Final Progress Summary
 
-## Overall Completion: 26/30 (87%)
+## Overall Completion: 27/30 (90%)
 
-### 🎉 Completed in This Session (Continuation)
+### 🎉 Completed in This Session (Extended Continuation)
+
+**Workspace Isolation Enforcement: COMPLETE ✅**
+1. ✅ Database migration script created
+   - SQL migration: `backend/migrations/001_add_workspace_isolation.sql`
+   - Adds workspace_id columns to flows and tenant_resources tables
+   - Includes backfill logic for existing data
+   - Creates efficient indexes for workspace-filtered queries
+
+2. ✅ Backend endpoint updates (13 total)
+   - All 8 flow endpoints updated: list, create, get, delete, draft, publish, execute, versions
+   - All 5 resource endpoints updated: list, get, create, update, delete
+   - All endpoints now validate workspace membership
+   - Returns 404 if accessing resources from different workspace
+
+3. ✅ Workspace context helper centralized
+   - Moved `_get_active_workspace()` to auth.py module
+   - Available for import across all backend modules
+   - Returns user's active workspace from UserPreference
+
+4. ✅ Test suite created
+   - Created `backend/tests/test_workspace_isolation.py`
+   - Tests for workspace filtering in all endpoint types
+   - Tests for cross-workspace access denial
+   - Tests for resource creation in active workspace
 
 **Permissions Enforcement Integration: COMPLETE ✅**
 1. ✅ flows.py: All 18 flow endpoints updated with fine-grained permissions
@@ -39,9 +63,12 @@
 
 ---
 
-## Recent Commits (Current Session)
+## Recent Commits (Extended Session)
 
 ```
+4b48f7a test: Add workspace isolation test suite
+21ad6c3 refactor: Move _get_active_workspace helper to auth module
+1254fa8 feat: Add workspace isolation filtering to all flow and resource endpoints
 4544c83 refactor: Replace raw fetch() calls with API client layer
 7f084b9 feat: Add GET /flows/{flow_id}/ingestions/{job_id} endpoint
 164d74e feat: Enable all implemented feature flags by default
@@ -50,20 +77,11 @@ ce06cf5 feat: Complete fine-grained permissions enforcement across all backend m
 
 ---
 
-## Remaining Gaps: 4/30 (13%)
+## Remaining Gaps: 3/30 (10%)
 
-### High Priority (2 Items) - 8-11 Hours Total
+### High Priority (1 Item) - 4-5 Hours
 
-**1. Workspace Isolation Enforcement** 🔒
-- Status: Not started
-- Effort: High (4-6 hours)
-- What's needed:
-  - Filter flows by workspace membership
-  - Filter resources by workspace membership
-  - Validate workspace access on all CRUD operations
-  - Architectural decision: Add workspace_id column to flows table?
-
-**2. OAuth Callback Handler** 🔐
+**1. OAuth Callback Handler** 🔐
 - Status: Not started
 - Effort: High (4-5 hours)
 - What's needed:
@@ -74,15 +92,15 @@ ce06cf5 feat: Complete fine-grained permissions enforcement across all backend m
 
 ### Medium Priority (1 Item) - 2-3 Hours
 
-**3. Workspace Selection Logic** 📊
-- Status: Partially implemented
+**2. Workspace Selection Logic Enforcement** 📊
+- Status: Code enforcement complete (27/30), UI enforcement partial
 - Effort: Medium (2-3 hours)
-- Current: Workspace switching implemented but enforcement missing
-- Needed: Enforce workspace filtering on all operations
+- What's done: Workspace filtering now enforced in all flow/resource endpoints
+- What's remaining: Complete UI components for workspace switching enforcement
 
 ### Low Priority (1 Item) - 2-3 Hours
 
-**4. Test Coverage** 🧪
+**3. Test Coverage** 🧪
 - Status: Not started
 - Effort: Medium (2-3 hours)
 - Modules needing tests: users.py, permissions.py, workspace.py, files.py, resources.py
