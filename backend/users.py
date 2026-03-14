@@ -3,7 +3,7 @@ from uuid import uuid4
 import csv
 from io import StringIO
 
-from fastapi import APIRouter, Depends, HTTPException, status, FileResponse
+from fastapi import APIRouter, Depends, HTTPException, status, FileResponse, StreamingResponse
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -248,7 +248,9 @@ def get_user_workspaces(
     user: Annotated[dict, Depends(require_roles("admin"))],
     db: Session = Depends(get_db)
 ) -> dict:
-    """Get workspaces assigned to a user. Stub returning empty for now."""
+    """Get workspaces assigned to a user."""
+    from models import UserPreference, TenantResource
+
     tenant_id = user.get("tenant_id")
 
     # Fetch user to verify it exists
@@ -256,8 +258,31 @@ def get_user_workspaces(
     if target_user is None:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # TODO: Implement workspace assignment when workspace model is created
-    return {"data": []}
+    # Get workspace preferences for the user (pref_key = workspace_role_{workspace_id})
+    workspace_prefs = db.query(UserPreference).filter(
+        UserPreference.tenant_id == tenant_id,
+        UserPreference.user_id == user_id,
+        UserPreference.pref_key.like("workspace_role_%")
+    ).all()
+
+    # Get workspace details
+    workspaces = []
+    for pref in workspace_prefs:
+        workspace_id = pref.pref_key.replace("workspace_role_", "")
+        workspace = db.query(TenantResource).filter(
+            TenantResource.id == workspace_id,
+            TenantResource.tenant_id == tenant_id,
+            TenantResource.resource_type == "workspace"
+        ).one_or_none()
+
+        if workspace:
+            workspaces.append({
+                "id": workspace.id,
+                "name": workspace.name,
+                "role": pref.pref_value.get("role", "member") if pref.pref_value else "member"
+            })
+
+    return {"data": workspaces}
 
 
 @router.get("/users/export/csv")
@@ -284,7 +309,7 @@ def export_users_csv(
 
     output.seek(0)
 
-    return FileResponse(
+    return StreamingResponse(
         iter([output.getvalue()]),
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=users.csv"}

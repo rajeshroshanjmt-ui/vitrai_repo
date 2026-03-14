@@ -821,7 +821,7 @@ formData.append("openAIApiKey[openAIEmbeddings_0]", "sk-my-openai-2nd-key")`
                                                     <a
                                                         rel='noreferrer'
                                                         target='_blank'
-                                                        href='https://docs.vetrai.ai/using-flowise/prediction#configuration-override'
+                                                        href='https://docs.vetrai.ai/api/configuration'
                                                     >
                                                         here
                                                     </a>{' '}
@@ -959,7 +959,7 @@ formData.append("openAIApiKey[openAIEmbeddings_0]", "sk-my-openai-2nd-key")`
                                 {getIsChatflowStreamingApi.data?.isStreaming && (
                                     <p>
                                         Read&nbsp;
-                                        <a rel='noreferrer' target='_blank' href='https://docs.vetrai.ai/using-flowise/streaming'>
+                                        <a rel='noreferrer' target='_blank' href='https://docs.vetrai.ai/api/streaming'>
                                             here
                                         </a>
                                         &nbsp;on how to stream response back to application

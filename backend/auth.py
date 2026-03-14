@@ -264,6 +264,20 @@ def me(user: Annotated[dict, Depends(get_current_user)]) -> dict:
     }
 
 
+@router.post("/logout")
+def logout(user: Annotated[dict, Depends(get_current_user)], db: Session = Depends(get_db)) -> dict:
+    """Logout endpoint. Logs the logout action for audit."""
+    tenant_id = user.get("tenant_id")
+    user_id = user.get("user_id")
+    email = user.get("sub")
+
+    _write_audit_log(db, tenant_id, user_id, email, "logout", "auth")
+
+    # Note: Since JWTs are stateless, actual token revocation would require
+    # a token blacklist (e.g., Redis). For now, we just log the action.
+    return {"message": "Logged out successfully"}
+
+
 def _get_permissions_for_role(role: str) -> list:
     """Return permission list based on user role."""
     all_permissions = [
@@ -528,3 +542,122 @@ def test_sso_config(
         return {"valid": True, "message": "SSO configuration is valid"}
     except Exception as e:
         return {"valid": False, "error": f"Failed to validate SSO config: {str(e)}"}
+
+
+# Password Reset Endpoints
+class PasswordResetRequestPayload(BaseModel):
+    email: EmailStr
+    tenant_id: str
+
+
+class PasswordResetConfirmPayload(BaseModel):
+    token: str
+    new_password: str
+
+
+RESET_TOKEN_TTL_MINUTES = 60  # Password reset tokens valid for 1 hour
+
+
+def create_reset_token(user_id: str) -> str:
+    """Create a short-lived JWT token for password reset."""
+    body = {
+        "sub": user_id,
+        "type": "password_reset",
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=RESET_TOKEN_TTL_MINUTES)
+    }
+    return jwt.encode(body, SECRET, algorithm=ALGORITHM)
+
+
+def decode_reset_token(token: str) -> dict | None:
+    """Decode and validate a password reset token."""
+    try:
+        claims = jwt.decode(token, SECRET, algorithms=[ALGORITHM])
+        if claims.get("type") != "password_reset":
+            return None
+        return claims
+    except JWTError:
+        return None
+
+
+@router.post("/password-reset/request")
+def request_password_reset(
+    payload: PasswordResetRequestPayload,
+    db: Session = Depends(get_db)
+) -> dict:
+    """Request a password reset token. Send token to user via email."""
+    email = payload.email.lower()
+
+    tenant = db.get(Tenant, payload.tenant_id)
+    if tenant is None:
+        # Don't reveal if tenant exists
+        return {"message": "If the email is associated with an account, a reset token has been sent"}
+
+    user = (
+        db.query(User)
+        .filter(User.tenant_id == payload.tenant_id, func.lower(User.email) == email)
+        .one_or_none()
+    )
+
+    if user is None:
+        # Don't reveal if user exists
+        _write_audit_log(db, payload.tenant_id, None, email, "password_reset_failed", "auth",
+                         details={"reason": "user_not_found"})
+        return {"message": "If the email is associated with an account, a reset token has been sent"}
+
+    # Generate reset token
+    reset_token = create_reset_token(user.id)
+
+    # Log the reset request
+    _write_audit_log(db, payload.tenant_id, user.id, email, "password_reset_requested", "auth")
+
+    # In a real app, this would send an email to the user with the reset token
+    # For now, we return the token (in production, NEVER return the token in the response)
+    return {
+        "message": "Password reset token generated",
+        "reset_token": reset_token  # TODO: Remove in production; send via email instead
+    }
+
+
+@router.post("/password-reset/confirm")
+def confirm_password_reset(
+    payload: PasswordResetConfirmPayload,
+    db: Session = Depends(get_db)
+) -> TokenResponse:
+    """Confirm password reset with the reset token and new password."""
+    # Validate reset token
+    claims = decode_reset_token(payload.token)
+    if claims is None:
+        raise HTTPException(status_code=401, detail="Invalid or expired reset token")
+
+    user_id = claims.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid reset token")
+
+    # Validate password length
+    if len(payload.new_password.encode('utf-8')) > 72:
+        raise HTTPException(status_code=400, detail="Password is too long (max 72 bytes)")
+
+    # Get user and update password
+    user = db.query(User).filter(User.id == user_id).one_or_none()
+    if user is None:
+        raise HTTPException(status_code=401, detail="Invalid reset token")
+
+    try:
+        user.password_hash = hash_password(payload.new_password)
+    except Exception as hash_error:
+        raise HTTPException(status_code=500, detail=f"Password update failed: {str(hash_error)}")
+
+    db.commit()
+
+    # Log successful password reset
+    _write_audit_log(db, user.tenant_id, user.id, user.email, "password_reset_completed", "auth")
+
+    # Return a new auth token so user is logged in after reset
+    token = create_token({
+        "sub": user.email,
+        "tenant_id": user.tenant_id,
+        "role": user.role,
+        "user_id": user.id,
+    })
+
+    return TokenResponse(access_token=token)

@@ -323,12 +323,23 @@ def link_user_to_workspace(
     if target_user is None:
         raise HTTPException(status_code=404, detail="User not found")
 
+    # Check if user is already linked to this workspace
+    workspace_pref_key = f"workspace_role_{workspace_id}"
+    existing_pref = db.query(UserPreference).filter(
+        UserPreference.tenant_id == tenant_id,
+        UserPreference.user_id == user_id,
+        UserPreference.pref_key == workspace_pref_key
+    ).one_or_none()
+
+    if existing_pref:
+        raise HTTPException(status_code=409, detail="User is already linked to this workspace")
+
     # Store workspace-user association in UserPreference
     pref = UserPreference(
         id=str(uuid4()),
         tenant_id=tenant_id,
         user_id=user_id,
-        pref_key=f"workspace_role_{workspace_id}",
+        pref_key=workspace_pref_key,
         pref_value={"workspace_id": workspace_id, "role": "member"}
     )
     db.add(pref)
@@ -417,8 +428,15 @@ def list_workspace_users(
     if workspace_resource is None:
         raise HTTPException(status_code=404, detail="Workspace not found")
 
-    # For now, return all users in the tenant (simplified implementation)
-    users = db.query(User).filter(User.tenant_id == tenant_id).all()
+    # Get users linked to this workspace via UserPreference
+    workspace_pref_key = f"workspace_role_{workspace_id}"
+
+    workspace_users = db.query(User).join(
+        UserPreference,
+        (UserPreference.user_id == User.id) &
+        (UserPreference.tenant_id == tenant_id) &
+        (UserPreference.pref_key == workspace_pref_key)
+    ).all()
 
     user_list = [
         {
@@ -427,7 +445,7 @@ def list_workspace_users(
             "role": u.role,
             "status": "active" if u.password_hash else "pending"
         }
-        for u in users
+        for u in workspace_users
     ]
 
     return {"data": user_list, "total": len(user_list)}

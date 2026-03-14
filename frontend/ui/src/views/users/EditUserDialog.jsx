@@ -100,7 +100,7 @@ const EditUserDialog = ({ show, dialogProps, onCancel, onConfirm, setError }) =>
                 onConfirm(saveResp.data.id)
             }
         } catch (error) {
-            setError(err)
+            setError(error)
             enqueueSnackbar({
                 message: `Failed to update User: ${
                     typeof error.response.data === 'object' ? error.response.data.message : error.response.data

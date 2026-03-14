@@ -17,7 +17,10 @@ import {
     IconFileText,
     IconLogout,
     IconHistory,
-    IconShield
+    IconShield,
+    IconLogin,
+    IconFolders,
+    IconLogs
 } from '@tabler/icons-react'
 
 const icons = {
@@ -39,7 +42,10 @@ const icons = {
     IconFileText,
     IconLogout,
     IconHistory,
-    IconShield
+    IconShield,
+    IconLogin,
+    IconFolders,
+    IconLogs
 }
 
 const dashboard = {
@@ -186,6 +192,15 @@ const dashboard = {
                     url: '/apikey',
                     icon: icons.IconKey,
                     permission: 'apikeys:view'
+                },
+                {
+                    id: 'files',
+                    title: 'Files',
+                    type: 'item',
+                    url: '/files',
+                    icon: icons.IconFiles,
+                    display: 'feat:files',
+                    permission: 'files:view'
                 }
             ]
         },
@@ -234,6 +249,40 @@ const dashboard = {
                     url: '/roles',
                     icon: icons.IconShield,
                     display: 'feat:roles',
+                    permission: 'users:manage'
+                },
+                {
+                    id: 'login-activity',
+                    title: 'Login Activity',
+                    type: 'item',
+                    url: '/login-activity',
+                    icon: icons.IconLogin,
+                    display: 'feat:login-activity',
+                    permission: 'users:manage'
+                },
+                {
+                    id: 'workspaces',
+                    title: 'Workspaces',
+                    type: 'item',
+                    url: '/workspaces',
+                    icon: icons.IconFolders,
+                    permission: 'workspace:view'
+                },
+                {
+                    id: 'sso-config',
+                    title: 'SSO Configuration',
+                    type: 'item',
+                    url: '/sso-config',
+                    icon: icons.IconShield,
+                    display: 'feat:sso-config',
+                    permission: 'users:manage'
+                },
+                {
+                    id: 'server-logs',
+                    title: 'Server Logs',
+                    type: 'item',
+                    url: '/logs',
+                    icon: icons.IconLogs,
                     permission: 'users:manage'
                 }
             ]

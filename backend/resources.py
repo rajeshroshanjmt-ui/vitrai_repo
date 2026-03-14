@@ -128,6 +128,33 @@ def list_resources(
     }
 
 
+@router.get("/{resource_type}/{resource_id}")
+def get_resource(
+    resource_type: str,
+    resource_id: str,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
+) -> dict[str, Any]:
+    normalized_type = _ensure_resource_type(resource_type)
+
+    if user.get("role") not in _required_reader_roles(normalized_type):
+        raise HTTPException(status_code=403, detail="Insufficient role")
+
+    resource = (
+        db.query(TenantResource)
+        .filter(
+            TenantResource.id == resource_id,
+            TenantResource.tenant_id == user["tenant_id"],
+            TenantResource.resource_type == normalized_type,
+        )
+        .one_or_none()
+    )
+    if resource is None:
+        raise HTTPException(status_code=404, detail="Resource not found")
+
+    return _serialize_resource(resource)
+
+
 @router.post("/{resource_type}")
 def create_resource(
     resource_type: str,

@@ -87,7 +87,7 @@ const AuditLog = () => {
     useEffect(() => {
         fetchLogs()
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [page, pageSize])
+    }, [page, pageSize, filters.action, filters.actor_email, filters.created_from, filters.created_to])
 
     const handleFilterChange = (field, value) => {
         setFilters({ ...filters, [field]: value })

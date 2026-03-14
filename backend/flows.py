@@ -630,7 +630,7 @@ def ingest_documents(
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
 ) -> dict[str, Any]:
-    _require_tenant_flow(db, user["tenant_id"], flow_id)
+    flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
 
     if not body.documents:
         raise HTTPException(status_code=400, detail="No documents provided")
@@ -903,6 +903,37 @@ def update_tool_state(
         "user_id": user["user_id"],
         "states": data["states"],
         "updated_at": data["updated_at"],
+    })
+
+
+@router.get("/{flow_id}/versions")
+def get_flow_versions(
+    flow_id: str,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
+) -> dict[str, Any]:
+    """Get all versions of a flow."""
+    flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
+
+    versions = db.query(FlowVersion).filter(
+        FlowVersion.flow_id == flow.id
+    ).order_by(FlowVersion.version.desc()).all()
+
+    version_list = [
+        {
+            "version": v.version,
+            "is_published": v.is_published,
+            "created_at": v.created_at.isoformat() if v.created_at else None,
+            "flow_version_id": v.id
+        }
+        for v in versions
+    ]
+
+    return _success_payload({
+        "flow_id": flow.id,
+        "flow_name": flow.name,
+        "versions": version_list,
+        "total_versions": len(version_list)
     })
 
 
