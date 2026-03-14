@@ -43,12 +43,59 @@ import useConfirm from '@/hooks/useConfirm'
 import useNotifier from '@/utils/useNotifier'
 
 // Icons
-import { IconTrash, IconEdit, IconX, IconPlus, IconUser, IconEyeOff, IconEye, IconUserStar, IconMail, IconArrowUp, IconArrowDown } from '@tabler/icons-react'
+import { IconTrash, IconEdit, IconX, IconPlus, IconUser, IconEyeOff, IconEye, IconUserStar, IconMail, IconArrowUp, IconArrowDown, IconCheck, IconClock } from '@tabler/icons-react'
 import users_emptySVG from '@/assets/images/users_empty.svg'
 
 // store
 import { useError } from '@/store/context/ErrorContext'
 import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction } from '@/store/actions'
+
+const StatusBadge = ({ status }) => {
+    switch (status?.toUpperCase()) {
+        case 'ACTIVE':
+            return (
+                <Chip
+                    icon={<IconCheck size={16} />}
+                    label="ACTIVE"
+                    color="success"
+                    variant="outlined"
+                    size="small"
+                />
+            )
+        case 'INVITED':
+            return (
+                <Chip
+                    icon={<IconClock size={16} />}
+                    label="INVITED"
+                    color="warning"
+                    variant="outlined"
+                    size="small"
+                />
+            )
+        case 'PENDING':
+            return (
+                <Chip
+                    icon={<IconClock size={16} />}
+                    label="PENDING"
+                    color="warning"
+                    variant="outlined"
+                    size="small"
+                />
+            )
+        case 'INACTIVE':
+            return (
+                <Chip
+                    icon={<IconX size={16} />}
+                    label="INACTIVE"
+                    color="error"
+                    variant="outlined"
+                    size="small"
+                />
+            )
+        default:
+            return null
+    }
+}
 
 function ShowUserRow(props) {
     const customization = useSelector((state) => state.customization)
@@ -151,13 +198,7 @@ function ShowUserRow(props) {
                     </PermissionIconButton>
                 </StyledTableCell>
                 <StyledTableCell>
-                    {props.row.status && (
-                        <>
-                            {'ACTIVE' === props.row.status.toUpperCase() && <Chip color={'success'} label={props.row.status.toUpperCase()} />}
-                            {'INVITED' === props.row.status.toUpperCase() && <Chip color={'warning'} label={props.row.status.toUpperCase()} />}
-                            {'INACTIVE' === props.row.status.toUpperCase() && <Chip color={'error'} label={props.row.status.toUpperCase()} />}
-                        </>
-                    )}
+                    <StatusBadge status={props.row.status} />
                 </StyledTableCell>
                 <StyledTableCell>{!props.row.lastLogin ? 'Never' : moment(props.row.lastLogin).format('DD/MM/YYYY HH:mm')}</StyledTableCell>
                 <StyledTableCell>
