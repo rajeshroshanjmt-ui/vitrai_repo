@@ -70,6 +70,7 @@ const ExecutionDetailsPage = Loadable(lazy(() => import('@/views/agentexecutions
 const UsersPage = Loadable(lazy(() => import('@/views/users')))
 const RolesPage = Loadable(lazy(() => import('@/views/roles')))
 const LoginActivityPage = Loadable(lazy(() => import('@/views/auth/loginActivity')))
+const AuditLogPage = Loadable(lazy(() => import('@/views/audit')))
 const Workspaces = Loadable(lazy(() => import('@/views/workspace')))
 const WorkspaceDetails = Loadable(lazy(() => import('@/views/workspace/WorkspaceUsers')))
 const SSOConfig = Loadable(lazy(() => import('@/views/auth/ssoConfig')))
@@ -346,6 +347,14 @@ const MainRoutes = {
             element: (
                 <RequireAuth permission={'loginActivity:view'} display={'feat:login-activity'}>
                     <LoginActivityPage />
+                </RequireAuth>
+            )
+        },
+        {
+            path: '/audit-log',
+            element: (
+                <RequireAuth permission={'users:manage'} display={'feat:audit-log'}>
+                    <AuditLogPage />
                 </RequireAuth>
             )
         },
