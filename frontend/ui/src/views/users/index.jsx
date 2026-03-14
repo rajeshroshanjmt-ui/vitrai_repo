@@ -43,7 +43,7 @@ import useConfirm from '@/hooks/useConfirm'
 import useNotifier from '@/utils/useNotifier'
 
 // Icons
-import { IconTrash, IconEdit, IconX, IconPlus, IconUser, IconEyeOff, IconEye, IconUserStar, IconMail, IconArrowUp, IconArrowDown, IconCheck, IconClock } from '@tabler/icons-react'
+import { IconTrash, IconEdit, IconX, IconPlus, IconUser, IconEyeOff, IconEye, IconUserStar, IconMail, IconArrowUp, IconArrowDown, IconCheck, IconClock, IconDownload } from '@tabler/icons-react'
 import users_emptySVG from '@/assets/images/users_empty.svg'
 
 // store
@@ -535,6 +535,58 @@ const Users = () => {
         }
     }
 
+    const exportUsers = async () => {
+        try {
+            const authState = JSON.parse(localStorage.getItem('persist:auth') || '{}')
+            const token = authState.access_token?.replace(/"/g, '')
+
+            const response = await fetch('/api/users/export/csv', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+
+            if (!response.ok) throw new Error('Export failed')
+
+            const blob = await response.blob()
+            const url = window.URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = url
+            link.download = `users-${new Date().toISOString().split('T')[0]}.csv`
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            window.URL.revokeObjectURL(url)
+
+            enqueueSnackbar({
+                message: 'Users exported successfully',
+                options: {
+                    key: new Date().getTime() + Math.random(),
+                    variant: 'success',
+                    action: (key) => (
+                        <Button style={{ color: 'white' }} onClick={() => closeSnackbar(key)}>
+                            <IconX />
+                        </Button>
+                    )
+                }
+            })
+        } catch (error) {
+            enqueueSnackbar({
+                message: `Export failed: ${error.message}`,
+                options: {
+                    key: new Date().getTime() + Math.random(),
+                    variant: 'error',
+                    persist: true,
+                    action: (key) => (
+                        <Button style={{ color: 'white' }} onClick={() => closeSnackbar(key)}>
+                            <IconX />
+                        </Button>
+                    )
+                }
+            })
+        }
+    }
+
     const onConfirm = () => {
         setShowInviteDialog(false)
         setShowEditDialog(false)
@@ -576,6 +628,15 @@ const Users = () => {
                 ) : (
                     <Stack flexDirection='column' sx={{ gap: 3 }}>
                         <ViewHeader onSearchChange={onSearchChange} search={true} searchPlaceholder='Search Users' title='User Management'>
+                            <StyledPermissionButton
+                                permissionId={'users:manage'}
+                                variant='outlined'
+                                sx={{ borderRadius: 2, height: '100%' }}
+                                onClick={exportUsers}
+                                startIcon={<IconDownload />}
+                            >
+                                Export CSV
+                            </StyledPermissionButton>
                             <StyledPermissionButton
                                 permissionId={'workspace:add-user,users:manage'}
                                 variant='contained'

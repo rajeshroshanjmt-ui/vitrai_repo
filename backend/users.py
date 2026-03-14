@@ -1,7 +1,9 @@
 from typing import Annotated
 from uuid import uuid4
+import csv
+from io import StringIO
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, FileResponse
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -256,3 +258,34 @@ def get_user_workspaces(
 
     # TODO: Implement workspace assignment when workspace model is created
     return {"data": []}
+
+
+@router.get("/users/export/csv")
+def export_users_csv(
+    user: Annotated[dict, Depends(require_roles("admin"))],
+    db: Session = Depends(get_db)
+):
+    """Export all users as CSV file. Requires admin role."""
+    tenant_id = user.get("tenant_id")
+
+    users = db.query(User).filter(User.tenant_id == tenant_id).all()
+
+    # Create CSV
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Email', 'Role', 'Status', 'Last Login', 'Created Date'])
+
+    for u in users:
+        status = "active" if u.password_hash else "pending"
+        last_login = u.last_login.isoformat() if u.last_login else "Never"
+        created_at = u.created_at.isoformat() if u.created_at else ""
+
+        writer.writerow([u.email, u.role, status, last_login, created_at])
+
+    output.seek(0)
+
+    return FileResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=users.csv"}
+    )
