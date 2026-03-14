@@ -1,17 +1,28 @@
 import client from './client'
 
-const getAllRolesByOrganizationId = (organizationId) => client.get(`/role?organizationId=${organizationId}`)
-const getRoleById = (id) => client.get(`/auth/roles/${id}`)
-const createRole = (body) => client.post(`/role`, body)
-const updateRole = (body) => client.put(`/role`, body)
-const getRoleByName = (name) => client.get(`/auth/roles/name/${name}`)
-const deleteRole = (id, organizationId) => client.delete(`/role?id=${id}&organizationId=${organizationId}`)
+// Roles
+const getAllRoles = () => client.get('/roles')
+const getRoleById = (id) => client.get(`/roles/${id}`)
+const createRole = (body) => client.post('/roles', body)
+const updateRole = (id, body) => client.put(`/roles/${id}`, body)
+const deleteRole = (id) => client.delete(`/roles/${id}`)
+
+// Permissions
+const getAllPermissions = () => client.get('/permissions')
+const createPermission = (body) => client.post('/permissions', body)
+
+// Role Permissions
+const getRolePermissions = (roleId) => client.get(`/roles/${roleId}/permissions`)
+const assignPermissionsToRole = (roleId, body) => client.post(`/roles/${roleId}/permissions`, body)
 
 export default {
-    getAllRolesByOrganizationId,
+    getAllRoles,
     getRoleById,
     createRole,
     updateRole,
-    getRoleByName,
-    deleteRole
+    deleteRole,
+    getAllPermissions,
+    createPermission,
+    getRolePermissions,
+    assignPermissionsToRole
 }
