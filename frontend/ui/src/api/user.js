@@ -143,6 +143,16 @@ const deleteOrganizationUser = async (body) => {
     }
 }
 
+const resendUserInvitation = async (userId) => {
+    try {
+        const response = await client.post(`/users/${userId}/resend-invitation`)
+        return { data: response?.data }
+    } catch (err) {
+        console.error('Failed to resend invitation:', err.message)
+        return { data: { status: 'error', error: err.message } }
+    }
+}
+
 const getAdditionalSeatsQuantity = async () => ({
     data: {
         includedSeats: 1,
@@ -279,5 +289,6 @@ export default {
     getPlanProration,
     updateSubscriptionPlan,
     getCurrentUsage,
-    deleteOrganizationUser
+    deleteOrganizationUser,
+    resendUserInvitation
 }

@@ -43,7 +43,7 @@ import useConfirm from '@/hooks/useConfirm'
 import useNotifier from '@/utils/useNotifier'
 
 // Icons
-import { IconTrash, IconEdit, IconX, IconPlus, IconUser, IconEyeOff, IconEye, IconUserStar } from '@tabler/icons-react'
+import { IconTrash, IconEdit, IconX, IconPlus, IconUser, IconEyeOff, IconEye, IconUserStar, IconMail } from '@tabler/icons-react'
 import users_emptySVG from '@/assets/images/users_empty.svg'
 
 // store
@@ -162,14 +162,24 @@ function ShowUserRow(props) {
                 <StyledTableCell>{!props.row.lastLogin ? 'Never' : moment(props.row.lastLogin).format('DD/MM/YYYY HH:mm')}</StyledTableCell>
                 <StyledTableCell>
                     {props.row.status && props.row.status.toUpperCase() === 'INVITED' && (
-                        <PermissionIconButton
-                            permissionId={'workspace:add-user,users:manage'}
-                            title='Edit'
-                            color='primary'
-                            onClick={() => props.onEditClick(props.row)}
-                        >
-                            <IconEdit />
-                        </PermissionIconButton>
+                        <>
+                            <PermissionIconButton
+                                permissionId={'workspace:add-user,users:manage'}
+                                title='Resend Invitation'
+                                color='info'
+                                onClick={() => props.onResendClick(props.row.userId)}
+                            >
+                                <IconMail />
+                            </PermissionIconButton>
+                            <PermissionIconButton
+                                permissionId={'workspace:add-user,users:manage'}
+                                title='Edit'
+                                color='primary'
+                                onClick={() => props.onEditClick(props.row)}
+                            >
+                                <IconEdit />
+                            </PermissionIconButton>
+                        </>
                     )}
                     {!props.row.isOrgOwner &&
                         props.row.userId !== currentUser.id &&
@@ -232,6 +242,7 @@ ShowUserRow.propTypes = {
     row: PropTypes.any,
     onDeleteClick: PropTypes.func,
     onEditClick: PropTypes.func,
+    onResendClick: PropTypes.func,
     open: PropTypes.bool,
     theme: PropTypes.any,
     deletingUserId: PropTypes.string
@@ -361,6 +372,45 @@ const Users = () => {
             } finally {
                 setDeletingUserId(null)
             }
+        }
+    }
+
+    const resendInvitation = async (userId) => {
+        try {
+            setDeletingUserId(userId)
+            const response = await userApi.resendUserInvitation(userId)
+            if (response.data && response.data.status === 'ok') {
+                enqueueSnackbar({
+                    message: `Invitation resent successfully`,
+                    options: {
+                        key: new Date().getTime() + Math.random(),
+                        variant: 'success',
+                        action: (key) => (
+                            <Button style={{ color: 'white' }} onClick={() => closeSnackbar(key)}>
+                                <IconX />
+                            </Button>
+                        )
+                    }
+                })
+            }
+        } catch (error) {
+            enqueueSnackbar({
+                message: `Failed to resend invitation: ${
+                    typeof error.response?.data === 'object' ? error.response.data.message : error.response?.data || error.message
+                }`,
+                options: {
+                    key: new Date().getTime() + Math.random(),
+                    variant: 'error',
+                    persist: true,
+                    action: (key) => (
+                        <Button style={{ color: 'white' }} onClick={() => closeSnackbar(key)}>
+                            <IconX />
+                        </Button>
+                    )
+                }
+            })
+        } finally {
+            setDeletingUserId(null)
         }
     }
 
@@ -503,6 +553,7 @@ const Users = () => {
                                                                     row={item}
                                                                     onDeleteClick={deleteUser}
                                                                     onEditClick={edit}
+                                                                    onResendClick={resendInvitation}
                                                                     deletingUserId={deletingUserId}
                                                                 />
                                                             ))}

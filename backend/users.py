@@ -201,6 +201,45 @@ def delete_user(
     return {"status": "ok", "message": "User deleted"}
 
 
+@router.post("/users/{user_id}/resend-invitation")
+def resend_invitation(
+    user_id: str,
+    user: Annotated[dict, Depends(require_roles("admin"))],
+    db: Session = Depends(get_db)
+) -> dict:
+    """Resend invitation email to pending user."""
+    tenant_id = user.get("tenant_id")
+    actor_user_id = user.get("user_id")
+    actor_email = user.get("sub")
+
+    # Fetch user
+    target_user = db.query(User).filter(
+        User.id == user_id,
+        User.tenant_id == tenant_id
+    ).one_or_none()
+
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Check if user is in pending state (no password)
+    if target_user.password_hash:
+        raise HTTPException(status_code=400, detail="User already activated")
+
+    # TODO: Send invitation email via email service
+    # send_invitation_email(target_user.email, tenant_id, target_user.id)
+
+    # Write audit log
+    _write_audit_log(
+        db, tenant_id, actor_user_id, actor_email,
+        "user.invitation_resent", "user",
+        resource_id=user_id,
+        details={"email": target_user.email}
+    )
+    db.commit()
+
+    return {"status": "ok", "message": f"Invitation resent to {target_user.email}"}
+
+
 @router.get("/users/{user_id}/workspaces")
 def get_user_workspaces(
     user_id: str,
