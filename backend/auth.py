@@ -610,12 +610,12 @@ def request_password_reset(
     # Log the reset request
     _write_audit_log(db, payload.tenant_id, user.id, email, "password_reset_requested", "auth")
 
-    # In a real app, this would send an email to the user with the reset token
-    # For now, we return the token (in production, NEVER return the token in the response)
-    return {
-        "message": "Password reset token generated",
-        "reset_token": reset_token  # TODO: Remove in production; send via email instead
-    }
+    # Send password reset email
+    from email_service import send_password_reset_email
+    send_password_reset_email(email, reset_token)
+
+    # Always return the same response to not leak user existence
+    return {"message": "If the email is associated with an account, a reset token has been sent"}
 
 
 @router.post("/password-reset/confirm")

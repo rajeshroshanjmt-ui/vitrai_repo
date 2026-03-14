@@ -8,7 +8,8 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from auth import require_roles, _write_audit_log
+from auth import require_roles, _write_audit_log, create_reset_token
+from email_service import send_invitation_email
 from database import get_db
 from models import User, Tenant
 
@@ -106,6 +107,10 @@ def invite_user(
         role=payload.role
     )
     db.add(new_user)
+    db.flush()  # Flush to get the user ID
+
+    # Generate invitation token (valid for 1 hour)
+    invitation_token = create_reset_token(new_user.id)
 
     # Write audit log
     _write_audit_log(
@@ -113,6 +118,9 @@ def invite_user(
         resource_id=new_user.id, details={"invited_email": email, "invited_role": payload.role}
     )
     db.commit()
+
+    # Send invitation email with password setup link
+    send_invitation_email(email, tenant_id, invitation_token)
 
     return UserResponse(
         id=new_user.id,
@@ -227,8 +235,11 @@ def resend_invitation(
     if target_user.password_hash:
         raise HTTPException(status_code=400, detail="User already activated")
 
-    # TODO: Send invitation email via email service
-    # send_invitation_email(target_user.email, tenant_id, target_user.id)
+    # Generate invitation token (valid for 1 hour)
+    invitation_token = create_reset_token(target_user.id)
+
+    # Send invitation email with password setup link
+    send_invitation_email(target_user.email, tenant_id, invitation_token)
 
     # Write audit log
     _write_audit_log(

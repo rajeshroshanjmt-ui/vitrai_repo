@@ -75,6 +75,7 @@ const Workspaces = Loadable(lazy(() => import('@/views/workspace')))
 const WorkspaceDetails = Loadable(lazy(() => import('@/views/workspace/WorkspaceUsers')))
 const SSOConfig = Loadable(lazy(() => import('@/views/auth/ssoConfig')))
 const SSOSuccess = Loadable(lazy(() => import('@/views/auth/ssoSuccess')))
+const NotFound = Loadable(lazy(() => import('@/views/errors/NotFound')))
 
 // ==============================|| MAIN ROUTING ||============================== //
 
@@ -385,6 +386,10 @@ const MainRoutes = {
         {
             path: '/sso-success',
             element: <SSOSuccess />
+        },
+        {
+            path: '*',
+            element: <NotFound />
         }
     ]
 }
