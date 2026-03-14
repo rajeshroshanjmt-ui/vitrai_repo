@@ -154,11 +154,76 @@ def _write_audit_log(
 
 
 def require_roles(*roles: str):
+    """Legacy role-based access control (admin/editor/viewer).
+
+    For fine-grained permission checks, use require_permission() instead.
+    """
     allowed = set(roles)
 
     def dependency(user: Annotated[dict, Depends(get_current_user)]) -> dict:
         if user.get("role") not in allowed:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient role")
+        return user
+
+    return dependency
+
+
+def require_permission(*permission_strings: str):
+    """Fine-grained permission-based access control.
+
+    Checks against Role/RolePermission tables for actual permissions.
+    Falls back to simple role checks for backward compatibility.
+
+    Example:
+        @router.get("/users")
+        def list_users(user: Annotated[dict, Depends(require_permission("users:view"))]):
+            ...
+    """
+    allowed_perms = set(permission_strings)
+
+    def dependency(user: Annotated[dict, Depends(get_current_user)], db: Session = Depends(get_db)) -> dict:
+        from models import User, Role, Permission, RolePermission
+
+        tenant_id = user.get("tenant_id")
+        user_id = user.get("user_id")
+
+        # Fetch the user
+        db_user = db.query(User).filter(User.id == user_id, User.tenant_id == tenant_id).one_or_none()
+        if db_user is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+
+        # Try to find custom role first
+        role = db.query(Role).filter(Role.id == db_user.role, Role.tenant_id == tenant_id).one_or_none()
+
+        if role:
+            # User has a custom role - check fine-grained permissions
+            role_permissions = db.query(Permission).join(
+                RolePermission, RolePermission.permission_id == Permission.id
+            ).filter(RolePermission.role_id == role.id).all()
+
+            user_permissions = {p.name for p in role_permissions}
+
+            # Check if user has any of the required permissions
+            if not user_permissions.intersection(allowed_perms):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+        else:
+            # Fall back to simple role checks for system roles
+            system_role = db_user.role
+            if system_role == "admin":
+                # Admin has all permissions
+                pass
+            elif system_role == "editor":
+                # Editor can do write operations, deny admin-only operations
+                admin_perms = {"users:manage", "workspace:delete", "workspace:unlink-user", "sso:manage"}
+                if allowed_perms.intersection(admin_perms):
+                    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+            elif system_role == "viewer":
+                # Viewer only has read permissions
+                if not all(":view" in perm for perm in allowed_perms):
+                    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+            else:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unknown role")
+
         return user
 
     return dependency
