@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from auth import require_roles
+from auth import require_roles, require_permission
 from database import get_db
 from models import AuditLog, Tenant, TenantResource
 
@@ -100,7 +100,7 @@ def list_resources(
     offset: int = 0,
     q: str | None = None,
     db: Session = Depends(get_db),
-    user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
+    user: Annotated[dict, Depends(require_permission("resources:view"))] = None,
 ) -> dict[str, Any]:
     normalized_type = _ensure_resource_type(resource_type)
 
@@ -133,7 +133,7 @@ def get_resource(
     resource_type: str,
     resource_id: str,
     db: Session = Depends(get_db),
-    user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
+    user: Annotated[dict, Depends(require_permission("resources:view"))] = None,
 ) -> dict[str, Any]:
     normalized_type = _ensure_resource_type(resource_type)
 
@@ -160,7 +160,7 @@ def create_resource(
     resource_type: str,
     body: ResourceCreateRequest,
     db: Session = Depends(get_db),
-    user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
+    user: Annotated[dict, Depends(require_permission("resources:create"))] = None,
 ) -> dict[str, Any]:
     normalized_type = _ensure_resource_type(resource_type)
     _ensure_tenant(db, user["tenant_id"])
@@ -189,7 +189,7 @@ def update_resource(
     resource_id: str,
     body: ResourceUpdateRequest,
     db: Session = Depends(get_db),
-    user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
+    user: Annotated[dict, Depends(require_permission("resources:edit"))] = None,
 ) -> dict[str, Any]:
     normalized_type = _ensure_resource_type(resource_type)
     resource = (
@@ -221,7 +221,7 @@ def delete_resource(
     resource_type: str,
     resource_id: str,
     db: Session = Depends(get_db),
-    user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
+    user: Annotated[dict, Depends(require_permission("resources:delete"))] = None,
 ) -> dict[str, Any]:
     normalized_type = _ensure_resource_type(resource_type)
     resource = (

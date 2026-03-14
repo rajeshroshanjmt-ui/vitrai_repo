@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from auth import get_current_user, require_roles
+from auth import get_current_user, require_roles, require_permission
 from database import get_db
 from models import AuditLog, ExecutionLog, Flow, FlowVersion, IngestionJob, Tenant, User, UserPreference
 
@@ -450,7 +450,7 @@ def _collect_queue_depth() -> dict[str, int]:
 def create_flow(
     body: FlowCreateRequest,
     db: Session = Depends(get_db),
-    user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
+    user: Annotated[dict, Depends(require_permission("chatflows:create", "agentflows:create"))] = None,
 ) -> dict[str, Any]:
     tenant_id = user["tenant_id"]
     _ensure_tenant(db, tenant_id)
@@ -475,7 +475,7 @@ def save_draft(
     flow_id: str,
     body: FlowDraftRequest,
     db: Session = Depends(get_db),
-    user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
+    user: Annotated[dict, Depends(require_permission("chatflows:edit", "agentflows:edit"))] = None,
 ) -> dict[str, Any]:
     flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
     current_max = (
@@ -502,7 +502,7 @@ def publish_flow(
     flow_id: str,
     body: FlowPublishRequest,
     db: Session = Depends(get_db),
-    user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
+    user: Annotated[dict, Depends(require_permission("chatflows:publish", "agentflows:publish"))] = None,
 ) -> dict[str, Any]:
     flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
     query = db.query(FlowVersion).filter(FlowVersion.flow_id == flow.id)
@@ -539,7 +539,7 @@ def execute_flow(
     flow_id: str,
     body: ExecuteRequest,
     db: Session = Depends(get_db),
-    user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
+    user: Annotated[dict, Depends(require_permission("chatflows:execute", "agentflows:execute"))] = None,
 ) -> dict[str, Any]:
     flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
     published = (
@@ -628,7 +628,7 @@ def ingest_documents(
     flow_id: str,
     body: IngestRequest,
     db: Session = Depends(get_db),
-    user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
+    user: Annotated[dict, Depends(require_permission("chatflows:edit", "agentflows:edit"))] = None,
 ) -> dict[str, Any]:
     flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
 
@@ -679,7 +679,7 @@ def get_ingestions(
     flow_id: str,
     limit: int = 20,
     db: Session = Depends(get_db),
-    user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
+    user: Annotated[dict, Depends(require_permission("chatflows:view", "agentflows:view"))] = None,
 ) -> list[dict[str, Any]]:
     flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
 
@@ -709,7 +709,7 @@ def get_ingestions(
 def get_logs(
     limit: int = 50,
     db: Session = Depends(get_db),
-    user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
+    user: Annotated[dict, Depends(require_permission("chatflows:view", "agentflows:view"))] = None,
 ) -> list[dict[str, Any]]:
     rows = (
         db.query(ExecutionLog, FlowVersion, Flow)
@@ -741,7 +741,7 @@ def get_logs(
 def delete_log(
     log_id: str,
     db: Session = Depends(get_db),
-    user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
+    user: Annotated[dict, Depends(require_permission("chatflows:delete", "agentflows:delete"))] = None,
 ) -> dict[str, str]:
     """Delete an execution log (admin/editor only)."""
     log = db.query(ExecutionLog).filter(ExecutionLog.id == log_id).one_or_none()
@@ -776,7 +776,7 @@ def delete_log(
 def list_flows(
     limit: int = 50,
     db: Session = Depends(get_db),
-    user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
+    user: Annotated[dict, Depends(require_permission("chatflows:view", "agentflows:view"))] = None,
 ) -> dict[str, Any]:
     safe_limit = max(1, min(limit, 200))
     flows = (
@@ -819,7 +819,7 @@ def list_flows(
 def get_usage(
     days: int | None = None,
     db: Session = Depends(get_db),
-    user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
+    user: Annotated[dict, Depends(require_permission("chatflows:view", "agentflows:view"))] = None,
 ) -> dict[str, Any]:
     window_days = _resolve_usage_window(days)
     usage = _collect_usage_metrics(db, user["tenant_id"], trend_days=window_days)
@@ -878,7 +878,7 @@ def get_usage(
 @router.get("/tools/state")
 def get_tool_state(
     db: Session = Depends(get_db),
-    user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
+    user: Annotated[dict, Depends(require_permission("chatflows:view", "agentflows:view"))] = None,
 ) -> dict[str, Any]:
     data = _get_user_tool_states(db, user["tenant_id"], user["user_id"])
     return _success_payload({
@@ -893,7 +893,7 @@ def get_tool_state(
 def update_tool_state(
     body: ToolStateUpdateRequest,
     db: Session = Depends(get_db),
-    user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
+    user: Annotated[dict, Depends(require_permission("chatflows:edit", "agentflows:edit"))] = None,
 ) -> dict[str, Any]:
     _ensure_tenant(db, user["tenant_id"])
     _ensure_tenant_user(db, user)
@@ -910,7 +910,7 @@ def update_tool_state(
 def get_flow_versions(
     flow_id: str,
     db: Session = Depends(get_db),
-    user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
+    user: Annotated[dict, Depends(require_permission("chatflows:view", "agentflows:view"))] = None,
 ) -> dict[str, Any]:
     """Get all versions of a flow."""
     flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
@@ -941,7 +941,7 @@ def get_flow_versions(
 def get_flow(
     flow_id: str,
     db: Session = Depends(get_db),
-    user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
+    user: Annotated[dict, Depends(require_permission("chatflows:view", "agentflows:view"))] = None,
 ) -> dict[str, Any]:
     flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
     latest_version = (
@@ -970,7 +970,7 @@ def get_flow(
 def delete_flow(
     flow_id: str,
     db: Session = Depends(get_db),
-    user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
+    user: Annotated[dict, Depends(require_permission("chatflows:delete", "agentflows:delete"))] = None,
 ) -> dict[str, Any]:
     flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
 
@@ -991,7 +991,7 @@ def delete_flow(
 def list_dlq_jobs(
     dlq_type: str,
     limit: int = 50,
-    user: Annotated[dict, Depends(require_roles("admin"))] = None,
+    user: Annotated[dict, Depends(require_permission("admin:manage"))] = None,
 ) -> dict[str, Any]:
     dlq_name, _ = _resolve_dlq(dlq_type)
     items = redis_client.lrange(dlq_name, 0, max(0, min(limit, 200)) - 1)
@@ -1020,7 +1020,7 @@ def replay_dlq_job(
     dlq_type: str,
     body: DLQReplayRequest,
     db: Session = Depends(get_db),
-    user: Annotated[dict, Depends(require_roles("admin"))] = None,
+    user: Annotated[dict, Depends(require_permission("admin:manage"))] = None,
 ) -> dict[str, Any]:
     dlq_name, default_target_queue = _resolve_dlq(dlq_type)
     raw = redis_client.lindex(dlq_name, body.redis_index)
@@ -1079,7 +1079,7 @@ def replay_dlq_job(
 def get_dlq_job(
     dlq_type: str,
     redis_index: int,
-    user: Annotated[dict, Depends(require_roles("admin"))] = None,
+    user: Annotated[dict, Depends(require_permission("admin:manage"))] = None,
 ) -> dict[str, Any]:
     if redis_index < 0:
         raise HTTPException(status_code=400, detail="redis_index must be non-negative")
@@ -1109,7 +1109,7 @@ def delete_dlq_job(
     dlq_type: str,
     redis_index: int,
     db: Session = Depends(get_db),
-    user: Annotated[dict, Depends(require_roles("admin"))] = None,
+    user: Annotated[dict, Depends(require_permission("admin:manage"))] = None,
 ) -> dict[str, Any]:
     if redis_index < 0:
         raise HTTPException(status_code=400, detail="redis_index must be non-negative")
@@ -1160,7 +1160,7 @@ def get_audit_logs(
     created_from: str | None = None,
     created_to: str | None = None,
     db: Session = Depends(get_db),
-    user: Annotated[dict, Depends(require_roles("admin"))] = None,
+    user: Annotated[dict, Depends(require_permission("admin:manage"))] = None,
 ) -> dict[str, Any]:
     safe_limit = max(1, min(limit, 200))
     safe_offset = max(0, offset)

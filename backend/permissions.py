@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from auth import require_roles, _write_audit_log
+from auth import require_roles, require_permission, _write_audit_log
 from database import get_db
 from models import Permission, Role, RolePermission
 
@@ -54,7 +54,7 @@ class RolePermissionAssignRequest(BaseModel):
 
 @router.get("/permissions", response_model=list[PermissionResponse])
 def list_permissions(
-    user: Annotated[dict, Depends(require_roles("admin"))],
+    user: Annotated[dict, Depends(require_permission("admin:manage"))],
     db: Session = Depends(get_db)
 ) -> list[PermissionResponse]:
     """List all available permissions. Requires admin role."""
@@ -65,7 +65,7 @@ def list_permissions(
 @router.post("/permissions", response_model=PermissionResponse)
 def create_permission(
     payload: PermissionResponse,
-    user: Annotated[dict, Depends(require_roles("admin"))],
+    user: Annotated[dict, Depends(require_permission("admin:manage"))],
     db: Session = Depends(get_db)
 ) -> PermissionResponse:
     """Create a new permission. Requires admin role."""
@@ -91,7 +91,7 @@ def create_permission(
 
 @router.get("/roles", response_model=list[RoleResponse])
 def list_roles(
-    user: Annotated[dict, Depends(require_roles("admin"))],
+    user: Annotated[dict, Depends(require_permission("admin:manage"))],
     db: Session = Depends(get_db)
 ) -> list[RoleResponse]:
     """List all roles in the tenant. Requires admin role."""
@@ -127,7 +127,7 @@ def list_roles(
 @router.get("/roles/{role_id}", response_model=RoleResponse)
 def get_role(
     role_id: str,
-    user: Annotated[dict, Depends(require_roles("admin"))],
+    user: Annotated[dict, Depends(require_permission("admin:manage"))],
     db: Session = Depends(get_db)
 ) -> RoleResponse:
     """Get a specific role with permissions. Requires admin role."""
@@ -161,7 +161,7 @@ def get_role(
 @router.post("/roles", response_model=RoleResponse)
 def create_role(
     payload: RoleCreateRequest,
-    user: Annotated[dict, Depends(require_roles("admin"))],
+    user: Annotated[dict, Depends(require_permission("admin:manage"))],
     db: Session = Depends(get_db)
 ) -> RoleResponse:
     """Create a new custom role. Requires admin role."""
@@ -208,7 +208,7 @@ def create_role(
 def update_role(
     role_id: str,
     payload: RoleUpdateRequest,
-    user: Annotated[dict, Depends(require_roles("admin"))],
+    user: Annotated[dict, Depends(require_permission("admin:manage"))],
     db: Session = Depends(get_db)
 ) -> RoleResponse:
     """Update a role. Requires admin role."""
@@ -261,7 +261,7 @@ def update_role(
 @router.delete("/roles/{role_id}")
 def delete_role(
     role_id: str,
-    user: Annotated[dict, Depends(require_roles("admin"))],
+    user: Annotated[dict, Depends(require_permission("admin:manage"))],
     db: Session = Depends(get_db)
 ) -> dict:
     """Delete a custom role. Requires admin role. Cannot delete system roles."""
@@ -294,7 +294,7 @@ def delete_role(
 def assign_permissions(
     role_id: str,
     payload: RolePermissionAssignRequest,
-    user: Annotated[dict, Depends(require_roles("admin"))],
+    user: Annotated[dict, Depends(require_permission("admin:manage"))],
     db: Session = Depends(get_db)
 ) -> dict:
     """Assign permissions to a role. Requires admin role."""
@@ -335,7 +335,7 @@ def assign_permissions(
 @router.get("/roles/{role_id}/permissions", response_model=list[PermissionResponse])
 def get_role_permissions(
     role_id: str,
-    user: Annotated[dict, Depends(require_roles("admin"))],
+    user: Annotated[dict, Depends(require_permission("admin:manage"))],
     db: Session = Depends(get_db)
 ) -> list[PermissionResponse]:
     """Get all permissions assigned to a role. Requires admin role."""

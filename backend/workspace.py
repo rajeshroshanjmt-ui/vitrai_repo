@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from auth import get_current_user, require_roles, _write_audit_log
+from auth import get_current_user, require_roles, require_permission, _write_audit_log
 from database import get_db
 from models import TenantResource, User, UserPreference
 
@@ -43,7 +43,7 @@ class WorkspacesListResponse(BaseModel):
 
 @router.get("/workspaces")
 def list_workspaces(
-    user: Annotated[dict, Depends(require_roles("admin"))],
+    user: Annotated[dict, Depends(require_permission("workspaces:manage"))],
     db: Session = Depends(get_db)
 ) -> WorkspacesListResponse:
     """List all workspaces in the organization."""
@@ -84,7 +84,7 @@ def list_workspaces(
 @router.post("/workspaces", response_model=WorkspaceResponse)
 def create_workspace(
     payload: WorkspaceCreate,
-    user: Annotated[dict, Depends(require_roles("admin", "editor"))],
+    user: Annotated[dict, Depends(require_permission("workspaces:manage"))],
     db: Session = Depends(get_db)
 ) -> WorkspaceResponse:
     """Create a new workspace."""
@@ -132,7 +132,7 @@ def create_workspace(
 def update_workspace(
     workspace_id: str,
     payload: WorkspaceUpdate,
-    user: Annotated[dict, Depends(require_roles("admin", "editor"))],
+    user: Annotated[dict, Depends(require_permission("workspaces:manage"))],
     db: Session = Depends(get_db)
 ) -> WorkspaceResponse:
     """Update a workspace."""
@@ -185,7 +185,7 @@ def update_workspace(
 @router.delete("/workspaces/{workspace_id}")
 def delete_workspace(
     workspace_id: str,
-    user: Annotated[dict, Depends(require_roles("admin"))],
+    user: Annotated[dict, Depends(require_permission("workspaces:manage"))],
     db: Session = Depends(get_db)
 ) -> dict:
     """Delete a workspace."""
@@ -297,7 +297,7 @@ def switch_workspace(
 def link_user_to_workspace(
     workspace_id: str,
     user_id: str,
-    user: Annotated[dict, Depends(require_roles("admin"))],
+    user: Annotated[dict, Depends(require_permission("workspaces:manage"))],
     db: Session = Depends(get_db)
 ) -> dict:
     """Link a user to a workspace."""
@@ -358,7 +358,7 @@ def link_user_to_workspace(
 def unlink_user_from_workspace(
     workspace_id: str,
     user_id: str,
-    user: Annotated[dict, Depends(require_roles("admin"))],
+    user: Annotated[dict, Depends(require_permission("workspaces:manage"))],
     db: Session = Depends(get_db)
 ) -> dict:
     """Remove a user from a workspace."""
@@ -409,7 +409,7 @@ def unlink_user_from_workspace(
 @router.get("/workspaces/{workspace_id}/users")
 def list_workspace_users(
     workspace_id: str,
-    user: Annotated[dict, Depends(get_current_user)],
+    user: Annotated[dict, Depends(require_permission("workspaces:view"))],
     db: Session = Depends(get_db)
 ) -> dict:
     """List users in a workspace."""
