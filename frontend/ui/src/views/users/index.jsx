@@ -19,7 +19,10 @@ import {
     Chip,
     Drawer,
     Typography,
-    CircularProgress
+    CircularProgress,
+    Grid,
+    Card,
+    CardContent
 } from '@mui/material'
 
 // project imports
@@ -95,6 +98,62 @@ const StatusBadge = ({ status }) => {
         default:
             return null
     }
+}
+
+const UserStats = ({ users }) => {
+    const totalUsers = users.length
+    const activeUsers = users.filter((u) => u.status?.toUpperCase() === 'ACTIVE').length
+    const pendingUsers = users.filter((u) => u.status?.toUpperCase() === 'INVITED' || u.status?.toUpperCase() === 'PENDING').length
+    const adminUsers = users.filter((u) => u.role?.name?.toUpperCase() === 'ADMIN').length
+
+    return (
+        <Grid container spacing={2} sx={{ mb: 2 }}>
+            <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                    <CardContent>
+                        <Typography color='textSecondary' gutterBottom>
+                            Total Users
+                        </Typography>
+                        <Typography variant='h5'>{totalUsers}</Typography>
+                    </CardContent>
+                </Card>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                    <CardContent>
+                        <Typography color='textSecondary' gutterBottom>
+                            Active
+                        </Typography>
+                        <Typography variant='h5' sx={{ color: '#4caf50' }}>
+                            {activeUsers}
+                        </Typography>
+                    </CardContent>
+                </Card>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                    <CardContent>
+                        <Typography color='textSecondary' gutterBottom>
+                            Pending
+                        </Typography>
+                        <Typography variant='h5' sx={{ color: '#ff9800' }}>
+                            {pendingUsers}
+                        </Typography>
+                    </CardContent>
+                </Card>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                    <CardContent>
+                        <Typography color='textSecondary' gutterBottom>
+                            Admins
+                        </Typography>
+                        <Typography variant='h5'>{adminUsers}</Typography>
+                    </CardContent>
+                </Card>
+            </Grid>
+        </Grid>
+    )
 }
 
 function ShowUserRow(props) {
@@ -648,6 +707,7 @@ const Users = () => {
                                 Invite User
                             </StyledPermissionButton>
                         </ViewHeader>
+                        {!isLoading && <UserStats users={users} />}
                         {!isLoading && users.length === 0 ? (
                             <Stack sx={{ alignItems: 'center', justifyContent: 'center' }} flexDirection='column'>
                                 <Box sx={{ p: 2, height: 'auto' }}>
