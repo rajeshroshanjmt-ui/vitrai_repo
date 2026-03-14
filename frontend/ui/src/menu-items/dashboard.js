@@ -16,7 +16,8 @@ import {
     IconSettings,
     IconFileText,
     IconLogout,
-    IconHistory
+    IconHistory,
+    IconShield
 } from '@tabler/icons-react'
 
 const icons = {
@@ -37,7 +38,8 @@ const icons = {
     IconSettings,
     IconFileText,
     IconLogout,
-    IconHistory
+    IconHistory,
+    IconShield
 }
 
 const dashboard = {
@@ -223,6 +225,15 @@ const dashboard = {
                     url: '/audit-log',
                     icon: icons.IconHistory,
                     display: 'feat:audit-log',
+                    permission: 'users:manage'
+                },
+                {
+                    id: 'roles',
+                    title: 'Roles & Permissions',
+                    type: 'item',
+                    url: '/roles',
+                    icon: icons.IconShield,
+                    display: 'feat:roles',
                     permission: 'users:manage'
                 }
             ]
