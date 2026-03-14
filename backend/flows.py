@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from auth import get_current_user, require_roles, require_permission
+from auth import get_current_user, require_roles, require_permission, _get_active_workspace
 from database import get_db
 from models import AuditLog, ExecutionLog, Flow, FlowVersion, IngestionJob, Tenant, User, UserPreference
 
@@ -100,21 +100,6 @@ def _ensure_tenant(db: Session, tenant_id: str) -> None:
         db.add(Tenant(id=tenant_id, name=f"tenant-{tenant_id[:8]}"))
         db.flush()
 
-
-def _get_active_workspace(db: Session, tenant_id: str, user_id: str) -> str | None:
-    """Get the user's active workspace ID. Returns None if no workspace is set."""
-    pref = (
-        db.query(UserPreference)
-        .filter(
-            UserPreference.tenant_id == tenant_id,
-            UserPreference.user_id == user_id,
-            UserPreference.pref_key == "active_workspace",
-        )
-        .one_or_none()
-    )
-    if pref and pref.pref_value:
-        return pref.pref_value.get("workspace_id")
-    return None
 
 
 def _require_tenant_flow(db: Session, tenant_id: str, flow_id: str) -> Flow:

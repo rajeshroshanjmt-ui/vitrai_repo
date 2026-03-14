@@ -12,7 +12,7 @@ from sqlalchemy import func, and_
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Tenant, User, AuditLog
+from models import Tenant, User, AuditLog, UserPreference
 
 router = APIRouter()
 security = HTTPBearer(auto_error=False)
@@ -105,6 +105,22 @@ def hash_password(password: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
+
+
+def _get_active_workspace(db: Session, tenant_id: str, user_id: str) -> str | None:
+    """Get the user's active workspace ID. Returns None if no workspace is set."""
+    pref = (
+        db.query(UserPreference)
+        .filter(
+            UserPreference.tenant_id == tenant_id,
+            UserPreference.user_id == user_id,
+            UserPreference.pref_key == "active_workspace",
+        )
+        .one_or_none()
+    )
+    if pref and pref.pref_value:
+        return pref.pref_value.get("workspace_id")
+    return None
 
 
 def decode_token(token: str) -> dict:
