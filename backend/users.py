@@ -8,7 +8,7 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from auth import require_roles, _write_audit_log, create_reset_token
+from auth import require_roles, require_permission, _write_audit_log, create_reset_token
 from email_service import send_invitation_email
 from database import get_db
 from models import User, Tenant
@@ -44,12 +44,12 @@ class UsersListResponse(BaseModel):
 
 @router.get("/users", response_model=UsersListResponse)
 def list_users(
-    user: Annotated[dict, Depends(require_roles("admin"))],
+    user: Annotated[dict, Depends(require_permission("users:manage"))],
     db: Session = Depends(get_db),
     skip: int = 0,
     limit: int = 100
 ) -> UsersListResponse:
-    """List all users in the tenant. Requires admin role."""
+    """List all users in the tenant. Requires users:manage permission."""
     tenant_id = user.get("tenant_id")
 
     users = db.query(User).filter(User.tenant_id == tenant_id).offset(skip).limit(limit).all()
@@ -79,10 +79,10 @@ def list_users(
 @router.post("/users/invite", response_model=UserResponse)
 def invite_user(
     payload: UserInviteRequest,
-    user: Annotated[dict, Depends(require_roles("admin"))],
+    user: Annotated[dict, Depends(require_permission("users:manage"))],
     db: Session = Depends(get_db)
 ) -> UserResponse:
-    """Invite a new user to the tenant. Requires admin role."""
+    """Invite a new user to the tenant. Requires users:manage permission."""
     tenant_id = user.get("tenant_id")
     actor_user_id = user.get("user_id")
     actor_email = user.get("sub")
@@ -136,10 +136,10 @@ def invite_user(
 def update_user(
     user_id: str,
     payload: UserUpdateRequest,
-    user: Annotated[dict, Depends(require_roles("admin"))],
+    user: Annotated[dict, Depends(require_permission("users:manage"))],
     db: Session = Depends(get_db)
 ) -> UserResponse:
-    """Update a user's role. Requires admin role."""
+    """Update a user's role. Requires users:manage permission."""
     tenant_id = user.get("tenant_id")
     actor_user_id = user.get("user_id")
     actor_email = user.get("sub")
@@ -176,10 +176,10 @@ def update_user(
 @router.delete("/users/{user_id}")
 def delete_user(
     user_id: str,
-    user: Annotated[dict, Depends(require_roles("admin"))],
+    user: Annotated[dict, Depends(require_permission("users:manage"))],
     db: Session = Depends(get_db)
 ) -> dict:
-    """Delete a user. Requires admin role. Cannot delete self or last admin."""
+    """Delete a user. Requires users:manage permission. Cannot delete self or last admin."""
     tenant_id = user.get("tenant_id")
     actor_user_id = user.get("user_id")
     actor_email = user.get("sub")
