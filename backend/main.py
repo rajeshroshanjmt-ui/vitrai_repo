@@ -14,6 +14,7 @@ from resources import router as resources_router
 from users import router as users_router
 from files import router as files_router
 from workspace import router as workspace_router
+from permissions import router as permissions_router
 from database import Base, engine
 
 app = FastAPI(title="Vetrai Backend", version="1.0.0")
@@ -74,6 +75,7 @@ app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(users_router, tags=["users"])
 app.include_router(files_router, tags=["files"])
 app.include_router(workspace_router, tags=["workspace"])
+app.include_router(permissions_router, tags=["permissions"])
 app.include_router(flow_router, prefix="/flows", tags=["flows"])
 app.include_router(agent_router, prefix="/agent", tags=["agent"])
 app.include_router(resources_router, prefix="/resources", tags=["resources"])
