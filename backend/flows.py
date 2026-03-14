@@ -705,6 +705,39 @@ def get_ingestions(
     ]
 
 
+@router.get("/{flow_id}/ingestions/{job_id}")
+def get_ingestion_job(
+    flow_id: str,
+    job_id: str,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_permission("chatflows:view", "agentflows:view"))] = None,
+) -> dict[str, Any]:
+    """Get details of a single ingestion job."""
+    flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
+
+    job = (
+        db.query(IngestionJob)
+        .filter(
+            IngestionJob.id == job_id,
+            IngestionJob.tenant_id == user["tenant_id"],
+            IngestionJob.flow_id == flow.id,
+        )
+        .one_or_none()
+    )
+    if job is None:
+        raise HTTPException(status_code=404, detail="Ingestion job not found")
+
+    return {
+        "ingestion_job_id": job.id,
+        "status": job.status,
+        "documents_count": job.documents_count,
+        "chunks_count": job.chunks_count,
+        "error_message": job.error_message,
+        "created_at": job.created_at.isoformat() if job.created_at else None,
+        "updated_at": job.updated_at.isoformat() if job.updated_at else None,
+    }
+
+
 @router.get("/logs")
 def get_logs(
     limit: int = 50,
