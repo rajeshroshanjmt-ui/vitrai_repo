@@ -6,13 +6,13 @@ const DEFAULT_FEATURES = {
     'feat:evaluators': true,
     'feat:evaluations': true,
     'feat:logs': true,
-    'feat:files': false,
+    'feat:files': true,
     'feat:account': true,
-    'feat:sso-config': false,
-    'feat:roles': false,
+    'feat:sso-config': true,
+    'feat:roles': true,
     'feat:users': true,
     'feat:workspaces': true,
-    'feat:login-activity': false
+    'feat:login-activity': true
 }
 
 const DEFAULT_PERMISSIONS = [
