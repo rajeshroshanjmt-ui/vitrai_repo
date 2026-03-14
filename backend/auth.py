@@ -1,9 +1,13 @@
 import os
+import json
+import base64
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Any
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, status, RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -17,6 +21,7 @@ from models import Tenant, User, AuditLog, UserPreference
 router = APIRouter()
 security = HTTPBearer(auto_error=False)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+logger = logging.getLogger(__name__)
 
 SECRET = os.getenv("JWT_SECRET", "change-me")
 APP_ENV = os.getenv("APP_ENV", os.getenv("ENVIRONMENT", os.getenv("ENV", "development"))).strip().lower()
@@ -742,3 +747,269 @@ def confirm_password_reset(
     })
 
     return TokenResponse(access_token=token)
+
+
+# OAuth/SSO Callback Handlers
+def _parse_id_token(id_token: str) -> dict | None:
+    """Parse and decode JWT ID token without signature verification (for now)."""
+    try:
+        # ID tokens are in the format: header.payload.signature
+        parts = id_token.split('.')
+        if len(parts) != 3:
+            return None
+
+        # Decode the payload (second part)
+        payload = parts[1]
+        # Add padding if needed
+        padding = 4 - len(payload) % 4
+        if padding != 4:
+            payload += '=' * padding
+
+        decoded = base64.urlsafe_b64decode(payload)
+        return json.loads(decoded)
+    except Exception as e:
+        logger.error(f"Failed to parse ID token: {str(e)}")
+        return None
+
+
+def _exchange_oauth_code(code: str, sso_config: dict, redirect_uri: str) -> dict | None:
+    """Exchange OAuth authorization code for ID token via OIDC token endpoint."""
+    try:
+        provider = sso_config.get("provider", "").lower()
+        client_id = sso_config.get("clientId")
+        client_secret = sso_config.get("clientSecret")
+        tenant_url = sso_config.get("tenantUrl")
+
+        if not all([client_id, client_secret, tenant_url]):
+            logger.error("Incomplete SSO configuration")
+            return None
+
+        # Determine token endpoint based on provider
+        token_endpoint = None
+        if provider in ["azure", "entra"]:
+            token_endpoint = f"{tenant_url}/oauth2/v2.0/token"
+        elif provider == "google":
+            token_endpoint = "https://oauth2.googleapis.com/token"
+        elif provider == "github":
+            token_endpoint = "https://github.com/login/oauth/access_token"
+        elif provider == "auth0":
+            token_endpoint = f"{tenant_url}/oauth/token"
+        else:
+            # Generic OIDC - try discovery endpoint
+            token_endpoint = f"{tenant_url}/oauth/token"
+
+        # Exchange code for token
+        token_response = httpx.post(
+            token_endpoint,
+            data={
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": redirect_uri,
+                "client_id": client_id,
+                "client_secret": client_secret,
+            },
+            timeout=10.0
+        )
+
+        if token_response.status_code != 200:
+            logger.error(f"Token exchange failed: {token_response.text}")
+            return None
+
+        token_data = token_response.json()
+        return token_data
+    except Exception as e:
+        logger.error(f"OAuth token exchange failed: {str(e)}")
+        return None
+
+
+@router.get("/callback")
+def oauth_callback(
+    code: str = None,
+    state: str = None,
+    error: str = None,
+    db: Session = Depends(get_db)
+):
+    """OAuth callback endpoint - called by provider after user authentication."""
+    from models import TenantResource
+
+    # Get frontend redirect URL
+    frontend_url = os.getenv("VETRAI_BASE_URL", "http://localhost:3000")
+
+    # Handle errors from provider
+    if error:
+        error_description = f"OAuth error: {error}"
+        logger.warning(error_description)
+        return RedirectResponse(url=f"{frontend_url}/login?error={error}")
+
+    if not code:
+        logger.warning("OAuth callback received without authorization code")
+        return RedirectResponse(url=f"{frontend_url}/login?error=no_code")
+
+    # Note: In production, validate state parameter for CSRF protection
+    # For now, we accept any valid code (state validation would require session storage)
+
+    try:
+        # Determine tenant from state or use default tenant (for multi-tenant, state would include tenant_id)
+        # For now, we'll need the tenant_id to be provided or stored with the state
+        # Default to first tenant for simplicity - in production, state would encode tenant_id
+        tenant = db.query(Tenant).first()
+        if not tenant:
+            logger.error("No tenant found for OAuth callback")
+            return RedirectResponse(url=f"{frontend_url}/login?error=no_tenant")
+
+        # Find enabled SSO config for this tenant
+        sso_configs = (
+            db.query(TenantResource)
+            .filter(
+                TenantResource.tenant_id == tenant.id,
+                TenantResource.resource_type == "sso_config"
+            )
+            .all()
+        )
+
+        if not sso_configs:
+            logger.error(f"No SSO config found for tenant {tenant.id}")
+            return RedirectResponse(url=f"{frontend_url}/login?error=no_sso_config")
+
+        # Find enabled config
+        enabled_config = None
+        for config in sso_configs:
+            if config.payload and config.payload.get("enabled"):
+                enabled_config = config
+                break
+
+        if not enabled_config:
+            logger.error(f"No enabled SSO config for tenant {tenant.id}")
+            return RedirectResponse(url=f"{frontend_url}/login?error=sso_disabled")
+
+        # Exchange code for ID token
+        redirect_uri = f"{os.getenv('VETRAI_BASE_URL', 'http://localhost:8000')}/api/auth/callback"
+        token_response = _exchange_oauth_code(code, enabled_config.payload, redirect_uri)
+
+        if not token_response:
+            logger.error("Failed to exchange OAuth code")
+            return RedirectResponse(url=f"{frontend_url}/login?error=token_exchange_failed")
+
+        # Parse ID token
+        id_token = token_response.get("id_token")
+        if not id_token:
+            # Some providers return token_type=Bearer without id_token, try access_token for user info
+            logger.warning("No id_token in response, attempting alternative flow")
+            # In production, could call user info endpoint here
+            return RedirectResponse(url=f"{frontend_url}/login?error=no_id_token")
+
+        id_token_claims = _parse_id_token(id_token)
+        if not id_token_claims:
+            logger.error("Failed to parse ID token claims")
+            return RedirectResponse(url=f"{frontend_url}/login?error=invalid_id_token")
+
+        # Extract user information from ID token
+        email = id_token_claims.get("email") or id_token_claims.get("upn") or id_token_claims.get("preferred_username")
+        given_name = id_token_claims.get("given_name", "")
+        family_name = id_token_claims.get("family_name", "")
+
+        if not email:
+            logger.error("No email found in ID token claims")
+            return RedirectResponse(url=f"{frontend_url}/login?error=no_email")
+
+        # Ensure tenant exists
+        if not tenant:
+            tenant = Tenant(id=str(uuid4()), name=f"Tenant-{str(uuid4())[:8]}")
+            db.add(tenant)
+            db.commit()
+
+        # Find or create user
+        user = db.query(User).filter(
+            User.email == email,
+            User.tenant_id == tenant.id
+        ).one_or_none()
+
+        if user is None:
+            # Create new user from OAuth claims
+            user = User(
+                id=str(uuid4()),
+                tenant_id=tenant.id,
+                email=email,
+                full_name=f"{given_name} {family_name}".strip() or email,
+                role="editor",  # Default role for OAuth users
+                password_hash=None,  # OAuth users don't have password
+                is_verified=True,  # OAuth users are pre-verified by provider
+            )
+            db.add(user)
+            db.flush()
+
+            # Log user creation
+            _write_audit_log(db, tenant.id, user.id, email, "user_created_oauth", "auth", details={"provider": enabled_config.payload.get("provider")})
+        else:
+            # Update existing user with latest info from OAuth
+            user.full_name = f"{given_name} {family_name}".strip() or user.full_name
+            user.is_verified = True
+            db.add(user)
+            db.flush()
+
+        db.commit()
+
+        # Create JWT token for frontend
+        jwt_token = create_token({
+            "sub": user.email,
+            "tenant_id": user.tenant_id,
+            "role": user.role,
+            "user_id": user.id,
+        })
+
+        # Log successful OAuth login
+        _write_audit_log(db, tenant.id, user.id, email, "oauth_login", "auth", details={"provider": enabled_config.payload.get("provider")})
+
+        # Redirect to frontend SSO success page with token
+        return RedirectResponse(url=f"{frontend_url}/sso-success?token={jwt_token}")
+
+    except Exception as e:
+        logger.error(f"OAuth callback error: {str(e)}", exc_info=True)
+        return RedirectResponse(url=f"{frontend_url}/login?error=callback_error")
+
+
+@router.post("/sso-success")
+def sso_success_handler(
+    token: str,
+    db: Session = Depends(get_db)
+) -> dict:
+    """Validate OAuth token and return user information to frontend."""
+    try:
+        # Decode and validate JWT token
+        payload = jwt.decode(token, SECRET, algorithms=[ALGORITHM])
+
+        user_id = payload.get("user_id")
+        tenant_id = payload.get("tenant_id")
+        email = payload.get("sub")
+
+        if not all([user_id, tenant_id, email]):
+            raise HTTPException(status_code=401, detail="Invalid token claims")
+
+        # Verify user exists
+        user = db.query(User).filter(
+            User.id == user_id,
+            User.tenant_id == tenant_id,
+            User.email == email
+        ).one_or_none()
+
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+
+        # Return user data (similar to login endpoint)
+        return {
+            "status": 200,
+            "data": {
+                "user_id": user.id,
+                "email": user.email,
+                "full_name": user.full_name,
+                "role": user.role,
+                "tenant_id": user.tenant_id,
+                "access_token": token,
+            }
+        }
+
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    except Exception as e:
+        logger.error(f"SSO success handler error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")

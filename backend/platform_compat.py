@@ -2323,9 +2323,42 @@ def delete_evaluations(
 
 
 @router.get("/loginmethod/default")
-def get_default_login_methods() -> dict:
-    """Return default login methods (empty list for self-hosted)."""
-    return {"providers": []}
+def get_default_login_methods(db: Session = Depends(get_db)) -> dict:
+    """Return enabled SSO providers for login."""
+    from models import Tenant, TenantResource
+
+    try:
+        # Get first tenant (for single-tenant deployments)
+        tenant = db.query(Tenant).first()
+        if not tenant:
+            return {"providers": []}
+
+        # Query enabled SSO configs
+        sso_configs = (
+            db.query(TenantResource)
+            .filter(
+                TenantResource.tenant_id == tenant.id,
+                TenantResource.resource_type == "sso_config"
+            )
+            .all()
+        )
+
+        providers = []
+        for config in sso_configs:
+            if config.payload and config.payload.get("enabled"):
+                provider = config.payload.get("provider", "").lower()
+                client_id = config.payload.get("clientId")
+                if provider and client_id:
+                    providers.append({
+                        "name": provider,
+                        "type": "oauth",
+                        "clientId": client_id,
+                    })
+
+        return {"providers": providers}
+    except Exception as e:
+        # Return empty list on any error
+        return {"providers": []}
 
 
 # Marketplace Templates Endpoints

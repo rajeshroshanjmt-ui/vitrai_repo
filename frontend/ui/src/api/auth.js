@@ -244,11 +244,25 @@ const getAllPermissions = async () => {
     }
 }
 
-const ssoSuccess = async () => {
-    return {
-        data: {
-            redirectUrl: '/chatflows'
-        }
+const ssoSuccess = async (token) => {
+    if (!token) {
+        return null
+    }
+
+    try {
+        const response = await axios.post(
+            `${baseURL}/api/auth/sso-success`,
+            { token },
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }
+        )
+        return response.data
+    } catch (error) {
+        console.error('SSO success handler error:', error)
+        return null
     }
 }
 
