@@ -101,6 +101,22 @@ def _ensure_tenant(db: Session, tenant_id: str) -> None:
         db.flush()
 
 
+def _get_active_workspace(db: Session, tenant_id: str, user_id: str) -> str | None:
+    """Get the user's active workspace ID. Returns None if no workspace is set."""
+    pref = (
+        db.query(UserPreference)
+        .filter(
+            UserPreference.tenant_id == tenant_id,
+            UserPreference.user_id == user_id,
+            UserPreference.pref_key == "active_workspace",
+        )
+        .one_or_none()
+    )
+    if pref and pref.pref_value:
+        return pref.pref_value.get("workspace_id")
+    return None
+
+
 def _require_tenant_flow(db: Session, tenant_id: str, flow_id: str) -> Flow:
     flow = db.query(Flow).filter(Flow.id == flow_id, Flow.tenant_id == tenant_id).one_or_none()
     if flow is None:
@@ -453,9 +469,10 @@ def create_flow(
     user: Annotated[dict, Depends(require_permission("chatflows:create", "agentflows:create"))] = None,
 ) -> dict[str, Any]:
     tenant_id = user["tenant_id"]
+    active_workspace = _get_active_workspace(db, tenant_id, user["user_id"])
     _ensure_tenant(db, tenant_id)
 
-    flow = Flow(id=str(uuid4()), tenant_id=tenant_id, name=body.name)
+    flow = Flow(id=str(uuid4()), tenant_id=tenant_id, workspace_id=active_workspace, name=body.name)
     db.add(flow)
 
     version = FlowVersion(
@@ -477,7 +494,10 @@ def save_draft(
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_permission("chatflows:edit", "agentflows:edit"))] = None,
 ) -> dict[str, Any]:
+    active_workspace = _get_active_workspace(db, user["tenant_id"], user["user_id"])
     flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
+    if flow.workspace_id != active_workspace:
+        raise HTTPException(status_code=404, detail="Flow not found")
     current_max = (
         db.query(func.coalesce(func.max(FlowVersion.version), 0))
         .filter(FlowVersion.flow_id == flow.id)
@@ -504,7 +524,10 @@ def publish_flow(
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_permission("chatflows:publish", "agentflows:publish"))] = None,
 ) -> dict[str, Any]:
+    active_workspace = _get_active_workspace(db, user["tenant_id"], user["user_id"])
     flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
+    if flow.workspace_id != active_workspace:
+        raise HTTPException(status_code=404, detail="Flow not found")
     query = db.query(FlowVersion).filter(FlowVersion.flow_id == flow.id)
 
     if body.version is None:
@@ -541,7 +564,10 @@ def execute_flow(
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_permission("chatflows:execute", "agentflows:execute"))] = None,
 ) -> dict[str, Any]:
+    active_workspace = _get_active_workspace(db, user["tenant_id"], user["user_id"])
     flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
+    if flow.workspace_id != active_workspace:
+        raise HTTPException(status_code=404, detail="Flow not found")
     published = (
         db.query(FlowVersion)
         .filter(FlowVersion.flow_id == flow.id, FlowVersion.is_published.is_(True))
@@ -811,10 +837,14 @@ def list_flows(
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_permission("chatflows:view", "agentflows:view"))] = None,
 ) -> dict[str, Any]:
+    active_workspace = _get_active_workspace(db, user["tenant_id"], user["user_id"])
     safe_limit = max(1, min(limit, 200))
     flows = (
         db.query(Flow)
-        .filter(Flow.tenant_id == user["tenant_id"])
+        .filter(
+            Flow.tenant_id == user["tenant_id"],
+            Flow.workspace_id == active_workspace
+        )
         .order_by(Flow.created_at.desc())
         .limit(safe_limit)
         .all()
@@ -946,7 +976,10 @@ def get_flow_versions(
     user: Annotated[dict, Depends(require_permission("chatflows:view", "agentflows:view"))] = None,
 ) -> dict[str, Any]:
     """Get all versions of a flow."""
+    active_workspace = _get_active_workspace(db, user["tenant_id"], user["user_id"])
     flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
+    if flow.workspace_id != active_workspace:
+        raise HTTPException(status_code=404, detail="Flow not found")
 
     versions = db.query(FlowVersion).filter(
         FlowVersion.flow_id == flow.id
@@ -976,7 +1009,10 @@ def get_flow(
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_permission("chatflows:view", "agentflows:view"))] = None,
 ) -> dict[str, Any]:
+    active_workspace = _get_active_workspace(db, user["tenant_id"], user["user_id"])
     flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
+    if flow.workspace_id != active_workspace:
+        raise HTTPException(status_code=404, detail="Flow not found")
     latest_version = (
         db.query(FlowVersion)
         .filter(FlowVersion.flow_id == flow.id)
@@ -1005,7 +1041,10 @@ def delete_flow(
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_permission("chatflows:delete", "agentflows:delete"))] = None,
 ) -> dict[str, Any]:
+    active_workspace = _get_active_workspace(db, user["tenant_id"], user["user_id"])
     flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
+    if flow.workspace_id != active_workspace:
+        raise HTTPException(status_code=404, detail="Flow not found")
 
     version_ids = [item.id for item in db.query(FlowVersion.id).filter(FlowVersion.flow_id == flow.id).all()]
     if version_ids:

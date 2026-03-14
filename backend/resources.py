@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from auth import require_roles, require_permission
+from auth import require_roles, require_permission, _get_active_workspace
 from database import get_db
 from models import AuditLog, Tenant, TenantResource
 
@@ -102,6 +102,7 @@ def list_resources(
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_permission("resources:view"))] = None,
 ) -> dict[str, Any]:
+    active_workspace = _get_active_workspace(db, user["tenant_id"], user["user_id"])
     normalized_type = _ensure_resource_type(resource_type)
 
     if user.get("role") not in _required_reader_roles(normalized_type):
@@ -113,6 +114,7 @@ def list_resources(
     query = db.query(TenantResource).filter(
         TenantResource.tenant_id == user["tenant_id"],
         TenantResource.resource_type == normalized_type,
+        TenantResource.workspace_id == active_workspace,
     )
 
     if q:
@@ -135,6 +137,7 @@ def get_resource(
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_permission("resources:view"))] = None,
 ) -> dict[str, Any]:
+    active_workspace = _get_active_workspace(db, user["tenant_id"], user["user_id"])
     normalized_type = _ensure_resource_type(resource_type)
 
     if user.get("role") not in _required_reader_roles(normalized_type):
@@ -146,6 +149,7 @@ def get_resource(
             TenantResource.id == resource_id,
             TenantResource.tenant_id == user["tenant_id"],
             TenantResource.resource_type == normalized_type,
+            TenantResource.workspace_id == active_workspace,
         )
         .one_or_none()
     )
@@ -162,6 +166,7 @@ def create_resource(
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_permission("resources:create"))] = None,
 ) -> dict[str, Any]:
+    active_workspace = _get_active_workspace(db, user["tenant_id"], user["user_id"])
     normalized_type = _ensure_resource_type(resource_type)
     _ensure_tenant(db, user["tenant_id"])
 
@@ -172,6 +177,7 @@ def create_resource(
         resource_type=normalized_type,
         name=body.name.strip(),
         payload=body.payload,
+        workspace_id=active_workspace,
         created_by=user.get("user_id"),
         updated_by=user.get("user_id"),
         created_at=now_utc,
@@ -191,6 +197,7 @@ def update_resource(
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_permission("resources:edit"))] = None,
 ) -> dict[str, Any]:
+    active_workspace = _get_active_workspace(db, user["tenant_id"], user["user_id"])
     normalized_type = _ensure_resource_type(resource_type)
     resource = (
         db.query(TenantResource)
@@ -198,6 +205,7 @@ def update_resource(
             TenantResource.id == resource_id,
             TenantResource.tenant_id == user["tenant_id"],
             TenantResource.resource_type == normalized_type,
+            TenantResource.workspace_id == active_workspace,
         )
         .one_or_none()
     )
@@ -223,6 +231,7 @@ def delete_resource(
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_permission("resources:delete"))] = None,
 ) -> dict[str, Any]:
+    active_workspace = _get_active_workspace(db, user["tenant_id"], user["user_id"])
     normalized_type = _ensure_resource_type(resource_type)
     resource = (
         db.query(TenantResource)
@@ -230,6 +239,7 @@ def delete_resource(
             TenantResource.id == resource_id,
             TenantResource.tenant_id == user["tenant_id"],
             TenantResource.resource_type == normalized_type,
+            TenantResource.workspace_id == active_workspace,
         )
         .one_or_none()
     )
