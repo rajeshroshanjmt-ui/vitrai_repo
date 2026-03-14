@@ -1124,9 +1124,50 @@ def process_document_loader(
             # Fallback to empty source if fetch fails
             text_content = f"Failed to fetch: {str(e)}"
     elif "pdf" in loader_name:
-        # PDF loader: if source is provided, it should be handled by PDF library
-        # For now, treat as text (would need pdfminer in requirements.txt)
-        text_content = source
+        # PDF loader: extract text from PDF file
+        try:
+            from io import BytesIO
+            from pdfminer.high_level import extract_text_to_fp
+
+            # source should be a file path or raw bytes
+            # If it's a file path, read it
+            if isinstance(source, str) and os.path.isfile(source):
+                with open(source, 'rb') as f:
+                    pdf_bytes = f.read()
+            else:
+                # Assume source is raw bytes or data, skip PDF processing
+                text_content = f"[PDF data - {len(str(source))} chars]"
+                text_content = ""  # Empty fallback
+
+            # Extract text from PDF
+            try:
+                from pdfminer.layout import LAParams
+                from pdfminer.converter import TextConverter
+                from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+                from pdfminer.pdfpage import PDFPage
+
+                pdf_file = BytesIO(pdf_bytes)
+                resource_manager = PDFResourceManager()
+                output = BytesIO()
+                converter = TextConverter(resource_manager, output, laparams=LAParams())
+                interpreter = PDFPageInterpreter(resource_manager, converter)
+
+                for page in PDFPage.get_pages(pdf_file):
+                    interpreter.process_page(page)
+
+                text_content = output.getvalue().decode('utf-8')
+                converter.close()
+                output.close()
+            except Exception as pdf_error:
+                print(f"Warning: PDF text extraction failed: {pdf_error}")
+                text_content = ""
+        except ImportError:
+            # pdfminer not installed, treat as empty
+            print("Warning: pdfminer.six not installed, cannot process PDFs")
+            text_content = ""
+        except Exception as e:
+            print(f"Warning: Failed to process PDF: {e}")
+            text_content = ""
     else:
         # Text loader
         text_content = source

@@ -1,0 +1,273 @@
+# Database Migration Framework Setup (Alembic)
+
+This guide walks through setting up Alembic for schema versioning and migrations.
+
+## Why Alembic?
+
+Current state: Tables are created via `SQLAlchemy.create_all()` at startup
+- Problem: No version control for schema changes
+- Problem: Production deployments require manual coordination
+- Solution: Alembic provides versioned migrations with rollback capability
+
+## Installation
+
+1. Install alembic:
+```bash
+pip install alembic
+```
+
+2. Add to `backend/requirements.txt`:
+```
+alembic>=1.13.0
+```
+
+## Setup Steps
+
+### Step 1: Initialize Alembic
+
+```bash
+cd backend
+alembic init alembic
+```
+
+This creates the `alembic/` directory with:
+- `alembic.ini` - Configuration file
+- `env.py` - Environment configuration
+- `script.py.mako` - Migration template
+- `versions/` - Directory for migration files
+
+### Step 2: Configure Database Connection
+
+Edit `alembic.ini` and update:
+
+```ini
+# Line 60-65
+sqlalchemy.url = driver://user:password@localhost/dbname
+
+# Or use environment variable:
+sqlalchemy.url = postgresql://user:password@localhost:5432/vetrai_db
+```
+
+For PostgreSQL with psycopg2:
+```ini
+sqlalchemy.url = postgresql+psycopg2://user:password@localhost:5432/vetrai_db
+```
+
+### Step 3: Update env.py
+
+Edit `alembic/env.py` to import models:
+
+```python
+from database import Base
+from models import *  # Import all models
+
+target_metadata = Base.metadata
+```
+
+Make sure these lines are present:
+
+```python
+def run_migrations_offline() -> None:
+    """Run migrations in 'offline' mode."""
+    configuration = config.get_section(config.config_ini_section)
+    configuration["sqlalchemy.url"] = os.getenv("DATABASE_URL",
+        configuration.get("sqlalchemy.url"))
+
+    context.configure(
+        url=configuration["sqlalchemy.url"],
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+    )
+
+def run_migrations_online() -> None:
+    """Run migrations in 'online' mode."""
+    configuration = config.get_section(config.config_ini_section)
+    configuration["sqlalchemy.url"] = os.getenv("DATABASE_URL",
+        configuration.get("sqlalchemy.url"))
+
+    connectable = engine_from_config(
+        configuration,
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
+
+    with connectable.connect() as connection:
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata
+        )
+        with context.begin_transaction():
+            context.run_migrations()
+```
+
+### Step 4: Create Initial Migration
+
+```bash
+alembic revision --autogenerate -m "Initial schema"
+```
+
+This creates `alembic/versions/xxx_initial_schema.py` with current schema.
+
+Review the generated migration and make sure it's correct, then:
+
+```bash
+alembic upgrade head
+```
+
+### Step 5: Update main.py
+
+Remove the automatic table creation and let migrations handle it:
+
+**Before:**
+```python
+Base.metadata.create_all(bind=engine)
+```
+
+**After:**
+```python
+# Migration handling - run 'alembic upgrade head' during deployment
+# Automatic migrations can be added to startup if needed, but manual
+# control is recommended for production
+```
+
+### Step 6: Add to Deployment/CI
+
+**Docker initialization:**
+```dockerfile
+RUN cd backend && alembic upgrade head
+```
+
+**Docker Compose:**
+```yaml
+services:
+  backend:
+    build: ./backend
+    depends_on:
+      - postgres
+    entrypoint: sh -c "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"
+```
+
+**GitHub Actions:**
+```yaml
+- name: Run migrations
+  run: |
+    cd backend
+    alembic upgrade head
+```
+
+## Common Alembic Commands
+
+```bash
+# Create new migration (autogenerate from model changes)
+alembic revision --autogenerate -m "Add new column to users"
+
+# Create blank migration
+alembic revision -m "Custom migration"
+
+# View migration history
+alembic history
+
+# Upgrade to specific revision
+alembic upgrade <revision_id>
+
+# Downgrade one revision
+alembic downgrade -1
+
+# Downgrade to specific revision
+alembic downgrade <revision_id>
+
+# Check current database revision
+alembic current
+
+# Show migration details
+alembic show <revision_id>
+```
+
+## Workflow for Schema Changes
+
+### Adding a Column
+
+1. Update the model in `backend/models.py`
+2. Run: `alembic revision --autogenerate -m "Add column description to flows"`
+3. Review the generated migration file
+4. Apply: `alembic upgrade head`
+
+### Removing a Column
+
+1. Update the model in `backend/models.py` (remove the column)
+2. Run: `alembic revision --autogenerate -m "Remove deprecated column"`
+3. Review and apply
+
+### Complex Migrations
+
+For manual migrations:
+```bash
+alembic revision -m "Complex data transformation"
+```
+
+Then edit the generated file with custom SQL/Python.
+
+## Important Notes
+
+- **Always test migrations locally first**
+- **Keep migrations small and focused**
+- **Never modify applied migrations** - create new ones
+- **Use descriptive names** for migration files
+- **Review autogenerated migrations** before applying
+
+## Rollback Procedures
+
+If a migration fails in production:
+
+```bash
+# Find the last known good revision
+alembic current
+alembic history
+
+# Downgrade to previous version
+alembic downgrade -1
+
+# Fix the migration and re-apply
+alembic upgrade head
+```
+
+## Example: Full Setup
+
+```bash
+# 1. Install
+pip install alembic
+
+# 2. Initialize
+cd backend
+alembic init alembic
+
+# 3. Configure (edit alembic.ini and env.py)
+
+# 4. Create initial migration
+alembic revision --autogenerate -m "Initial schema from models"
+
+# 5. Apply
+alembic upgrade head
+
+# 6. From now on, after model changes:
+alembic revision --autogenerate -m "Descriptive message"
+alembic upgrade head
+```
+
+## Troubleshooting
+
+**"Can't find 'PostgreSQL' dialect"**
+- Solution: Ensure psycopg2 is installed: `pip install psycopg2-binary`
+
+**"No changes detected in schema"**
+- This is normal if no models changed
+- Alembic autogenerate couldn't find changes
+
+**"Migration conflict"**
+- Multiple branches created conflicting migrations
+- Manual merge needed in migration files
+
+**"Can't import models"**
+- Ensure `from models import *` is in `alembic/env.py`
+- Check PYTHONPATH includes backend directory

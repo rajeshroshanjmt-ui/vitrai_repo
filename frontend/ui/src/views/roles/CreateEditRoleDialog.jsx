@@ -324,7 +324,7 @@ const CreateEditRoleDialog = ({ show, dialogProps, onCancel, onConfirm, setError
                             type='string'
                             size='small'
                             fullWidth
-                            disabled={dialogProps.type === 'EDIT' || dialogProps.type === 'VIEW'}
+                            disabled={dialogProps.type === 'VIEW'}
                             placeholder='Enter role name'
                             value={roleName}
                             name='roleName'
