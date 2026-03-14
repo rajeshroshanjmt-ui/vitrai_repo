@@ -596,18 +596,7 @@ const Users = () => {
 
     const exportUsers = async () => {
         try {
-            const authState = JSON.parse(localStorage.getItem('persist:auth') || '{}')
-            const token = authState.access_token?.replace(/"/g, '')
-
-            const response = await fetch('/api/users/export/csv', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            })
-
-            if (!response.ok) throw new Error('Export failed')
-
-            const blob = await response.blob()
+            const blob = await userApi.exportUsers()
             const url = window.URL.createObjectURL(blob)
             const link = document.createElement('a')
             link.href = url

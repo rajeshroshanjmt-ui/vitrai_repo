@@ -153,6 +153,18 @@ const resendUserInvitation = async (userId) => {
     }
 }
 
+const exportUsers = async () => {
+    try {
+        const response = await client.get('/users/export/csv', {
+            responseType: 'blob'
+        })
+        return { data: response?.data }
+    } catch (err) {
+        console.error('Failed to export users:', err.message)
+        throw err
+    }
+}
+
 const getAdditionalSeatsQuantity = async () => ({
     data: {
         includedSeats: 1,
@@ -290,5 +302,6 @@ export default {
     updateSubscriptionPlan,
     getCurrentUsage,
     deleteOrganizationUser,
-    resendUserInvitation
+    resendUserInvitation,
+    exportUsers
 }

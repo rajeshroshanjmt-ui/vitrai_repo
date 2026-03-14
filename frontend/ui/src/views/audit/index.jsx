@@ -27,6 +27,9 @@ import ErrorBoundary from '@/ErrorBoundary'
 import { StyledTableCell, StyledTableRow } from '@/ui-component/table/TableStyles'
 import { useError } from '@/store/context/ErrorContext'
 
+// API
+import auditApi from '@/api/audit'
+
 const getActionColor = (action) => {
     if (action?.includes('deleted')) return 'error'
     if (action?.includes('created') || action?.includes('invited')) return 'success'
@@ -54,28 +57,19 @@ const AuditLog = () => {
     const fetchLogs = async () => {
         try {
             setIsLoading(true)
-            const authState = JSON.parse(localStorage.getItem('persist:auth') || '{}')
-            const token = authState.access_token?.replace(/"/g, '')
-
-            const params = new URLSearchParams({
+            const params = {
                 limit: pageSize,
                 offset: page * pageSize
-            })
+            }
 
-            if (filters.action) params.append('action', filters.action)
-            if (filters.actor_email) params.append('actor_email', filters.actor_email)
-            if (filters.created_from) params.append('created_from', filters.created_from)
-            if (filters.created_to) params.append('created_to', filters.created_to)
+            if (filters.action) params.action = filters.action
+            if (filters.actor_email) params.actor_email = filters.actor_email
+            if (filters.created_from) params.created_from = filters.created_from
+            if (filters.created_to) params.created_to = filters.created_to
 
-            const response = await fetch(`/api/audit?${params.toString()}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            })
-
-            if (!response.ok) throw new Error('Failed to fetch audit logs')
-
-            const data = await response.json()
-            setLogs(data.items || [])
-            setTotalCount(data.total_count || 0)
+            const response = await auditApi.getAuditLogs(params)
+            setLogs(response?.data?.items || [])
+            setTotalCount(response?.data?.total_count || 0)
         } catch (error) {
             setError(error.message)
             console.error('Failed to fetch audit logs:', error)
