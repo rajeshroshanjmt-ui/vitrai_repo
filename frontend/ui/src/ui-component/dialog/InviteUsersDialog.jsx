@@ -439,13 +439,13 @@ const InviteUsersDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
         setSearchString(newInputValue)
         const searchTerm = newInputValue.toLowerCase()
         const filteredUsers = allUsers.filter(
-            (item) => item.user.name.toLowerCase().includes(searchTerm) || item.user.email.toLowerCase().includes(searchTerm)
+            (item) => (item?.user?.name?.toLowerCase().includes(searchTerm) || item?.user?.email?.toLowerCase().includes(searchTerm))
         )
         setUserSearchResults(filteredUsers)
         setAllUsers((prevResults) => {
             const newResults = [...prevResults]
             filteredUsers.forEach((item) => {
-                if (!newResults.some((result) => result.user.id === item.user.id)) {
+                if (!newResults.some((result) => result?.user?.id === item?.user?.id)) {
                     newResults.push(item)
                 }
             })

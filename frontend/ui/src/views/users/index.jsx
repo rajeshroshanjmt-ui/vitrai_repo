@@ -268,8 +268,8 @@ const Users = () => {
 
     function filterUsers(data) {
         return (
-            data.user.name?.toLowerCase().indexOf(search.toLowerCase()) > -1 ||
-            data.user.email.toLowerCase().indexOf(search.toLowerCase()) > -1
+            data?.user?.name?.toLowerCase().indexOf(search.toLowerCase()) > -1 ||
+            data?.user?.email?.toLowerCase().indexOf(search.toLowerCase()) > -1
         )
     }
 
