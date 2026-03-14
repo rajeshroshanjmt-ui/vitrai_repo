@@ -114,6 +114,7 @@ const InviteUsersDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
     const [availableRoles, setAvailableRoles] = useState([])
     const [selectedRole, setSelectedRole] = useState('')
     const [isSaving, setIsSaving] = useState(false)
+    const [customMessage, setCustomMessage] = useState('')
 
     const getAllRolesApi = useApi(roleApi.getAllRolesByOrganizationId)
     const getAllWorkspacesByOrganizationIdApi = useApi(workspaceApi.getAllWorkspacesByOrganizationId)
@@ -194,6 +195,7 @@ const InviteUsersDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
         setSearchString('')
         setUserSearchResults([])
         setSelectedUsers([])
+        setCustomMessage('')
         fetchInitialData()
         if (dialogProps.type === 'ADD' && dialogProps.data) {
             // when clicking on add user in workspace page
@@ -219,6 +221,7 @@ const InviteUsersDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
             setWorkspaces([])
             setSelectedRole(null)
             setSelectedWorkspace(null)
+            setCustomMessage('')
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dialogProps])
@@ -698,6 +701,24 @@ const InviteUsersDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                             PopperComponent={StyledPopper}
                         />
                     </Box>
+                </Box>
+                <Box>
+                    <Typography>
+                        Custom Invitation Message <span style={{ color: '#999' }}>(Optional)</span>
+                    </Typography>
+                    <TextField
+                        multiline
+                        rows={3}
+                        placeholder='Add a personalized message to the invitation email...'
+                        value={customMessage}
+                        onChange={(e) => setCustomMessage(e.target.value)}
+                        fullWidth
+                        variant='outlined'
+                        sx={{ mt: 0.5 }}
+                    />
+                    <Typography variant='caption' color='textSecondary' sx={{ mt: 0.5, display: 'block' }}>
+                        Leave empty to use default message
+                    </Typography>
                 </Box>
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 2 }}>
