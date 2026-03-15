@@ -8,7 +8,8 @@ from uuid import uuid4
 
 import httpx
 import redis
-from fastapi import APIRouter, Depends, HTTPException, status, RedirectResponse
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
