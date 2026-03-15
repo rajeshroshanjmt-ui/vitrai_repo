@@ -7,6 +7,7 @@ from typing import Annotated, Any
 from uuid import uuid4
 
 import httpx
+import redis
 from fastapi import APIRouter, Depends, HTTPException, status, RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
@@ -52,6 +53,86 @@ def _load_token_ttl_minutes() -> int:
 
 TOKEN_TTL_MINUTES = _load_token_ttl_minutes()
 _ensure_secure_jwt_secret(SECRET, APP_ENV)
+
+# Token blacklist configuration
+TOKEN_BLACKLIST_PREFIX = "token_blacklist:"
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+REDIS_DB = int(os.getenv("REDIS_DB", 0))
+
+# Initialize Redis client for token blacklist
+_redis_client = None
+
+def _get_redis_client() -> redis.Redis:
+    """Get or create Redis client for token blacklist."""
+    global _redis_client
+    if _redis_client is None:
+        try:
+            _redis_client = redis.Redis(
+                host=REDIS_HOST,
+                port=REDIS_PORT,
+                db=REDIS_DB,
+                decode_responses=True,
+                socket_connect_timeout=5,
+                socket_keepalive=True,
+                health_check_interval=30
+            )
+            # Test connection
+            _redis_client.ping()
+            logger.info(f"Redis token blacklist connected: {REDIS_HOST}:{REDIS_PORT}")
+        except Exception as e:
+            logger.warning(f"Redis connection failed for token blacklist: {e}. Logout will not revoke tokens.")
+            _redis_client = None
+    return _redis_client
+
+def _add_token_to_blacklist(token: str, ttl_minutes: int) -> bool:
+    """Add JWT token to blacklist (revoke it). Returns True if successful."""
+    try:
+        client = _get_redis_client()
+        if not client:
+            logger.warning("Redis unavailable: token not added to blacklist")
+            return False
+
+        # Use token JTI (unique identifier) as key
+        # If no JTI in token, use token hash as key
+        try:
+            claims = jwt.decode(token, SECRET, algorithms=[ALGORITHM])
+            token_id = claims.get("jti", token[:16])
+        except:
+            token_id = token[:16]
+
+        key = f"{TOKEN_BLACKLIST_PREFIX}{token_id}"
+        ttl_seconds = ttl_minutes * 60
+
+        # Set in Redis with expiration
+        client.setex(key, ttl_seconds, "revoked")
+        logger.info(f"Token added to blacklist: {token_id}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to add token to blacklist: {e}")
+        return False
+
+def _is_token_blacklisted(token: str) -> bool:
+    """Check if token is in blacklist (revoked). Returns True if revoked."""
+    try:
+        client = _get_redis_client()
+        if not client:
+            # If Redis unavailable, allow token (fail open for availability)
+            return False
+
+        # Get token ID
+        try:
+            claims = jwt.decode(token, SECRET, algorithms=[ALGORITHM])
+            token_id = claims.get("jti", token[:16])
+        except:
+            token_id = token[:16]
+
+        key = f"{TOKEN_BLACKLIST_PREFIX}{token_id}"
+        return client.exists(key) > 0
+    except Exception as e:
+        logger.error(f"Failed to check token blacklist: {e}")
+        # If error checking blacklist, allow token (fail open)
+        return False
 
 
 class RegisterRequest(BaseModel):
@@ -136,6 +217,11 @@ def decode_token(token: str) -> dict:
     missing_claims = [claim for claim in REQUIRED_TOKEN_CLAIMS if claim not in claims]
     if missing_claims:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+    # Check if token has been revoked (blacklisted)
+    if _is_token_blacklisted(token):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has been revoked")
+
     return claims
 
 
@@ -351,17 +437,26 @@ def me(user: Annotated[dict, Depends(get_current_user)]) -> dict:
 
 
 @router.post("/logout")
-def logout(user: Annotated[dict, Depends(get_current_user)], db: Session = Depends(get_db)) -> dict:
-    """Logout endpoint. Logs the logout action for audit."""
+def logout(
+    user: Annotated[dict, Depends(get_current_user)],
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)],
+    db: Session = Depends(get_db)
+) -> dict:
+    """Logout endpoint. Revokes token and logs the logout action for audit."""
     tenant_id = user.get("tenant_id")
     user_id = user.get("user_id")
     email = user.get("sub")
 
-    _write_audit_log(db, tenant_id, user_id, email, "logout", "auth")
+    # Revoke the token by adding it to the blacklist
+    if credentials and credentials.credentials:
+        token_added = _add_token_to_blacklist(credentials.credentials, TOKEN_TTL_MINUTES)
+        if not token_added:
+            logger.warning(f"Failed to revoke token for user {email} in tenant {tenant_id}")
 
-    # Note: Since JWTs are stateless, actual token revocation would require
-    # a token blacklist (e.g., Redis). For now, we just log the action.
-    return {"message": "Logged out successfully"}
+    # Log the logout action for audit trail
+    _write_audit_log(db, tenant_id, user_id, email, "logout", "auth", details={"token_revoked": True})
+
+    return {"message": "Logged out successfully. Token has been revoked."}
 
 
 def _get_permissions_for_role(role: str) -> list:
