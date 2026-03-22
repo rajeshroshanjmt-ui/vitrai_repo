@@ -300,8 +300,8 @@ def require_permission(*permission_strings: str):
         if db_user is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
-        # Try to find custom role first
-        role = db.query(Role).filter(Role.id == db_user.role, Role.tenant_id == tenant_id).one_or_none()
+        # Try to find custom role by name first
+        role = db.query(Role).filter(Role.name == db_user.role, Role.tenant_id == tenant_id, Role.is_custom == True).one_or_none()
 
         if role:
             # User has a custom role - check fine-grained permissions

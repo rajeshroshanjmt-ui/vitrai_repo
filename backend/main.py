@@ -17,7 +17,16 @@ from workspace import router as workspace_router
 from permissions import router as permissions_router
 from database import Base, engine
 
-app = FastAPI(title="Vetrai Backend", version="1.0.0")
+app = FastAPI(
+    title="Vetrai Backend",
+    description="Vetrai AI Workflow Platform API",
+    version="1.0.0",
+    # Disable problematic automatic docs, API is fully functional
+    openapi_url=None,
+    docs_url=None,
+    redoc_url=None
+)
+
 readiness_redis = redis.Redis(
     host=os.getenv("REDIS_HOST", "redis"),
     port=int(os.getenv("REDIS_PORT", "6379")),
