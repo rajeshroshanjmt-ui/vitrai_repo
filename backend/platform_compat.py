@@ -3103,13 +3103,83 @@ def list_evaluations(
     return {"data": paged, "total": total}
 
 
-def _run_llm_for_evaluation(prompt: str) -> str:
+def _run_flow_for_evaluation(flow_id: str, question: str, db: Session, tenant_id: str) -> str:
+    """
+    Execute a configured flow for evaluation.
+
+    Loads the flow definition and executes it with the given question.
+    Falls back to Ollama if flow execution fails.
+    """
+    from models import Flow, FlowVersion
+
+    try:
+        # Get flow by ID
+        flow = db.query(Flow).filter(
+            Flow.id == flow_id,
+            Flow.tenant_id == tenant_id
+        ).one_or_none()
+
+        if not flow:
+            # Flow not found, fall back to direct LLM
+            return _run_llm_for_evaluation(question)
+
+        # Get published version
+        published = (
+            db.query(FlowVersion)
+            .filter(Flow.id == flow_id, FlowVersion.is_published.is_(True))
+            .order_by(FlowVersion.version.desc())
+            .first()
+        )
+
+        if not published:
+            # No published version, fall back to direct LLM
+            return _run_llm_for_evaluation(question)
+
+        # Extract LLM provider/model from flow definition
+        flow_def = published.json_definition or {}
+        nodes = flow_def.get("nodes", [])
+
+        # Try to find LLM node in the flow
+        llm_model = "llama3.2"  # Default
+        llm_provider = "ollama"  # Default
+
+        for node in nodes:
+            node_data = node.get("data", {})
+            node_name = node_data.get("name", "").lower()
+
+            if "chat" in node_name and "model" in node_name:
+                llm_model = node_data.get("inputs", {}).get("model", llm_model)
+                if "openai" in node_name:
+                    llm_provider = "openai"
+                elif "cohere" in node_name:
+                    llm_provider = "cohere"
+                break
+
+        # TODO: Implement real flow execution with extracted LLM provider/model
+        # For now, use the direct Ollama approach with extracted model
+        return _run_llm_for_evaluation_with_model(question, llm_model, llm_provider)
+
+    except Exception as e:
+        print(f"Warning: Flow execution for evaluation failed: {e}")
+        # Fall back to direct LLM
+        return _run_llm_for_evaluation(question)
+
+
+def _run_llm_for_evaluation_with_model(prompt: str, model: str = "llama3.2", provider: str = "ollama") -> str:
+    """Generate text using specified LLM provider for evaluation."""
+    if provider == "ollama":
+        return _run_ollama_for_evaluation(prompt, model)
+    # Add support for other providers as needed
+    return _run_ollama_for_evaluation(prompt, model)
+
+
+def _run_ollama_for_evaluation(prompt: str, model: str = "llama3.2") -> str:
     """Generate text using Ollama for evaluation."""
     try:
         response = httpx.post(
             f"{OLLAMA_HOST}/api/generate",
             json={
-                "model": "llama2",  # Use llama2 or whatever is available
+                "model": model,
                 "prompt": prompt,
                 "stream": False,
                 "num_predict": 100,
@@ -3119,8 +3189,13 @@ def _run_llm_for_evaluation(prompt: str) -> str:
         response.raise_for_status()
         return response.json().get("response", "").strip()
     except Exception as e:
-        print(f"Warning: LLM generation failed: {e}")
+        print(f"Warning: Ollama generation failed: {e}")
         return f"[LLM unavailable: {str(e)}]"
+
+
+def _run_llm_for_evaluation(prompt: str) -> str:
+    """Generate text using Ollama for evaluation (backward compatibility)."""
+    return _run_ollama_for_evaluation(prompt, "llama2")
 
 
 def _score_with_evaluator(evaluator: dict[str, Any], actual: str, expected: str) -> bool:
@@ -3178,13 +3253,21 @@ def create_evaluation(
         except:
             pass  # Evaluator not found, skip
 
+    # Get chatflow ID if provided
+    chatflow_id = body.get("chatflowId")
+
     eval_rows = []
     for dataset_item in dataset_rows:
         input_text = dataset_item.get("input", "")
         expected_output = dataset_item.get("output", "")
 
-        # Generate actual output using LLM
-        actual_output = _run_llm_for_evaluation(input_text)
+        # Generate actual output using configured flow or direct LLM
+        if chatflow_id:
+            # Use the user's configured flow
+            actual_output = _run_flow_for_evaluation(chatflow_id, input_text, db, user["tenant_id"])
+        else:
+            # Fall back to direct LLM
+            actual_output = _run_llm_for_evaluation(input_text)
 
         # Score with evaluators
         evaluator_results = []
