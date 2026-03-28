@@ -457,7 +457,7 @@ def create_flow(
     active_workspace = _get_active_workspace(db, tenant_id, user["user_id"])
     _ensure_tenant(db, tenant_id)
 
-    flow = Flow(id=str(uuid4()), tenant_id=tenant_id, name=body.name)  # workspace_id column not in table yet
+    flow = Flow(id=str(uuid4()), tenant_id=tenant_id, workspace_id=active_workspace, name=body.name)
     db.add(flow)
 
     version = FlowVersion(
@@ -481,7 +481,7 @@ def save_draft(
 ) -> dict[str, Any]:
     active_workspace = _get_active_workspace(db, user["tenant_id"], user["user_id"])
     flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
-    if False:  # workspace_id not in table yet - keeping tenant_id isolation
+    if active_workspace and flow.workspace_id != active_workspace:
         raise HTTPException(status_code=404, detail="Flow not found")
     current_max = (
         db.query(func.coalesce(func.max(FlowVersion.version), 0))
@@ -511,7 +511,7 @@ def publish_flow(
 ) -> dict[str, Any]:
     active_workspace = _get_active_workspace(db, user["tenant_id"], user["user_id"])
     flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
-    if False:  # workspace_id not in table yet - keeping tenant_id isolation
+    if active_workspace and flow.workspace_id != active_workspace:
         raise HTTPException(status_code=404, detail="Flow not found")
     query = db.query(FlowVersion).filter(FlowVersion.flow_id == flow.id)
 
@@ -551,7 +551,7 @@ def execute_flow(
 ) -> dict[str, Any]:
     active_workspace = _get_active_workspace(db, user["tenant_id"], user["user_id"])
     flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
-    if False:  # workspace_id not in table yet - keeping tenant_id isolation
+    if active_workspace and flow.workspace_id != active_workspace:
         raise HTTPException(status_code=404, detail="Flow not found")
     published = (
         db.query(FlowVersion)
@@ -961,7 +961,7 @@ def get_flow_versions(
     """Get all versions of a flow."""
     active_workspace = _get_active_workspace(db, user["tenant_id"], user["user_id"])
     flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
-    if False:  # workspace_id not in table yet - keeping tenant_id isolation
+    if active_workspace and flow.workspace_id != active_workspace:
         raise HTTPException(status_code=404, detail="Flow not found")
 
     versions = db.query(FlowVersion).filter(
@@ -994,7 +994,7 @@ def get_flow(
 ) -> dict[str, Any]:
     active_workspace = _get_active_workspace(db, user["tenant_id"], user["user_id"])
     flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
-    if False:  # workspace_id not in table yet - keeping tenant_id isolation
+    if active_workspace and flow.workspace_id != active_workspace:
         raise HTTPException(status_code=404, detail="Flow not found")
     latest_version = (
         db.query(FlowVersion)
@@ -1026,7 +1026,7 @@ def delete_flow(
 ) -> dict[str, Any]:
     active_workspace = _get_active_workspace(db, user["tenant_id"], user["user_id"])
     flow = _require_tenant_flow(db, user["tenant_id"], flow_id)
-    if False:  # workspace_id not in table yet - keeping tenant_id isolation
+    if active_workspace and flow.workspace_id != active_workspace:
         raise HTTPException(status_code=404, detail="Flow not found")
 
     version_ids = [item.id for item in db.query(FlowVersion.id).filter(FlowVersion.flow_id == flow.id).all()]
