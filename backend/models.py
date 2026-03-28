@@ -20,6 +20,7 @@ class Tenant(Base):
     resources: Mapped[list["TenantResource"]] = relationship(back_populates="tenant")
     roles: Mapped[list["Role"]] = relationship(back_populates="tenant")
     chat_messages: Mapped[list["ChatMessage"]] = relationship(back_populates="tenant")
+    webhooks: Mapped[list["Webhook"]] = relationship(back_populates="tenant")
 
 
 class User(Base):
@@ -50,6 +51,7 @@ class Flow(Base):
     versions: Mapped[list["FlowVersion"]] = relationship(back_populates="flow")
     ingestions: Mapped[list["IngestionJob"]] = relationship(back_populates="flow")
     chat_messages: Mapped[list["ChatMessage"]] = relationship(back_populates="flow")
+    webhooks: Mapped[list["Webhook"]] = relationship(back_populates="flow")
 
 
 class FlowVersion(Base):
@@ -221,3 +223,23 @@ class ChatMessage(Base):
 
     tenant: Mapped["Tenant"] = relationship(back_populates="chat_messages")
     flow: Mapped["Flow"] = relationship(back_populates="chat_messages")
+
+
+class Webhook(Base):
+    """Webhook endpoints for triggering flows and receiving events."""
+
+    __tablename__ = "webhooks"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    tenant_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    flow_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), ForeignKey("flows.id", ondelete="SET NULL"), nullable=True)
+    event_types: Mapped[list] = mapped_column(JSONB, default=list)  # ["flow.completed", "flow.failed", "chatmessage.created"]
+    endpoint_url: Mapped[str] = mapped_column(Text, nullable=False)  # Outbound: where to POST events
+    secret: Mapped[str] = mapped_column(Text, nullable=False)  # HMAC signing secret (sha256)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    tenant: Mapped["Tenant"] = relationship(back_populates="webhooks")
+    flow: Mapped["Flow"] = relationship(back_populates="webhooks")

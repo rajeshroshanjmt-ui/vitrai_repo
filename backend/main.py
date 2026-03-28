@@ -16,6 +16,7 @@ from files import router as files_router
 from workspace import router as workspace_router
 from permissions import router as permissions_router
 from chatmessage import router as chatmessage_router
+from webhooks import router as webhooks_router
 from database import Base, engine
 from middleware import APIKeyMiddleware
 
@@ -94,6 +95,7 @@ app.include_router(flow_router, prefix="/flows", tags=["flows"])
 app.include_router(agent_router, prefix="/agent", tags=["agent"])
 app.include_router(resources_router, prefix="/resources", tags=["resources"])
 app.include_router(chatmessage_router, tags=["chatmessage"])
+app.include_router(webhooks_router, tags=["webhooks"])
 app.include_router(platform_compat_router, tags=["platform-compat"])
 
 
