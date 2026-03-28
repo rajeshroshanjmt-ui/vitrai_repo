@@ -2,6 +2,7 @@ import os
 import json
 import base64
 import logging
+import time
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Any
 from uuid import uuid4
@@ -846,23 +847,163 @@ def confirm_password_reset(
 
 
 # OAuth/SSO Callback Handlers
-def _parse_id_token(id_token: str) -> dict | None:
-    """Parse and decode JWT ID token without signature verification (for now)."""
+# JWKS cache: {issuer: {"keys": [...], "cached_at": timestamp}}
+_jwks_cache = {}
+_JWKS_CACHE_TTL = 3600  # 1 hour
+
+
+def _get_jwks_from_issuer(issuer: str) -> dict | None:
+    """Fetch and cache JWKS from OIDC discovery endpoint."""
     try:
-        # ID tokens are in the format: header.payload.signature
-        parts = id_token.split('.')
-        if len(parts) != 3:
+        now = time.time()
+
+        # Check cache
+        if issuer in _jwks_cache:
+            cached = _jwks_cache[issuer]
+            if now - cached.get("cached_at", 0) < _JWKS_CACHE_TTL:
+                return cached.get("keys")
+
+        # Fetch OIDC discovery document
+        discovery_url = f"{issuer.rstrip('/')}/.well-known/openid-configuration"
+        discovery_response = httpx.get(discovery_url, timeout=10.0)
+
+        if discovery_response.status_code != 200:
+            logger.error(f"Failed to fetch OIDC discovery from {discovery_url}: {discovery_response.status_code}")
             return None
 
-        # Decode the payload (second part)
-        payload = parts[1]
-        # Add padding if needed
-        padding = 4 - len(payload) % 4
-        if padding != 4:
-            payload += '=' * padding
+        discovery = discovery_response.json()
+        jwks_uri = discovery.get("jwks_uri")
 
-        decoded = base64.urlsafe_b64decode(payload)
-        return json.loads(decoded)
+        if not jwks_uri:
+            logger.error(f"No jwks_uri in OIDC discovery from {issuer}")
+            return None
+
+        # Fetch JWKS
+        jwks_response = httpx.get(jwks_uri, timeout=10.0)
+
+        if jwks_response.status_code != 200:
+            logger.error(f"Failed to fetch JWKS from {jwks_uri}: {jwks_response.status_code}")
+            return None
+
+        jwks_data = jwks_response.json()
+        keys = jwks_data.get("keys", [])
+
+        # Cache the keys
+        _jwks_cache[issuer] = {
+            "keys": keys,
+            "cached_at": now
+        }
+
+        return keys
+
+    except Exception as e:
+        logger.error(f"Failed to get JWKS from issuer {issuer}: {str(e)}")
+        return None
+
+
+def _parse_id_token(
+    id_token: str,
+    issuer: str,
+    client_id: str,
+    nonce: str | None = None,
+    debug_mode: bool = False
+) -> dict | None:
+    """Parse and validate JWT ID token with signature verification."""
+    try:
+        import jwt as pyjwt
+
+        # In debug mode, skip signature verification
+        if debug_mode:
+            logger.warning("Debug mode: skipping ID token signature verification")
+            parts = id_token.split('.')
+            if len(parts) != 3:
+                return None
+
+            payload = parts[1]
+            padding = 4 - len(payload) % 4
+            if padding != 4:
+                payload += '=' * padding
+
+            decoded = base64.urlsafe_b64decode(payload)
+            claims = json.loads(decoded)
+
+            # Still validate expiry and nonce if present
+            now = time.time()
+            if claims.get("exp", 0) < now:
+                logger.error("ID token has expired")
+                return None
+
+            if nonce and claims.get("nonce") != nonce:
+                logger.error("ID token nonce mismatch")
+                return None
+
+            return claims
+
+        # Fetch JWKS from issuer
+        keys = _get_jwks_from_issuer(issuer)
+        if not keys:
+            logger.error(f"Failed to fetch JWKS for issuer {issuer}")
+            return None
+
+        # Decode token header to find the kid (key ID)
+        unverified_header = pyjwt.get_unverified_header(id_token)
+        kid = unverified_header.get("kid")
+
+        # Find the correct key
+        key = None
+        for k in keys:
+            if k.get("kid") == kid:
+                key = k
+                break
+
+        if not key:
+            logger.error(f"No key found in JWKS for kid {kid}")
+            return None
+
+        # Convert JWKS key to PEM format using cryptography library
+        from cryptography.hazmat.primitives import serialization
+        from cryptography.hazmat.backends import default_backend
+        from jwt import PyJWK
+
+        try:
+            pem_key = PyJWK.from_dict(key)
+        except Exception as e:
+            logger.error(f"Failed to convert JWKS key to PEM: {str(e)}")
+            return None
+
+        # Validate and decode token
+        try:
+            claims = pyjwt.decode(
+                id_token,
+                pem_key.key,
+                algorithms=["RS256"],
+                audience=client_id,
+                issuer=issuer,
+                options={"verify_exp": True}
+            )
+        except pyjwt.ExpiredSignatureError:
+            logger.error("ID token has expired")
+            return None
+        except pyjwt.InvalidAudienceError:
+            logger.error(f"ID token audience mismatch: expected {client_id}")
+            return None
+        except pyjwt.InvalidIssuerError:
+            logger.error(f"ID token issuer mismatch: expected {issuer}")
+            return None
+        except pyjwt.InvalidSignatureError:
+            logger.error("ID token signature verification failed")
+            return None
+        except pyjwt.DecodeError as e:
+            logger.error(f"ID token decode error: {str(e)}")
+            return None
+
+        # Validate nonce if provided
+        if nonce and claims.get("nonce") != nonce:
+            logger.error("ID token nonce mismatch")
+            return None
+
+        return claims
+
     except Exception as e:
         logger.error(f"Failed to parse ID token: {str(e)}")
         return None
@@ -994,7 +1135,13 @@ def oauth_callback(
             # In production, could call user info endpoint here
             return RedirectResponse(url=f"{frontend_url}/login?error=no_id_token")
 
-        id_token_claims = _parse_id_token(id_token)
+        id_token_claims = _parse_id_token(
+            id_token,
+            issuer=enabled_config.payload.get("tenantUrl"),
+            client_id=enabled_config.payload.get("clientId"),
+            nonce=None,  # State parameter handling would be needed to extract nonce
+            debug_mode=APP_ENV in LOCAL_ENV_NAMES
+        )
         if not id_token_claims:
             logger.error("Failed to parse ID token claims")
             return RedirectResponse(url=f"{frontend_url}/login?error=invalid_id_token")
