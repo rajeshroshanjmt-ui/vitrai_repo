@@ -19,6 +19,7 @@ class Tenant(Base):
     flows: Mapped[list["Flow"]] = relationship(back_populates="tenant")
     resources: Mapped[list["TenantResource"]] = relationship(back_populates="tenant")
     roles: Mapped[list["Role"]] = relationship(back_populates="tenant")
+    chat_messages: Mapped[list["ChatMessage"]] = relationship(back_populates="tenant")
 
 
 class User(Base):
@@ -48,6 +49,7 @@ class Flow(Base):
     tenant: Mapped["Tenant"] = relationship(back_populates="flows")
     versions: Mapped[list["FlowVersion"]] = relationship(back_populates="flow")
     ingestions: Mapped[list["IngestionJob"]] = relationship(back_populates="flow")
+    chat_messages: Mapped[list["ChatMessage"]] = relationship(back_populates="flow")
 
 
 class FlowVersion(Base):
@@ -196,3 +198,26 @@ class RolePermission(Base):
 
     role: Mapped["Role"] = relationship(back_populates="role_permissions")
     permission: Mapped["Permission"] = relationship(back_populates="role_permissions")
+
+
+class ChatMessage(Base):
+    """Chat message history for chatflows and agentflows."""
+
+    __tablename__ = "chat_messages"
+
+    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    tenant_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    chatflow_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("flows.id", ondelete="CASCADE"), nullable=False)
+    session_id: Mapped[str] = mapped_column(Text, nullable=False)  # Client-provided session UUID
+    role: Mapped[str] = mapped_column(Text, nullable=False)  # "userMessage" | "apiMessage"
+    content: Mapped[str] = mapped_column(Text, nullable=False)  # Message text
+    source_documents: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # RAG sources
+    agent_reasoning: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # Agent steps
+    used_tools: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # Tool calls
+    feedback_rating: Mapped[str | None] = mapped_column(Text, nullable=True)  # "THUMBS_UP" | "THUMBS_DOWN"
+    feedback_content: Mapped[str | None] = mapped_column(Text, nullable=True)  # User feedback text
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    tenant: Mapped["Tenant"] = relationship(back_populates="chat_messages")
+    flow: Mapped["Flow"] = relationship(back_populates="chat_messages")
