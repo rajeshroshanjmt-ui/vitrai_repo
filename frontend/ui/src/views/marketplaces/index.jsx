@@ -27,7 +27,8 @@ import {
     Tooltip,
     Typography,
     Divider,
-    Grid
+    Grid,
+    Pagination
 } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 import { alpha } from '@mui/material/styles'
@@ -134,6 +135,8 @@ const Marketplace = () => {
 
     const getAllTemplatesMarketplacesApi = useApi(marketplacesApi.getAllTemplatesFromMarketplaces)
 
+    const ITEMS_PER_PAGE = 24
+    const [currentPage, setCurrentPage] = useState(1)
     const [view, setView] = React.useState(localStorage.getItem('mpDisplayStyle') || 'card')
     const [search, setSearch] = useState('')
     const [searchSuggestions, setSearchSuggestions] = useState([])
@@ -145,6 +148,7 @@ const Marketplace = () => {
     const [typeFilter, setTypeFilter] = useState([])
     const [frameworkFilter, setFrameworkFilter] = useState([])
     const [difficultyFilter, setDifficultyFilter] = useState([])
+    const [categoryFilter, setCategoryFilter] = useState([])
 
     // Flowise-style hero & category tiles
     const CATEGORY_TILES = React.useMemo(() => getCategoryTiles({
@@ -167,7 +171,7 @@ const Marketplace = () => {
     const { hasPermission } = useAuth()
 
     // Flowise-style hero & category tiles - state-dependent calculations
-    const noFiltersActive = !search && activeTabValue === 0 && !typeFilter.length && !difficultyFilter.length
+    const noFiltersActive = !search && activeTabValue === 0 && !typeFilter.length && !difficultyFilter.length && !categoryFilter.length
 
     const categoryCountMap = React.useMemo(() => {
         const data = getAllTemplatesMarketplacesApi.data || []
@@ -182,6 +186,8 @@ const Marketplace = () => {
     const handleCategoryTileClick = (key) => {
         if (key === 'all') { setTypeFilter([]); setActiveTabValue(0) }
         else { setTypeFilter([key]); setActiveTabValue(0) }
+        setCategoryFilter([])
+        setCurrentPage(1)
     }
 
     const handleDifficultyChipClick = (difficulty) => {
@@ -241,6 +247,7 @@ const Marketplace = () => {
             // On autofill we get a stringified value.
             typeof value === 'string' ? value.split(',') : value
         )
+        setCurrentPage(1)
         const data = activeTabValue === 0 ? getAllTemplatesMarketplacesApi.data : getAllCustomTemplatesApi.data
         getEligibleUsecases(data, {
             typeFilter,
@@ -258,6 +265,8 @@ const Marketplace = () => {
             // On autofill we get a stringified value.
             typeof value === 'string' ? value.split(',') : value
         )
+        setCategoryFilter([])
+        setCurrentPage(1)
         const data = activeTabValue === 0 ? getAllTemplatesMarketplacesApi.data : getAllCustomTemplatesApi.data
         getEligibleUsecases(data, {
             typeFilter: typeof value === 'string' ? value.split(',') : value,
@@ -275,6 +284,7 @@ const Marketplace = () => {
             // On autofill we get a stringified value.
             typeof value === 'string' ? value.split(',') : value
         )
+        setCurrentPage(1)
         const data = activeTabValue === 0 ? getAllTemplatesMarketplacesApi.data : getAllCustomTemplatesApi.data
         getEligibleUsecases(data, {
             typeFilter,
@@ -291,6 +301,7 @@ const Marketplace = () => {
         setDifficultyFilter(
             typeof value === 'string' ? value.split(',') : value
         )
+        setCurrentPage(1)
     }
 
     const handleViewChange = (event, nextView) => {
@@ -330,6 +341,7 @@ const Marketplace = () => {
         const value = event.target.value
         setSearch(value)
         setShowSearchSuggestions(value.length > 0)
+        setCurrentPage(1)
 
         const data = activeTabValue === 0 ? getAllTemplatesMarketplacesApi.data : getAllCustomTemplatesApi.data
 
@@ -360,6 +372,7 @@ const Marketplace = () => {
     const handleSearchSelect = (selectedValue) => {
         setSearch(selectedValue)
         setShowSearchSuggestions(false)
+        setCurrentPage(1)
 
         // Save to recent searches
         const updated = [selectedValue, ...recentSearches.filter((s) => s !== selectedValue)].slice(0, 5)
@@ -456,6 +469,10 @@ const Marketplace = () => {
 
     function filterByDifficulty(data) {
         return difficultyFilter.length > 0 ? difficultyFilter.includes(data.difficulty) : true
+    }
+
+    function filterByCategory(data) {
+        return categoryFilter.length > 0 ? categoryFilter.some(cat => (data.categories || []).includes(cat)) : true
     }
 
     function filterByUsecases(data) {
@@ -729,6 +746,34 @@ const Marketplace = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [getAllCustomTemplatesApi.error])
 
+    const availableCategories = React.useMemo(() => {
+        const data = getAllTemplatesMarketplacesApi.data || []
+        const filtered = typeFilter.length
+            ? data.filter(t => typeFilter.includes(t.type) || typeFilter.some(f => t.type?.toLowerCase().startsWith(f.toLowerCase())))
+            : data
+        const cats = new Set()
+        filtered.forEach(t => (t.categories || []).forEach(c => cats.add(c)))
+        return Array.from(cats).sort()
+    }, [getAllTemplatesMarketplacesApi.data, typeFilter])
+
+    const filteredCommunityData = React.useMemo(() => {
+        return (getAllTemplatesMarketplacesApi.data || [])
+            .filter(filterByBadge)
+            .filter(filterByType)
+            .filter(filterFlows)
+            .filter(filterByFramework)
+            .filter(filterByDifficulty)
+            .filter(filterByUsecases)
+            .filter(filterByCategory)
+    }, [getAllTemplatesMarketplacesApi.data, badgeFilter, typeFilter, search, frameworkFilter, difficultyFilter, selectedUsecases, categoryFilter])
+
+    const paginatedCommunityData = React.useMemo(() => {
+        const start = (currentPage - 1) * ITEMS_PER_PAGE
+        return filteredCommunityData.slice(start, start + ITEMS_PER_PAGE)
+    }, [filteredCommunityData, currentPage])
+
+    const totalPages = Math.ceil(filteredCommunityData.length / ITEMS_PER_PAGE)
+
     return (
         <>
             <MainCard>
@@ -883,6 +928,44 @@ const Marketplace = () => {
                                             ))}
                                         </Select>
                                     </FormControl>
+                                    {availableCategories.length > 0 && (
+                                        <FormControl
+                                            sx={{
+                                                borderRadius: 2,
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                justifyContent: 'end',
+                                                minWidth: 160
+                                            }}
+                                        >
+                                            <InputLabel size='small' id='filter-category-label'>
+                                                Category
+                                            </InputLabel>
+                                            <Select
+                                                labelId='filter-category-label'
+                                                id='filter-category-checkbox'
+                                                size='small'
+                                                multiple
+                                                value={categoryFilter}
+                                                onChange={(e) => {
+                                                    const val = typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value
+                                                    setCategoryFilter(val)
+                                                    setCurrentPage(1)
+                                                }}
+                                                input={<OutlinedInput label='Category' />}
+                                                renderValue={(selected) => selected.length === 1 ? selected[0] : `${selected.length} selected`}
+                                                MenuProps={{ PaperProps: { style: { maxHeight: 320, width: 200 } } }}
+                                                sx={getSelectStyles(theme.palette.grey[900] + 25, theme?.customization?.isDarkMode)}
+                                            >
+                                                {availableCategories.map((cat) => (
+                                                    <MenuItem key={cat} value={cat} sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1 }}>
+                                                        <Checkbox checked={categoryFilter.indexOf(cat) > -1} sx={{ p: 0 }} />
+                                                        <ListItemText primary={cat} />
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
+                                    )}
                                 </>
                             }
                             onSearchChange={onSearchChange}
@@ -1005,7 +1088,7 @@ const Marketplace = () => {
                                     size='small'
                                     options={usecases}
                                     value={selectedUsecases}
-                                    onChange={(_, newValue) => setSelectedUsecases(newValue)}
+                                    onChange={(_, newValue) => { setSelectedUsecases(newValue); setCurrentPage(1) }}
                                     disableCloseOnSelect
                                     getOptionLabel={(option) => option}
                                     isOptionEqualToValue={(option, value) => option === value}
@@ -1209,14 +1292,7 @@ const Marketplace = () => {
                                             </Box>
                                         ) : (
                                             <Box display='grid' gridTemplateColumns='repeat(3, 1fr)' gap={gridSpacing}>
-                                                {getAllTemplatesMarketplacesApi.data
-                                                    ?.filter(filterByBadge)
-                                                    .filter(filterByType)
-                                                    .filter(filterFlows)
-                                                    .filter(filterByFramework)
-                                                    .filter(filterByDifficulty)
-                                                    .filter(filterByUsecases)
-                                                    .map((data, index) => (
+                                                {paginatedCommunityData.map((data, index) => (
                                                         <Box key={index}>
                                                             {data.badge && (
                                                                 <Badge
@@ -1249,6 +1325,22 @@ const Marketplace = () => {
                                                         </Box>
                                                     ))}
                                             </Box>
+                                            {totalPages > 1 && (
+                                                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 3, gap: 2 }}>
+                                                    <Typography variant='body2' sx={{ color: 'text.secondary' }}>
+                                                        {filteredCommunityData.length} templates
+                                                    </Typography>
+                                                    <Pagination
+                                                        count={totalPages}
+                                                        page={currentPage}
+                                                        onChange={(_, p) => { setCurrentPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                                                        color='primary'
+                                                        shape='rounded'
+                                                        showFirstButton
+                                                        showLastButton
+                                                    />
+                                                </Box>
+                                            )}
                                         )}
                                     </>
                                 ) : (

@@ -13,9 +13,9 @@ from sqlalchemy.orm import Session
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 
-from auth import require_roles, _write_audit_log
+from auth import require_roles, require_permission, _write_audit_log
 from database import get_db
-from models import Tenant, TenantResource
+from models import Tenant, TenantResource, ChatMessage, UserPreference
 
 router = APIRouter()
 
@@ -3954,6 +3954,7 @@ def get_chatflow_streaming_status(chatflow_id: str) -> dict[str, Any]:
 def export_data(
     body: dict[str, Any],
     db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
 ) -> dict[str, Any]:
     """
     Export flows, tools, credentials, and variables as JSON.
@@ -3983,7 +3984,7 @@ def export_data(
     try:
         # Export chatflows and agentflows
         if body.get("chatflowsAndAgentflows"):
-            flows = db.query(Flow).all()
+            flows = db.query(Flow).filter(Flow.tenant_id == user["tenant_id"]).all()
             chatflows = []
             agentflows = []
 
@@ -4014,7 +4015,10 @@ def export_data(
 
         # Export tools
         if body.get("tools"):
-            tools = db.query(TenantResource).filter(TenantResource.resource_type == "tool").all()
+            tools = db.query(TenantResource).filter(
+                TenantResource.resource_type == "tool",
+                TenantResource.tenant_id == user["tenant_id"]
+            ).all()
             export["Tools"] = [
                 {
                     "id": tool.id,
@@ -4026,7 +4030,10 @@ def export_data(
 
         # Export credentials (without sensitive data)
         if body.get("credentials"):
-            credentials = db.query(TenantResource).filter(TenantResource.resource_type == "credential").all()
+            credentials = db.query(TenantResource).filter(
+                TenantResource.resource_type == "credential",
+                TenantResource.tenant_id == user["tenant_id"]
+            ).all()
             export["Credentials"] = [
                 {
                     "id": cred.id,
@@ -4038,7 +4045,10 @@ def export_data(
 
         # Export variables
         if body.get("variables"):
-            variables = db.query(TenantResource).filter(TenantResource.resource_type == "variable").all()
+            variables = db.query(TenantResource).filter(
+                TenantResource.resource_type == "variable",
+                TenantResource.tenant_id == user["tenant_id"]
+            ).all()
             export["Variables"] = [
                 {
                     "id": var.id,
@@ -4058,6 +4068,7 @@ def export_data(
 def import_data(
     body: dict[str, Any],
     db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
 ) -> dict[str, Any]:
     """
     Import flows, tools, credentials, and variables from JSON.
@@ -4095,7 +4106,7 @@ def import_data(
         for chatflow in body.get("Chatflows", []):
             flow = Flow(
                 id=str(uuid4()),
-                tenant_id="default-tenant",  # TODO: Get from context
+                tenant_id=user["tenant_id"],
                 name=chatflow.get("name", "Imported Flow"),
                 workspace_id=None,
             )
@@ -4117,7 +4128,7 @@ def import_data(
         for agentflow in body.get("Agentflows", []):
             flow = Flow(
                 id=str(uuid4()),
-                tenant_id="default-tenant",  # TODO: Get from context
+                tenant_id=user["tenant_id"],
                 name=agentflow.get("name", "Imported Agentflow"),
                 workspace_id=None,
             )
@@ -4138,7 +4149,7 @@ def import_data(
         for tool in body.get("Tools", []):
             resource = TenantResource(
                 id=str(uuid4()),
-                tenant_id="default-tenant",  # TODO: Get from context
+                tenant_id=user["tenant_id"],
                 resource_type="tool",
                 name=tool.get("name", "Imported Tool"),
                 payload=tool.get("payload", {}),
@@ -4152,7 +4163,7 @@ def import_data(
         for cred in body.get("Credentials", []):
             resource = TenantResource(
                 id=str(uuid4()),
-                tenant_id="default-tenant",  # TODO: Get from context
+                tenant_id=user["tenant_id"],
                 resource_type="credential",
                 name=cred.get("name", "Imported Credential"),
                 payload=cred.get("payload", {}),
@@ -4166,7 +4177,7 @@ def import_data(
         for var in body.get("Variables", []):
             resource = TenantResource(
                 id=str(uuid4()),
-                tenant_id="default-tenant",  # TODO: Get from context
+                tenant_id=user["tenant_id"],
                 resource_type="variable",
                 name=var.get("name", "Imported Variable"),
                 payload=var.get("payload", {}),
@@ -4188,6 +4199,7 @@ def import_data(
 def export_chatflow_messages(
     body: dict[str, Any],
     db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
 ) -> list[dict[str, Any]]:
     """
     Export chat messages for a chatflow within a date range.
@@ -4209,7 +4221,10 @@ def export_chatflow_messages(
         if not chatflow_id:
             raise HTTPException(status_code=400, detail="Missing chatflowId")
 
-        query = db.query(ChatMessage).filter(ChatMessage.chatflow_id == chatflow_id)
+        query = db.query(ChatMessage).filter(
+            ChatMessage.chatflow_id == chatflow_id,
+            ChatMessage.tenant_id == user["tenant_id"]
+        )
 
         # Optional date filtering
         start_date = body.get("startDate")
@@ -4246,6 +4261,384 @@ def export_chatflow_messages(
             }
             for msg in messages
         ]
+
+
+# ===== UI Gap Aliases (workspace, vector, feedback, prediction, version) =====
+
+# UI Gap C: Workspace singlar/plural alias routes
+@router.get("/workspace")
+def list_workspaces_alias(
+    organization_id: str | None = None,
+    workspace_id: str | None = None,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_permission("workspaces:manage"))] = None,
+) -> dict:
+    """Alias for GET /workspaces (singular vs plural)."""
+    if workspace_id:
+        # Single workspace by ID
+        workspace = (
+            db.query(TenantResource)
+            .filter(
+                TenantResource.id == workspace_id,
+                TenantResource.tenant_id == user["tenant_id"],
+                TenantResource.resource_type == "workspace"
+            )
+            .one_or_none()
+        )
+        if not workspace:
+            raise HTTPException(status_code=404, detail="Workspace not found")
+        return workspace.payload
+    elif organization_id:
+        # List by organization
+        workspaces = db.query(TenantResource).filter(
+            TenantResource.tenant_id == user["tenant_id"],
+            TenantResource.resource_type == "workspace"
+        ).all()
+        return {
+            "data": [w.payload for w in workspaces],
+            "total": len(workspaces)
+        }
+    else:
+        # No filter, return default org workspaces
+        workspaces = db.query(TenantResource).filter(
+            TenantResource.tenant_id == user["tenant_id"],
+            TenantResource.resource_type == "workspace"
+        ).all()
+        return {
+            "data": [w.payload for w in workspaces],
+            "total": len(workspaces)
+        }
+
+
+@router.post("/workspace")
+def create_workspace_alias(
+    body: dict,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_permission("workspaces:manage"))] = None,
+) -> dict:
+    """Alias for POST /workspaces (singular vs plural)."""
+    workspace_id = str(uuid4())
+    now_utc = datetime.now(timezone.utc)
+    workspace = TenantResource(
+        id=workspace_id,
+        tenant_id=user["tenant_id"],
+        resource_type="workspace",
+        created_by=user["user_id"],
+        payload={
+            "id": workspace_id,
+            "name": body.get("name", "Untitled Workspace"),
+            "description": body.get("description"),
+            "organizationId": user["tenant_id"],
+            "userCount": 1,
+            "isOrgDefault": False,
+            "createdDate": now_utc.isoformat(),
+            "updatedDate": now_utc.isoformat(),
+        }
+    )
+    db.add(workspace)
+    db.commit()
+    db.refresh(workspace)
+    return workspace.payload
+
+
+@router.put("/workspace")
+def update_workspace_alias(
+    body: dict,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_permission("workspaces:manage"))] = None,
+) -> dict:
+    """Alias for PUT /workspaces (singular vs plural)."""
+    workspace_id = body.get("id")
+    if not workspace_id:
+        raise HTTPException(status_code=400, detail="Workspace ID required")
+
+    workspace = (
+        db.query(TenantResource)
+        .filter(
+            TenantResource.id == workspace_id,
+            TenantResource.tenant_id == user["tenant_id"],
+            TenantResource.resource_type == "workspace"
+        )
+        .one_or_none()
+    )
+    if not workspace:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+
+    now_utc = datetime.now(timezone.utc)
+    payload = workspace.payload
+    if "name" in body:
+        payload["name"] = body["name"]
+    if "description" in body:
+        payload["description"] = body["description"]
+    payload["updatedDate"] = now_utc.isoformat()
+    workspace.payload = payload
+    db.add(workspace)
+    db.commit()
+    db.refresh(workspace)
+    return workspace.payload
+
+
+@router.delete("/workspace/{workspace_id}")
+def delete_workspace_alias(
+    workspace_id: str,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_permission("workspaces:manage"))] = None,
+) -> dict:
+    """Alias for DELETE /workspaces/{id} (singular vs plural)."""
+    workspace = (
+        db.query(TenantResource)
+        .filter(
+            TenantResource.id == workspace_id,
+            TenantResource.tenant_id == user["tenant_id"],
+            TenantResource.resource_type == "workspace"
+        )
+        .one_or_none()
+    )
+    if not workspace:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+
+    db.delete(workspace)
+    db.commit()
+    return {"status": "ok"}
+
+
+@router.post("/workspace/switch")
+def switch_workspace_alias(
+    workspace_id: str | None = None,
+    id: str | None = None,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_permission("workspaces:manage"))] = None,
+) -> dict:
+    """Alias for POST /workspaces/switch (singular vs plural)."""
+    target_id = workspace_id or id
+    if not target_id:
+        raise HTTPException(status_code=400, detail="Workspace ID required")
+
+    # Update user preference
+    pref = db.query(UserPreference).filter(
+        UserPreference.user_id == user["user_id"],
+        UserPreference.key == "active_workspace"
+    ).one_or_none()
+
+    if pref:
+        pref.value = target_id
+    else:
+        pref = UserPreference(
+            user_id=user["user_id"],
+            key="active_workspace",
+            value=target_id
+        )
+        db.add(pref)
+
+    db.commit()
+    return {"status": "ok", "workspaceId": target_id}
+
+
+@router.post("/workspace/link-users/{workspace_id}")
+def link_users_alias(
+    workspace_id: str,
+    body: dict,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_permission("workspaces:manage"))] = None,
+) -> dict:
+    """Alias for POST /workspaces/link-users/{id}."""
+    # Stub: just acknowledge
+    return {"status": "ok", "workspaceId": workspace_id}
+
+
+@router.post("/workspace/unlink-users/{workspace_id}")
+def unlink_users_alias(
+    workspace_id: str,
+    body: dict,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_permission("workspaces:manage"))] = None,
+) -> dict:
+    """Alias for POST /workspaces/unlink-users/{id}."""
+    # Stub: just acknowledge
+    return {"status": "ok", "workspaceId": workspace_id}
+
+
+@router.get("/workspace/shared/{workspace_id}")
+def get_workspace_sharing_alias(
+    workspace_id: str,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_permission("workspaces:manage"))] = None,
+) -> dict:
+    """Alias for GET /workspaces/shared/{id}."""
+    return {"workspaceId": workspace_id, "shared": False}
+
+
+@router.post("/workspace/shared/{workspace_id}")
+def set_workspace_sharing_alias(
+    workspace_id: str,
+    body: dict,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_permission("workspaces:manage"))] = None,
+) -> dict:
+    """Alias for POST /workspaces/shared/{id}."""
+    return {"status": "ok", "workspaceId": workspace_id}
+
+
+# UI Gap B: Vector upsert routes
+@router.post("/vector/internal-upsert/{store_id}")
+def vector_upsert(
+    store_id: str,
+    body: dict | None = None,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_permission("document_stores:edit"))] = None,
+) -> dict:
+    """Stub: Accept vector upsert, return success."""
+    return {
+        "status": "ok",
+        "numAdded": 0,
+        "numDeleted": 0,
+        "numUpdated": 0,
+        "storageProvider": "vector-store"
+    }
+
+
+@router.get("/upsert-history/{store_id}")
+def get_upsert_history(
+    store_id: str,
+    order: str = "DESC",
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_permission("document_stores:view"))] = None,
+) -> dict:
+    """Stub: Return empty upsert history."""
+    return {
+        "data": [],
+        "total": 0,
+        "limit": limit,
+        "offset": offset
+    }
+
+
+@router.patch("/upsert-history")
+def update_upsert_history(
+    body: dict,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_permission("document_stores:edit"))] = None,
+) -> dict:
+    """Stub: Mark upsert history records as processed."""
+    return {"status": "ok", "updated": 0}
+
+
+# UI Gap D: Chat message feedback with simplified path
+@router.post("/feedback/{message_id}")
+def save_feedback_simple(
+    message_id: str,
+    body: dict,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_permission("chatflows:view"))] = None,
+) -> dict:
+    """Simplified feedback endpoint (message_id only, no chatflow_id)."""
+    message = (
+        db.query(ChatMessage)
+        .filter(
+            ChatMessage.id == message_id,
+            ChatMessage.tenant_id == user["tenant_id"]
+        )
+        .one_or_none()
+    )
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+
+    message.feedback_rating = body.get("rating")
+    message.feedback_content = body.get("content")
+    message.updated_at = datetime.now(timezone.utc)
+    db.add(message)
+    db.commit()
+    db.refresh(message)
+
+    return {
+        "id": message.id,
+        "chatflow_id": message.chatflow_id,
+        "session_id": message.session_id,
+        "feedback_rating": message.feedback_rating,
+        "feedback_content": message.feedback_content,
+    }
+
+
+@router.put("/feedback/{message_id}")
+def update_feedback_simple(
+    message_id: str,
+    body: dict,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_permission("chatflows:view"))] = None,
+) -> dict:
+    """Simplified feedback update endpoint."""
+    message = (
+        db.query(ChatMessage)
+        .filter(
+            ChatMessage.id == message_id,
+            ChatMessage.tenant_id == user["tenant_id"]
+        )
+        .one_or_none()
+    )
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+
+    message.feedback_rating = body.get("rating")
+    message.feedback_content = body.get("content")
+    message.updated_at = datetime.now(timezone.utc)
+    db.add(message)
+    db.commit()
+    db.refresh(message)
+
+    return {
+        "id": message.id,
+        "chatflow_id": message.chatflow_id,
+        "session_id": message.session_id,
+        "feedback_rating": message.feedback_rating,
+        "feedback_content": message.feedback_content,
+    }
+
+
+# UI Gap E: Prediction fallback aliases (without /v1/ prefix)
+async def _stream_prediction_no_v1():
+    """Streaming generator for prediction placeholder."""
+    yield f"data: {json.dumps({'token': '[Starting prediction...]'})}\n\n"
+    yield f"data: {json.dumps({'event': 'end', 'text': '[Prediction result]'})}\n\n"
+
+
+@router.post("/internal-prediction/{chatflow_id}")
+async def internal_prediction_no_v1(
+    chatflow_id: str,
+    body: dict,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_permission("chatflows:execute"))] = None,
+) -> StreamingResponse:
+    """Fallback: /internal-prediction/{id} (no /v1/ prefix) — streams to SSE."""
+    return StreamingResponse(_stream_prediction_no_v1(), media_type="text/event-stream")
+
+
+@router.post("/prediction/{chatflow_id}")
+def prediction_no_v1(
+    chatflow_id: str,
+    body: dict,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_permission("chatflows:execute"))] = None,
+) -> dict:
+    """Fallback: /prediction/{id} (no /v1/ prefix) — public prediction."""
+    return {
+        "text": "[Prediction placeholder]",
+        "chatId": str(uuid4()),
+        "sessionId": body.get("sessionId", str(uuid4())),
+        "sources": []
+    }
+
+
+# UI Gap G: Version endpoint
+@router.get("/v1/version")
+def get_version() -> dict:
+    """Get API version."""
+    return {
+        "version": "1.0.0",
+        "name": "vetrai",
+        "status": "ok"
+    }
 
     except HTTPException:
         raise

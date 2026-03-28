@@ -260,3 +260,49 @@ def save_message_feedback(
     db.refresh(message)
 
     return _serialize_chat_message(message)
+
+
+@router.post("/feedback/{message_id}")
+def save_message_feedback_simple(
+    message_id: str,
+    body: ChatMessageFeedbackRequest,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_permission("chatflows:view"))] = None,
+) -> dict[str, Any]:
+    """
+    Save feedback on a chat message (simplified path, message_id only).
+
+    Allows users to provide quality feedback without specifying chatflow_id.
+    """
+    message = (
+        db.query(ChatMessage)
+        .filter(
+            ChatMessage.id == message_id,
+            ChatMessage.tenant_id == user["tenant_id"]
+        )
+        .one_or_none()
+    )
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+
+    message.feedback_rating = body.rating
+    message.feedback_content = body.content
+    message.updated_at = datetime.now(timezone.utc)
+    db.add(message)
+    db.commit()
+    db.refresh(message)
+
+    return _serialize_chat_message(message)
+
+
+@router.put("/feedback/{message_id}")
+def update_message_feedback_simple(
+    message_id: str,
+    body: ChatMessageFeedbackRequest,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_permission("chatflows:view"))] = None,
+) -> dict[str, Any]:
+    """
+    Update feedback on a chat message (PUT variant, simplified path).
+    """
+    return save_message_feedback_simple(message_id, body, db, user)
