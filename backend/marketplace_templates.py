@@ -2225,6 +2225,98 @@ MARKETPLACE_STATS = {
     }
 }
 
+# Template flowData for popular templates - enables instant canvas preview
+TEMPLATE_FLOWDATA = {
+    "chatflow_cs_001": {  # Customer Support Chatbot
+        "nodes": [
+            {
+                "id": "chatModel_0",
+                "type": "customNode",
+                "data": {"name": "ollamaChat", "inputs": {"model": "llama3.2"}, "label": "Chat Model"},
+                "position": {"x": 100, "y": 100}
+            },
+            {
+                "id": "conversationChain_0",
+                "type": "customNode",
+                "data": {"name": "conversationChain", "inputs": {}, "label": "Conversation Chain"},
+                "position": {"x": 300, "y": 100}
+            },
+            {
+                "id": "output_0",
+                "type": "customNode",
+                "data": {"name": "output", "label": "Output"},
+                "position": {"x": 500, "y": 100}
+            }
+        ],
+        "edges": [
+            {"source": "chatModel_0", "target": "conversationChain_0", "animated": False},
+            {"source": "conversationChain_0", "target": "output_0", "animated": False}
+        ],
+        "viewport": {"x": 0, "y": 0, "zoom": 1}
+    },
+    "chatflow_rag_001": {  # RAG Document QA
+        "nodes": [
+            {
+                "id": "documentStore_0",
+                "type": "customNode",
+                "data": {"name": "documentStore", "inputs": {}, "label": "Document Store"},
+                "position": {"x": 100, "y": 100}
+            },
+            {
+                "id": "retriever_0",
+                "type": "customNode",
+                "data": {"name": "retriever", "inputs": {}, "label": "Retriever"},
+                "position": {"x": 300, "y": 100}
+            },
+            {
+                "id": "chatModel_0",
+                "type": "customNode",
+                "data": {"name": "ollamaChat", "inputs": {"model": "llama3.2"}, "label": "Chat Model"},
+                "position": {"x": 500, "y": 100}
+            },
+            {
+                "id": "output_0",
+                "type": "customNode",
+                "data": {"name": "output", "label": "Output"},
+                "position": {"x": 700, "y": 100}
+            }
+        ],
+        "edges": [
+            {"source": "documentStore_0", "target": "retriever_0", "animated": False},
+            {"source": "retriever_0", "target": "chatModel_0", "animated": False},
+            {"source": "chatModel_0", "target": "output_0", "animated": False}
+        ],
+        "viewport": {"x": 0, "y": 0, "zoom": 0.8}
+    },
+    "agentflow_sql_001": {  # SQL Agent
+        "nodes": [
+            {
+                "id": "sqlTool_0",
+                "type": "customNode",
+                "data": {"name": "sqlTool", "inputs": {}, "label": "SQL Tool"},
+                "position": {"x": 100, "y": 100}
+            },
+            {
+                "id": "agent_0",
+                "type": "customNode",
+                "data": {"name": "agent", "inputs": {}, "label": "Agent"},
+                "position": {"x": 300, "y": 100}
+            },
+            {
+                "id": "output_0",
+                "type": "customNode",
+                "data": {"name": "output", "label": "Output"},
+                "position": {"x": 500, "y": 100}
+            }
+        ],
+        "edges": [
+            {"source": "sqlTool_0", "target": "agent_0", "animated": False},
+            {"source": "agent_0", "target": "output_0", "animated": False}
+        ],
+        "viewport": {"x": 0, "y": 0, "zoom": 1}
+    },
+}
+
 def get_all_templates(category: str = None, tags: list = None, search: str = None):
     """
     Get templates with optional filtering
@@ -2259,6 +2351,11 @@ def get_all_templates(category: str = None, tags: list = None, search: str = Non
                search_lower in t.get("description", "").lower()
         ]
 
+    # Add flowData where available
+    for template in all_templates:
+        if template["id"] in TEMPLATE_FLOWDATA:
+            template["flowData"] = TEMPLATE_FLOWDATA[template["id"]]
+
     return all_templates
 
 def get_template_by_id(template_id: str):
@@ -2266,6 +2363,9 @@ def get_template_by_id(template_id: str):
     for category in MARKETPLACE_TEMPLATES.values():
         for template in category:
             if template["id"] == template_id:
+                # Add flowData if available
+                if template_id in TEMPLATE_FLOWDATA:
+                    template["flowData"] = TEMPLATE_FLOWDATA[template_id]
                 return template
     return None
 
@@ -2276,6 +2376,10 @@ def get_trending_templates(limit: int = 10):
         all_templates.extend(category)
 
     trending = [t for t in all_templates if "popular" in t.get("tags", [])]
+    # Add flowData to trending templates
+    for template in trending:
+        if template["id"] in TEMPLATE_FLOWDATA:
+            template["flowData"] = TEMPLATE_FLOWDATA[template["id"]]
     return trending[:limit]
 
 def get_new_templates(limit: int = 10):
