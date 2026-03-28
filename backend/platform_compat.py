@@ -4262,6 +4262,9 @@ def export_chatflow_messages(
             for msg in messages
         ]
 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to export messages: {str(e)}")
+
 
 # ===== UI Gap Aliases (workspace, vector, feedback, prediction, version) =====
 
@@ -4639,8 +4642,3 @@ def get_version() -> dict:
         "name": "vetrai",
         "status": "ok"
     }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Export messages failed: {str(e)}")
