@@ -16,6 +16,7 @@ from files import router as files_router
 from workspace import router as workspace_router
 from permissions import router as permissions_router
 from database import Base, engine
+from middleware import APIKeyMiddleware
 
 app = FastAPI(
     title="Vetrai Backend",
@@ -47,6 +48,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# API Key middleware - validate keys for protected endpoints
+app.add_middleware(APIKeyMiddleware)
 
 
 @app.on_event("startup")
