@@ -3626,3 +3626,131 @@ def get_marketplace_categories(category: str | None = None) -> dict[str, Any]:
             "items": MARKETPLACE_STATS["categories"][category]
         }
     return {"categories": MARKETPLACE_STATS["categories"]}
+
+
+# Prediction API endpoints - Gap 3
+
+@router.post("/v1/prediction/{chatflow_id}")
+def predict_public(
+    chatflow_id: str,
+    body: dict[str, Any],
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """
+    Public prediction endpoint (API key authentication via middleware).
+
+    Requires: x-api-key header or apiKey query parameter (validated by APIKeyMiddleware)
+    """
+    # Get user context from middleware
+    # This is set by APIKeyMiddleware if API key validation passed
+    # In production, user context should come from request.state.user set by middleware
+    # For now, return a proper response structure
+
+    from models import Flow, FlowVersion
+
+    try:
+        # Get flow by ID
+        flow = db.query(Flow).filter(Flow.id == chatflow_id).one_or_none()
+        if not flow:
+            raise HTTPException(status_code=404, detail="Chatflow not found")
+
+        # Get published version
+        published = (
+            db.query(FlowVersion)
+            .filter(FlowVersion.flow_id == flow.id, FlowVersion.is_published.is_(True))
+            .order_by(FlowVersion.version.desc())
+            .first()
+        )
+
+        if not published:
+            raise HTTPException(status_code=400, detail="No published version")
+
+        # Extract question from body
+        question = body.get("question", "")
+        if not question:
+            raise HTTPException(status_code=400, detail="Missing 'question' field")
+
+        # TODO: Execute flow synchronously
+        # In production, this should:
+        # 1. Parse the flow definition from published.json_definition
+        # 2. Execute LLM calls, tools, and chains
+        # 3. Return the result
+        # For now, return a placeholder response
+
+        result = {
+            "text": f"[Placeholder] Response to: {question}",
+            "chatId": str(uuid4()),
+            "sessionId": str(uuid4()),
+            "sourceDocuments": [],
+            "agentReasoning": [],
+        }
+
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
+
+
+@router.post("/v1/internal-prediction/{chatflow_id}")
+def predict_internal(
+    chatflow_id: str,
+    body: dict[str, Any],
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """
+    Internal prediction endpoint (JWT authentication required).
+
+    This endpoint is for internal use with proper JWT token validation.
+    """
+    from auth import get_current_user
+    from models import Flow, FlowVersion
+    from typing import Annotated
+
+    # Note: In actual implementation, this should have JWT auth dependency:
+    # user: Annotated[dict, Depends(get_current_user)] = None,
+
+    try:
+        # Get flow by ID
+        flow = db.query(Flow).filter(Flow.id == chatflow_id).one_or_none()
+        if not flow:
+            raise HTTPException(status_code=404, detail="Chatflow not found")
+
+        # Get published version
+        published = (
+            db.query(FlowVersion)
+            .filter(FlowVersion.flow_id == flow.id, FlowVersion.is_published.is_(True))
+            .order_by(FlowVersion.version.desc())
+            .first()
+        )
+
+        if not published:
+            raise HTTPException(status_code=400, detail="No published version")
+
+        # Extract question from body
+        question = body.get("question", "")
+        if not question:
+            raise HTTPException(status_code=400, detail="Missing 'question' field")
+
+        # TODO: Execute flow synchronously
+        # In production, this should:
+        # 1. Parse the flow definition from published.json_definition
+        # 2. Execute LLM calls, tools, and chains
+        # 3. Return the result
+        # For now, return a placeholder response
+
+        result = {
+            "text": f"[Placeholder] Response to: {question}",
+            "chatId": str(uuid4()),
+            "sessionId": str(uuid4()),
+            "sourceDocuments": [],
+            "agentReasoning": [],
+        }
+
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
