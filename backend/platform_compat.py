@@ -3863,3 +3863,308 @@ def get_chatflow_streaming_status(chatflow_id: str) -> dict[str, Any]:
         "streaming": True,
         "sseEndpoint": f"/api/v1/chatflows-streaming/{chatflow_id}",
     }
+
+
+# Export/Import endpoints - Gap 9
+
+@router.post("/export-import/export")
+def export_data(
+    body: dict[str, Any],
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """
+    Export flows, tools, credentials, and variables as JSON.
+
+    Request body:
+    {
+        "chatflowsAndAgentflows": bool,
+        "agentflows": bool,
+        "tools": bool,
+        "credentials": bool,
+        "variables": bool
+    }
+
+    Returns:
+    {
+        "Chatflows": [...],
+        "Agentflows": [...],
+        "Tools": [...],
+        "Credentials": [...],
+        "Variables": [...]
+    }
+    """
+    from models import Flow, FlowVersion, TenantResource
+
+    export = {}
+
+    try:
+        # Export chatflows and agentflows
+        if body.get("chatflowsAndAgentflows"):
+            flows = db.query(Flow).all()
+            chatflows = []
+            agentflows = []
+
+            for flow in flows:
+                # Get latest version
+                latest_version = (
+                    db.query(FlowVersion)
+                    .filter(FlowVersion.flow_id == flow.id)
+                    .order_by(FlowVersion.version.desc())
+                    .first()
+                )
+
+                flow_data = {
+                    "id": flow.id,
+                    "name": flow.name,
+                    "flowData": latest_version.json_definition if latest_version else {},
+                    "type": "chatflow",  # TODO: Determine from metadata
+                }
+
+                if body.get("agentflows"):
+                    agentflows.append(flow_data)
+                else:
+                    chatflows.append(flow_data)
+
+            export["Chatflows"] = chatflows
+            if body.get("agentflows"):
+                export["Agentflows"] = agentflows
+
+        # Export tools
+        if body.get("tools"):
+            tools = db.query(TenantResource).filter(TenantResource.resource_type == "tool").all()
+            export["Tools"] = [
+                {
+                    "id": tool.id,
+                    "name": tool.name,
+                    "payload": tool.payload,
+                }
+                for tool in tools
+            ]
+
+        # Export credentials (without sensitive data)
+        if body.get("credentials"):
+            credentials = db.query(TenantResource).filter(TenantResource.resource_type == "credential").all()
+            export["Credentials"] = [
+                {
+                    "id": cred.id,
+                    "name": cred.name,
+                    "payload": {k: v for k, v in (cred.payload or {}).items() if k not in ["password", "secret", "apiKey", "token"]},
+                }
+                for cred in credentials
+            ]
+
+        # Export variables
+        if body.get("variables"):
+            variables = db.query(TenantResource).filter(TenantResource.resource_type == "variable").all()
+            export["Variables"] = [
+                {
+                    "id": var.id,
+                    "name": var.name,
+                    "payload": var.payload,
+                }
+                for var in variables
+            ]
+
+        return export
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
+
+
+@router.post("/export-import/import")
+def import_data(
+    body: dict[str, Any],
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """
+    Import flows, tools, credentials, and variables from JSON.
+
+    Request body:
+    {
+        "Chatflows": [...],
+        "Agentflows": [...],
+        "Tools": [...],
+        "Credentials": [...],
+        "Variables": [...]
+    }
+
+    Returns:
+    {
+        "chatflows": count,
+        "agentflows": count,
+        "tools": count,
+        "credentials": count,
+        "variables": count
+    }
+    """
+    from models import Flow, FlowVersion, TenantResource
+
+    imported = {
+        "chatflows": 0,
+        "agentflows": 0,
+        "tools": 0,
+        "credentials": 0,
+        "variables": 0,
+    }
+
+    try:
+        # Import chatflows
+        for chatflow in body.get("Chatflows", []):
+            flow = Flow(
+                id=str(uuid4()),
+                tenant_id="default-tenant",  # TODO: Get from context
+                name=chatflow.get("name", "Imported Flow"),
+                workspace_id=None,
+            )
+            db.add(flow)
+            db.flush()
+
+            # Create version with flowData
+            version = FlowVersion(
+                id=str(uuid4()),
+                flow_id=flow.id,
+                version=1,
+                json_definition=chatflow.get("flowData", {}),
+                is_published=False,
+            )
+            db.add(version)
+            imported["chatflows"] += 1
+
+        # Import agentflows
+        for agentflow in body.get("Agentflows", []):
+            flow = Flow(
+                id=str(uuid4()),
+                tenant_id="default-tenant",  # TODO: Get from context
+                name=agentflow.get("name", "Imported Agentflow"),
+                workspace_id=None,
+            )
+            db.add(flow)
+            db.flush()
+
+            version = FlowVersion(
+                id=str(uuid4()),
+                flow_id=flow.id,
+                version=1,
+                json_definition=agentflow.get("flowData", {}),
+                is_published=False,
+            )
+            db.add(version)
+            imported["agentflows"] += 1
+
+        # Import tools
+        for tool in body.get("Tools", []):
+            resource = TenantResource(
+                id=str(uuid4()),
+                tenant_id="default-tenant",  # TODO: Get from context
+                resource_type="tool",
+                name=tool.get("name", "Imported Tool"),
+                payload=tool.get("payload", {}),
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
+            )
+            db.add(resource)
+            imported["tools"] += 1
+
+        # Import credentials
+        for cred in body.get("Credentials", []):
+            resource = TenantResource(
+                id=str(uuid4()),
+                tenant_id="default-tenant",  # TODO: Get from context
+                resource_type="credential",
+                name=cred.get("name", "Imported Credential"),
+                payload=cred.get("payload", {}),
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
+            )
+            db.add(resource)
+            imported["credentials"] += 1
+
+        # Import variables
+        for var in body.get("Variables", []):
+            resource = TenantResource(
+                id=str(uuid4()),
+                tenant_id="default-tenant",  # TODO: Get from context
+                resource_type="variable",
+                name=var.get("name", "Imported Variable"),
+                payload=var.get("payload", {}),
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
+            )
+            db.add(resource)
+            imported["variables"] += 1
+
+        db.commit()
+        return imported
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
+
+
+@router.post("/export-import/chatflow-messages")
+def export_chatflow_messages(
+    body: dict[str, Any],
+    db: Session = Depends(get_db),
+) -> list[dict[str, Any]]:
+    """
+    Export chat messages for a chatflow within a date range.
+
+    Request body:
+    {
+        "chatflowId": str,
+        "startDate": "2026-01-01",
+        "endDate": "2026-03-29"
+    }
+
+    Returns:
+    List of message dicts with timestamp, role, content, feedback
+    """
+    from models import ChatMessage
+
+    try:
+        chatflow_id = body.get("chatflowId")
+        if not chatflow_id:
+            raise HTTPException(status_code=400, detail="Missing chatflowId")
+
+        query = db.query(ChatMessage).filter(ChatMessage.chatflow_id == chatflow_id)
+
+        # Optional date filtering
+        start_date = body.get("startDate")
+        end_date = body.get("endDate")
+
+        if start_date:
+            try:
+                start = datetime.fromisoformat(start_date)
+                query = query.filter(ChatMessage.created_at >= start)
+            except (ValueError, TypeError):
+                pass
+
+        if end_date:
+            try:
+                end = datetime.fromisoformat(end_date)
+                query = query.filter(ChatMessage.created_at <= end)
+            except (ValueError, TypeError):
+                pass
+
+        messages = query.order_by(ChatMessage.created_at.desc()).all()
+
+        return [
+            {
+                "id": msg.id,
+                "session_id": msg.session_id,
+                "role": msg.role,
+                "content": msg.content,
+                "source_documents": msg.source_documents,
+                "agent_reasoning": msg.agent_reasoning,
+                "used_tools": msg.used_tools,
+                "feedback_rating": msg.feedback_rating,
+                "feedback_content": msg.feedback_content,
+                "created_at": msg.created_at.isoformat() if msg.created_at else None,
+            }
+            for msg in messages
+        ]
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Export messages failed: {str(e)}")
