@@ -126,6 +126,149 @@ const CORE_NODE_REGISTRY = [
         outputs: [{ label: 'Document', name: 'document', baseClasses: ['Document'] }]
     },
     {
+        name: 'csvFileLoader',
+        label: 'CSV File Loader',
+        category: 'Document Loaders',
+        description: 'Load and parse CSV files.',
+        baseClasses: ['Document'],
+        inputs: [
+            { label: 'File Upload', name: 'fileUpload', type: 'file', fileType: '.csv', optional: true },
+            { label: 'File Path', name: 'path', type: 'string', optional: true }
+        ],
+        outputs: [{ label: 'Document', name: 'document', baseClasses: ['Document'] }]
+    },
+    {
+        name: 'jsonFileLoader',
+        label: 'JSON File Loader',
+        category: 'Document Loaders',
+        description: 'Load and parse JSON files.',
+        baseClasses: ['Document'],
+        inputs: [
+            { label: 'File Upload', name: 'fileUpload', type: 'file', fileType: '.json', optional: true },
+            { label: 'File Path', name: 'path', type: 'string', optional: true }
+        ],
+        outputs: [{ label: 'Document', name: 'document', baseClasses: ['Document'] }]
+    },
+    {
+        name: 'jsonLinesLoader',
+        label: 'JSON Lines File Loader',
+        category: 'Document Loaders',
+        description: 'Load and parse JSONL (JSON Lines) files.',
+        baseClasses: ['Document'],
+        inputs: [
+            { label: 'File Upload', name: 'fileUpload', type: 'file', fileType: '.jsonl,.ndjson', optional: true },
+            { label: 'File Path', name: 'path', type: 'string', optional: true },
+            { label: 'Text Key', name: 'textKey', type: 'string', default: 'text', optional: true }
+        ],
+        outputs: [{ label: 'Document', name: 'document', baseClasses: ['Document'] }]
+    },
+    {
+        name: 'docxFileLoader',
+        label: 'Docx File Loader',
+        category: 'Document Loaders',
+        description: 'Load text from DOCX (Word) files.',
+        baseClasses: ['Document'],
+        inputs: [
+            { label: 'File Upload', name: 'fileUpload', type: 'file', fileType: '.docx', optional: true },
+            { label: 'File Path', name: 'path', type: 'string', optional: true }
+        ],
+        outputs: [{ label: 'Document', name: 'document', baseClasses: ['Document'] }]
+    },
+    {
+        name: 'excelFileLoader',
+        label: 'Excel File Loader',
+        category: 'Document Loaders',
+        description: 'Load and parse Excel files.',
+        baseClasses: ['Document'],
+        inputs: [
+            { label: 'File Upload', name: 'fileUpload', type: 'file', fileType: '.xlsx,.xls', optional: true },
+            { label: 'File Path', name: 'path', type: 'string', optional: true },
+            { label: 'Sheet Name', name: 'sheetName', type: 'string', optional: true }
+        ],
+        outputs: [{ label: 'Document', name: 'document', baseClasses: ['Document'] }]
+    },
+    {
+        name: 'notionLoader',
+        label: 'Notion',
+        category: 'Document Loaders',
+        description: 'Load content from Notion pages.',
+        baseClasses: ['Document'],
+        inputs: [
+            { label: 'Notion Page ID', name: 'notionPageId', type: 'string', optional: false },
+            { label: 'Notion API Key', name: 'credential', type: 'credential', credentialNames: ['notionApi'], optional: false }
+        ],
+        outputs: [{ label: 'Document', name: 'document', baseClasses: ['Document'] }]
+    },
+    {
+        name: 'githubLoader',
+        label: 'Github',
+        category: 'Document Loaders',
+        description: 'Load files from a GitHub repository.',
+        baseClasses: ['Document'],
+        inputs: [
+            { label: 'Repo URL', name: 'repoLink', type: 'string', optional: false },
+            { label: 'Branch', name: 'branch', type: 'string', default: 'main', optional: true },
+            { label: 'File Extensions', name: 'fileExtensions', type: 'string', default: '.md,.txt,.py,.js,.ts', optional: true },
+            { label: 'Recursive', name: 'recursive', type: 'boolean', default: true, optional: true },
+            { label: 'GitHub Token', name: 'credential', type: 'credential', credentialNames: ['githubApi'], optional: true }
+        ],
+        outputs: [{ label: 'Document', name: 'document', baseClasses: ['Document'] }]
+    },
+    {
+        name: 'confluenceLoader',
+        label: 'Confluence',
+        category: 'Document Loaders',
+        description: 'Load pages from a Confluence space.',
+        baseClasses: ['Document'],
+        inputs: [
+            { label: 'Base URL', name: 'baseUrl', type: 'string', optional: false },
+            { label: 'Space Key', name: 'spaceKey', type: 'string', optional: false },
+            { label: 'Username', name: 'confluenceUsername', type: 'string', optional: true },
+            { label: 'API Token', name: 'credential', type: 'credential', credentialNames: ['confluenceApi'], optional: false }
+        ],
+        outputs: [{ label: 'Document', name: 'document', baseClasses: ['Document'] }]
+    },
+    {
+        name: 's3FileLoader',
+        label: 'S3 File Loader',
+        category: 'Document Loaders',
+        description: 'Load files from AWS S3 bucket.',
+        baseClasses: ['Document'],
+        inputs: [
+            { label: 'Bucket Name', name: 'bucket', type: 'string', optional: false },
+            { label: 'Key Prefix', name: 'keyPrefix', type: 'string', optional: true },
+            { label: 'AWS Credentials', name: 'credential', type: 'credential', credentialNames: ['awsS3'], optional: false }
+        ],
+        outputs: [{ label: 'Document', name: 'document', baseClasses: ['Document'] }]
+    },
+    {
+        name: 'cheerioWebScraper',
+        label: 'Cheerio Web Scraper',
+        category: 'Document Loaders',
+        description: 'Scrape web content with CSS selectors.',
+        baseClasses: ['Document'],
+        inputs: [
+            { label: 'URL', name: 'url', type: 'string', optional: false },
+            { label: 'CSS Selector', name: 'selector', type: 'string', optional: true },
+            { label: 'Follow Links', name: 'followLinks', type: 'boolean', default: false, optional: true },
+            { label: 'Max Depth', name: 'maxDepth', type: 'number', default: 1, optional: true }
+        ],
+        outputs: [{ label: 'Document', name: 'document', baseClasses: ['Document'] }]
+    },
+    {
+        name: 'airtableLoader',
+        label: 'Airtable',
+        category: 'Document Loaders',
+        description: 'Load records from an Airtable table.',
+        baseClasses: ['Document'],
+        inputs: [
+            { label: 'Base ID', name: 'baseId', type: 'string', optional: false },
+            { label: 'Table ID', name: 'tableId', type: 'string', optional: false },
+            { label: 'API Key', name: 'credential', type: 'credential', credentialNames: ['airtableApi'], optional: false }
+        ],
+        outputs: [{ label: 'Document', name: 'document', baseClasses: ['Document'] }]
+    },
+    {
         name: 'ollamaEmbeddings',
         label: 'Ollama Embeddings',
         category: 'Embeddings',
@@ -140,7 +283,34 @@ const CORE_NODE_REGISTRY = [
         category: 'Embeddings',
         description: 'Generate embeddings using OpenAI.',
         baseClasses: ['Embeddings'],
-        inputs: [{ label: 'Model', name: 'model', type: 'string', default: 'text-embedding-3-small', optional: true }],
+        inputs: [
+            { label: 'Model', name: 'model', type: 'string', default: 'text-embedding-3-small', optional: true },
+            { label: 'API Key', name: 'apiKey', type: 'password', optional: false }
+        ],
+        outputs: [{ label: 'Embeddings', name: 'embeddings', baseClasses: ['Embeddings'] }]
+    },
+    {
+        name: 'cohereEmbeddings',
+        label: 'Cohere Embeddings',
+        category: 'Embeddings',
+        description: 'Generate embeddings using Cohere.',
+        baseClasses: ['Embeddings'],
+        inputs: [
+            { label: 'Model', name: 'model', type: 'string', default: 'embed-english-v3.0', optional: true },
+            { label: 'API Key', name: 'apiKey', type: 'password', optional: false }
+        ],
+        outputs: [{ label: 'Embeddings', name: 'embeddings', baseClasses: ['Embeddings'] }]
+    },
+    {
+        name: 'huggingFaceInferenceEmbeddings',
+        label: 'HuggingFace Inference Embeddings',
+        category: 'Embeddings',
+        description: 'Generate embeddings using HuggingFace Inference API.',
+        baseClasses: ['Embeddings'],
+        inputs: [
+            { label: 'Model ID', name: 'modelId', type: 'string', default: 'sentence-transformers/all-MiniLM-L6-v2', optional: true },
+            { label: 'API Key', name: 'apiKey', type: 'password', optional: false }
+        ],
         outputs: [{ label: 'Embeddings', name: 'embeddings', baseClasses: ['Embeddings'] }]
     },
     {
@@ -326,6 +496,49 @@ const CORE_NODE_REGISTRY = [
         inputs: [
             { label: 'URL', name: 'url', type: 'string', default: '', optional: false },
             { label: 'Collection', name: 'collectionName', type: 'string', default: 'default', optional: false },
+            { label: 'Embeddings', name: 'embeddings', type: 'Embeddings', optional: false }
+        ],
+        outputs: [{ label: 'Vector Store', name: 'vectorStore', baseClasses: ['VectorStore'] }]
+    },
+    {
+        name: 'chroma',
+        label: 'Chroma',
+        category: 'Vector Stores',
+        description: 'Chroma vector database provider.',
+        baseClasses: ['VectorStore'],
+        inputs: [
+            { label: 'Host', name: 'host', type: 'string', default: 'localhost', optional: true },
+            { label: 'Port', name: 'port', type: 'number', default: 8000, optional: true },
+            { label: 'Collection Name', name: 'collectionName', type: 'string', default: 'documents', optional: true },
+            { label: 'Embeddings', name: 'embeddings', type: 'Embeddings', optional: false }
+        ],
+        outputs: [{ label: 'Vector Store', name: 'vectorStore', baseClasses: ['VectorStore'] }]
+    },
+    {
+        name: 'pinecone',
+        label: 'Pinecone',
+        category: 'Vector Stores',
+        description: 'Pinecone vector database provider.',
+        baseClasses: ['VectorStore'],
+        inputs: [
+            { label: 'Index Name', name: 'indexName', type: 'string', default: '', optional: false },
+            { label: 'Namespace', name: 'namespace', type: 'string', default: '', optional: true },
+            { label: 'API Key', name: 'apiKey', type: 'password', optional: false },
+            { label: 'Embeddings', name: 'embeddings', type: 'Embeddings', optional: false }
+        ],
+        outputs: [{ label: 'Vector Store', name: 'vectorStore', baseClasses: ['VectorStore'] }]
+    },
+    {
+        name: 'weaviate',
+        label: 'Weaviate',
+        category: 'Vector Stores',
+        description: 'Weaviate vector database provider.',
+        baseClasses: ['VectorStore'],
+        inputs: [
+            { label: 'Host', name: 'host', type: 'string', default: 'localhost', optional: true },
+            { label: 'Port', name: 'port', type: 'number', default: 8080, optional: true },
+            { label: 'Class Name', name: 'className', type: 'string', default: 'Document', optional: true },
+            { label: 'API Key', name: 'apiKey', type: 'password', optional: true },
             { label: 'Embeddings', name: 'embeddings', type: 'Embeddings', optional: false }
         ],
         outputs: [{ label: 'Vector Store', name: 'vectorStore', baseClasses: ['VectorStore'] }]

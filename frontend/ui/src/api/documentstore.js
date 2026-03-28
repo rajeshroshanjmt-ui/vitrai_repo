@@ -127,6 +127,16 @@ const generateDocStoreToolDesc = async (storeId, body = {}) => {
     return { data: response.data }
 }
 
+const uploadLoaderFile = async (storeId, file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('store_id', storeId)
+    const response = await client.post('/document-store/loader/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    return { data: response.data }
+}
+
 export default {
     getAllDocumentStores,
     getSpecificDocumentStore,
@@ -151,5 +161,6 @@ export default {
     saveProcessingLoader,
     refreshLoader,
     generateDocStoreToolDesc,
-    getDocumentStoreConfig
+    getDocumentStoreConfig,
+    uploadLoaderFile
 }

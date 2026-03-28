@@ -7,10 +7,12 @@ const upsertVectorStoreWithFormData = (id, formData) =>
     })
 const getUpsertHistory = (id, params = {}) => client.get(`/upsert-history/${id}`, { params: { order: 'DESC', ...params } })
 const deleteUpsertHistory = (ids) => client.patch(`/upsert-history`, { ids })
+const deleteDocStoreUpsertHistory = (storeId, ids) => client.patch(`/upsert-history`, { storeId, ids })
 
 export default {
     getUpsertHistory,
     upsertVectorStore,
     upsertVectorStoreWithFormData,
-    deleteUpsertHistory
+    deleteUpsertHistory,
+    deleteDocStoreUpsertHistory
 }

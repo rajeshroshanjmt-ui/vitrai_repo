@@ -3,6 +3,7 @@ import hashlib
 import os
 import httpx
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Annotated, Any
 from uuid import uuid4
 
@@ -49,6 +50,119 @@ def _get_ollama_embedding(text: str) -> list[float] | None:
         print(f"Warning: Failed to get Ollama embedding: {e}")
         # Return zero vector as fallback
         return [0.0] * EMBEDDING_DIM
+
+
+def _get_openai_embedding(text: str, api_key: str, model: str = "text-embedding-3-small") -> list[float] | None:
+    """Get embedding from OpenAI."""
+    if not text or not text.strip():
+        return None
+
+    if not api_key:
+        print("Warning: OpenAI API key not provided")
+        return None
+
+    try:
+        response = httpx.post(
+            "https://api.openai.com/v1/embeddings",
+            headers={"Authorization": f"Bearer {api_key}"},
+            json={"model": model, "input": text},
+            timeout=30.0
+        )
+        response.raise_for_status()
+        return response.json().get("data", [{}])[0].get("embedding")
+    except Exception as e:
+        print(f"Warning: Failed to get OpenAI embedding: {e}")
+        return None
+
+
+def _get_cohere_embedding(text: str, api_key: str, model: str = "embed-english-v3.0") -> list[float] | None:
+    """Get embedding from Cohere."""
+    if not text or not text.strip():
+        return None
+
+    if not api_key:
+        print("Warning: Cohere API key not provided")
+        return None
+
+    try:
+        response = httpx.post(
+            "https://api.cohere.com/v1/embed",
+            headers={"Authorization": f"Bearer {api_key}"},
+            json={"texts": [text], "model": model, "input_type": "search_document"},
+            timeout=30.0
+        )
+        response.raise_for_status()
+        embeddings = response.json().get("embeddings", [[]])
+        return embeddings[0] if embeddings else None
+    except Exception as e:
+        print(f"Warning: Failed to get Cohere embedding: {e}")
+        return None
+
+
+def _get_huggingface_embedding(text: str, api_key: str, model_id: str = "sentence-transformers/all-MiniLM-L6-v2") -> list[float] | None:
+    """Get embedding from HuggingFace Inference API."""
+    if not text or not text.strip():
+        return None
+
+    if not api_key:
+        print("Warning: HuggingFace API key not provided")
+        return None
+
+    try:
+        response = httpx.post(
+            f"https://api-inference.huggingface.co/models/{model_id}",
+            headers={"Authorization": f"Bearer {api_key}"},
+            json={"inputs": text},
+            timeout=30.0
+        )
+        response.raise_for_status()
+        result = response.json()
+        # HF returns [[embedding]] for a single input
+        if isinstance(result, list) and len(result) > 0:
+            return result[0]
+        return None
+    except Exception as e:
+        print(f"Warning: Failed to get HuggingFace embedding: {e}")
+        return None
+
+
+def _get_embedding(
+    text: str,
+    provider: str,
+    provider_config: dict[str, Any]
+) -> list[float] | None:
+    """Get embedding using the specified provider."""
+    if provider == "openAIEmbeddings":
+        api_key = provider_config.get("apiKey", os.getenv("OPENAI_API_KEY", ""))
+        model = provider_config.get("model", "text-embedding-3-small")
+        return _get_openai_embedding(text, api_key, model)
+    elif provider == "cohereEmbeddings":
+        api_key = provider_config.get("apiKey", os.getenv("COHERE_API_KEY", ""))
+        model = provider_config.get("model", "embed-english-v3.0")
+        return _get_cohere_embedding(text, api_key, model)
+    elif provider == "huggingFaceInferenceEmbeddings":
+        api_key = provider_config.get("apiKey", os.getenv("HUGGINGFACE_API_KEY", ""))
+        model = provider_config.get("modelId", "sentence-transformers/all-MiniLM-L6-v2")
+        return _get_huggingface_embedding(text, api_key, model)
+    else:
+        # Default: Ollama
+        return _get_ollama_embedding(text)
+
+
+EMBEDDING_DIMS = {
+    "ollamaEmbeddings": 384,
+    "openAIEmbeddings": {
+        "text-embedding-3-small": 1536,
+        "text-embedding-3-large": 3072,
+        "text-embedding-ada-002": 1536,
+    },
+    "cohereEmbeddings": 1024,
+    "huggingFaceInferenceEmbeddings": {
+        "sentence-transformers/all-MiniLM-L6-v2": 384,
+        "sentence-transformers/all-mpnet-base-v2": 768,
+    },
+}
+
 
 CHAT_MODEL_COMPONENTS = [
     {
@@ -151,10 +265,57 @@ DOC_LOADERS = [
     {"name": "textFileLoader", "label": "Text File Loader"},
     {"name": "webLoader", "label": "Web Loader"},
     {"name": "pdfFileLoader", "label": "PDF Loader"},
+    {"name": "csvFileLoader", "label": "CSV File Loader"},
+    {"name": "jsonFileLoader", "label": "JSON File Loader"},
+    {"name": "jsonLinesLoader", "label": "JSON Lines File Loader"},
+    {"name": "docxFileLoader", "label": "Docx File Loader"},
+    {"name": "excelFileLoader", "label": "Excel File Loader"},
+    {"name": "notionLoader", "label": "Notion"},
+    {"name": "githubLoader", "label": "Github"},
+    {"name": "confluenceLoader", "label": "Confluence"},
+    {"name": "s3FileLoader", "label": "S3 File Loader"},
+    {"name": "cheerioWebScraper", "label": "Cheerio Web Scraper"},
+    {"name": "airtableLoader", "label": "Airtable"},
 ]
 
-VECTOR_PROVIDERS = [{"name": "qdrant", "label": "Qdrant", "inputs": []}]
-EMBEDDING_PROVIDERS = [{"name": "ollamaEmbeddings", "label": "Ollama Embeddings", "inputs": []}]
+VECTOR_PROVIDERS = [
+    {"name": "qdrant", "label": "Qdrant", "inputs": [
+        {"label": "Collection Name", "name": "collectionName", "type": "string", "default": "", "optional": True}
+    ]},
+    {"name": "chroma", "label": "Chroma", "inputs": [
+        {"label": "Host", "name": "host", "type": "string", "default": "localhost", "optional": True},
+        {"label": "Port", "name": "port", "type": "number", "default": 8000, "optional": True},
+        {"label": "Collection Name", "name": "collectionName", "type": "string", "default": "documents", "optional": True}
+    ]},
+    {"name": "pinecone", "label": "Pinecone", "inputs": [
+        {"label": "Index Name", "name": "indexName", "type": "string", "default": "", "optional": False},
+        {"label": "Namespace", "name": "namespace", "type": "string", "default": "", "optional": True},
+        {"label": "API Key", "name": "apiKey", "type": "password", "optional": False}
+    ]},
+    {"name": "weaviate", "label": "Weaviate", "inputs": [
+        {"label": "Host", "name": "host", "type": "string", "default": "localhost", "optional": True},
+        {"label": "Port", "name": "port", "type": "number", "default": 8080, "optional": True},
+        {"label": "Class Name", "name": "className", "type": "string", "default": "Document", "optional": True},
+        {"label": "API Key", "name": "apiKey", "type": "password", "optional": True}
+    ]},
+]
+EMBEDDING_PROVIDERS = [
+    {"name": "ollamaEmbeddings", "label": "Ollama Embeddings", "inputs": [
+        {"label": "Model", "name": "model", "type": "string", "default": "nomic-embed-text"}
+    ]},
+    {"name": "openAIEmbeddings", "label": "OpenAI Embeddings", "inputs": [
+        {"label": "Model", "name": "model", "type": "string", "default": "text-embedding-3-small"},
+        {"label": "API Key", "name": "apiKey", "type": "password", "optional": False}
+    ]},
+    {"name": "cohereEmbeddings", "label": "Cohere Embeddings", "inputs": [
+        {"label": "Model", "name": "model", "type": "string", "default": "embed-english-v3.0"},
+        {"label": "API Key", "name": "apiKey", "type": "password", "optional": False}
+    ]},
+    {"name": "huggingFaceInferenceEmbeddings", "label": "HuggingFace Inference Embeddings", "inputs": [
+        {"label": "Model ID", "name": "modelId", "type": "string", "default": "sentence-transformers/all-MiniLM-L6-v2"},
+        {"label": "API Key", "name": "apiKey", "type": "password", "optional": False}
+    ]},
+]
 RECORD_MANAGER_PROVIDERS = [{"name": "sqliteRecordManager", "label": "SQLite Record Manager", "inputs": []}]
 
 
@@ -328,10 +489,41 @@ def _paginate(items: list[Any], page: int, limit: int) -> tuple[list[Any], int]:
     return items[start : start + safe_limit], len(items)
 
 
-def _build_chunks(source_text: str, preview_count: int = 20) -> tuple[list[dict[str, Any]], int]:
-    parts = [p.strip() for p in source_text.replace("\r", "").split("\n") if p.strip()]
-    if not parts:
-        parts = ["Sample chunk from document loader"]
+def _split_text(
+    text: str,
+    splitter_id: str | None,
+    splitter_config: dict[str, Any] | None,
+    preview_count: int = 20
+) -> tuple[list[dict[str, Any]], int]:
+    """Split text into chunks based on splitter configuration."""
+    if splitter_config is None:
+        splitter_config = {}
+
+    text = text.replace("\r", "")
+    if not text.strip():
+        all_parts = ["Sample chunk from document loader"]
+    elif splitter_id == "recursiveCharacterTextSplitter":
+        chunk_size = splitter_config.get("chunkSize", 1000)
+        chunk_overlap = splitter_config.get("chunkOverlap", 200)
+        all_parts = _recursive_character_split(text, chunk_size, chunk_overlap)
+    elif splitter_id == "tokenTextSplitter":
+        chunk_size = splitter_config.get("chunkSize", 500)
+        all_parts = _token_split(text, chunk_size)
+    elif splitter_id == "markdownTextSplitter":
+        chunk_size = splitter_config.get("chunkSize", 1000)
+        chunk_overlap = splitter_config.get("chunkOverlap", 200)
+        all_parts = _markdown_split(text, chunk_size, chunk_overlap)
+    elif splitter_id == "characterTextSplitter":
+        separator = splitter_config.get("separator", "\n\n")
+        chunk_size = splitter_config.get("chunkSize", 1000)
+        chunk_overlap = splitter_config.get("chunkOverlap", 200)
+        all_parts = _character_split(text, separator, chunk_size, chunk_overlap)
+    else:
+        # Default: newline split (backwards compatible)
+        all_parts = [p.strip() for p in text.split("\n") if p.strip()]
+
+    if not all_parts:
+        all_parts = ["Sample chunk from document loader"]
 
     all_chunks = [
         {
@@ -339,10 +531,165 @@ def _build_chunks(source_text: str, preview_count: int = 20) -> tuple[list[dict[
             "pageContent": part,
             "metadata": {"chunkIndex": idx + 1},
         }
-        for idx, part in enumerate(parts)
+        for idx, part in enumerate(all_parts)
     ]
 
     return all_chunks[: max(1, preview_count)], len(all_chunks)
+
+
+def _recursive_character_split(text: str, chunk_size: int = 1000, chunk_overlap: int = 200) -> list[str]:
+    """Recursively split text using multiple separators."""
+    separators = ["\n\n", "\n", " ", ""]
+
+    def split_recursive(text: str, separators: list[str]) -> list[str]:
+        good_splits = []
+        separator = separators[-1]
+
+        for i, sep in enumerate(separators):
+            if sep == "":
+                splits = list(text)
+            else:
+                splits = text.split(sep)
+
+            good_splits = [s for s in splits if len(s) > chunk_size]
+            if not good_splits:
+                separator = sep
+                break
+            if i == 0:
+                separator = sep
+                break
+
+        if separator != "":
+            final_splits = []
+            for i, s in enumerate(splits):
+                if len(s) < chunk_size:
+                    if i == 0:
+                        final_splits.append(s)
+                    elif len(final_splits[-1]) + len(sep) + len(s) <= chunk_size:
+                        final_splits[-1] += sep + s
+                    else:
+                        final_splits.append(s)
+                else:
+                    if final_splits and len(final_splits[-1]) + len(sep) + len(s[:chunk_size]) <= chunk_size:
+                        final_splits[-1] += sep + s
+                    splits_sub = split_recursive(s, separators[separators.index(separator) + 1:])
+                    final_splits.extend(splits_sub)
+            return final_splits
+        return splits
+
+    result = split_recursive(text, separators)
+
+    # Now apply overlap
+    chunks = []
+    current_chunk = ""
+    for part in result:
+        if len(current_chunk) + len(part) <= chunk_size:
+            current_chunk += part
+        else:
+            if current_chunk:
+                chunks.append(current_chunk.strip())
+            current_chunk = part
+    if current_chunk:
+        chunks.append(current_chunk.strip())
+
+    # Add overlap
+    overlapped_chunks = []
+    for i, chunk in enumerate(chunks):
+        if i == 0:
+            overlapped_chunks.append(chunk)
+        else:
+            prev_chunk = overlapped_chunks[-1]
+            overlap_start = max(0, len(prev_chunk) - chunk_overlap)
+            overlap_text = prev_chunk[overlap_start:]
+            overlapped_chunks.append(overlap_text + " " + chunk)
+
+    return [c.strip() for c in overlapped_chunks if c.strip()]
+
+
+def _token_split(text: str, chunk_size: int = 500) -> list[str]:
+    """Split text based on approximate token count (word * 1.3)."""
+    words = text.split()
+    chunks = []
+    current_chunk = []
+    current_tokens = 0
+
+    for word in words:
+        word_tokens = len(word) / 4 + 1  # Approximate tokens per word
+        if current_tokens + word_tokens > chunk_size and current_chunk:
+            chunks.append(" ".join(current_chunk))
+            current_chunk = [word]
+            current_tokens = word_tokens
+        else:
+            current_chunk.append(word)
+            current_tokens += word_tokens
+
+    if current_chunk:
+        chunks.append(" ".join(current_chunk))
+
+    return [c.strip() for c in chunks if c.strip()]
+
+
+def _markdown_split(text: str, chunk_size: int = 1000, chunk_overlap: int = 200) -> list[str]:
+    """Split markdown text by headers, then apply character split to each section."""
+    import re
+
+    # Split by markdown headers (##, ###, etc.)
+    header_pattern = r"(?=^#{1,6}\s)"
+    sections = re.split(header_pattern, text, flags=re.MULTILINE)
+
+    chunks = []
+    for section in sections:
+        if len(section) <= chunk_size:
+            chunks.append(section.strip())
+        else:
+            # Apply character split to this section
+            sub_chunks = _character_split(section, "\n\n", chunk_size, chunk_overlap)
+            chunks.extend(sub_chunks)
+
+    return [c.strip() for c in chunks if c.strip()]
+
+
+def _character_split(text: str, separator: str = "\n\n", chunk_size: int = 1000, chunk_overlap: int = 200) -> list[str]:
+    """Split text by a separator while respecting chunk size and overlap."""
+    if separator:
+        splits = text.split(separator)
+    else:
+        splits = list(text)
+
+    # Merge splits to respect chunk_size
+    good_splits = []
+    for s in splits:
+        if len(s) > chunk_size:
+            if good_splits:
+                merged = good_splits[-1] + separator + s if separator else good_splits[-1] + s
+                good_splits[-1] = merged
+            else:
+                good_splits.append(s)
+        else:
+            if good_splits and len(good_splits[-1]) + len(separator) + len(s) <= chunk_size:
+                good_splits[-1] += separator + s if separator else good_splits[-1] + s
+            else:
+                good_splits.append(s)
+
+    # Apply overlap
+    result = []
+    for i, chunk in enumerate(good_splits):
+        if i == 0:
+            result.append(chunk)
+        else:
+            prev_chunk = result[-1]
+            if chunk_overlap > 0 and len(prev_chunk) > chunk_overlap:
+                overlap_text = prev_chunk[-chunk_overlap:]
+                result.append(overlap_text + (separator if separator else "") + chunk)
+            else:
+                result.append(chunk)
+
+    return [c.strip() for c in result if c.strip()]
+
+
+def _build_chunks(source_text: str, preview_count: int = 20) -> tuple[list[dict[str, Any]], int]:
+    """Legacy function: splits text using default newline strategy. Use _split_text for new code."""
+    return _split_text(source_text, None, {}, preview_count)
 
 
 # Assistants
@@ -1011,6 +1358,55 @@ def get_document_store_config(
     return None
 
 
+def _ensure_tenant_docstore_upload_dir(tenant_id: str) -> Path:
+    """Create uploads directory for document store if it doesn't exist."""
+    uploads_base = os.getenv("UPLOADS_DIR", "./uploads")
+    tenant_dir = Path(uploads_base) / tenant_id / "docstore"
+    tenant_dir.mkdir(parents=True, exist_ok=True)
+    return tenant_dir
+
+
+@router.post("/document-store/loader/upload")
+async def upload_document_loader_file(
+    file: UploadFile = File(...),
+    store_id: str = "",
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
+) -> dict[str, Any]:
+    """Upload a file for document loader (PDF, CSV, Docx, etc.)."""
+    tenant_id = user.get("tenant_id")
+
+    # Create tenant-specific upload directory
+    tenant_dir = _ensure_tenant_docstore_upload_dir(tenant_id)
+
+    # Read file content
+    try:
+        contents = await file.read()
+        file_size = len(contents)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read file: {str(e)}")
+
+    # Generate unique filename
+    file_id = str(uuid4())
+    file_ext = Path(file.filename).suffix if file.filename else ""
+    safe_filename = f"{file_id}{file_ext}"
+    file_path = tenant_dir / safe_filename
+
+    # Write file to disk
+    try:
+        with open(file_path, "wb") as f:
+            f.write(contents)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save file: {str(e)}")
+
+    return {
+        "fileId": file_id,
+        "path": str(file_path),
+        "name": file.filename,
+        "size": file_size,
+    }
+
+
 @router.post("/document-store/loader/preview")
 def preview_document_loader_chunks(
     body: dict[str, Any],
@@ -1018,7 +1414,9 @@ def preview_document_loader_chunks(
 ) -> dict[str, Any]:
     loader_config = body.get("loaderConfig") or {}
     source = str(loader_config.get("text") or loader_config.get("url") or loader_config.get("path") or "")
-    chunks, total = _build_chunks(source, preview_count=int(body.get("previewChunkCount") or 10))
+    splitter_id = body.get("splitterId")
+    splitter_config = body.get("splitterConfig") or {}
+    chunks, total = _split_text(source, splitter_id, splitter_config, preview_count=int(body.get("previewChunkCount") or 10))
     return {
         "chunks": chunks,
         "totalChunks": total,
@@ -1037,7 +1435,9 @@ def save_document_loader(
     loaders = payload.get("loaders") or []
 
     source = str((body.get("loaderConfig") or {}).get("text") or (body.get("loaderConfig") or {}).get("url") or "")
-    preview_chunks, total = _build_chunks(source, preview_count=20)
+    splitter_id = body.get("splitterId")
+    splitter_config = body.get("splitterConfig") or {}
+    preview_chunks, total = _split_text(source, splitter_id, splitter_config, preview_count=20)
 
     loader_id = body.get("id") or str(uuid4())
     loader = {
@@ -1105,76 +1505,13 @@ def process_document_loader(
     if loader is None:
         raise HTTPException(status_code=404, detail="Loader not found")
 
-    # Get source from loader config
-    source = loader.get("source") or ""
+    # Process the loader using the appropriate handler
+    text_content = _process_loader_text(loader)
 
-    # Process based on loader type
-    loader_name = loader.get("loaderName", "").lower()
-
-    if "web" in loader_name or "url" in loader_name:
-        # Web loader: fetch and process URL
-        try:
-            import httpx
-            from bs4 import BeautifulSoup
-            response = httpx.get(source, timeout=10.0)
-            response.raise_for_status()
-            # Strip HTML tags
-            soup = BeautifulSoup(response.text, "html.parser")
-            text_content = soup.get_text()
-        except Exception as e:
-            # Fallback to empty source if fetch fails
-            text_content = f"Failed to fetch: {str(e)}"
-    elif "pdf" in loader_name:
-        # PDF loader: extract text from PDF file
-        try:
-            from io import BytesIO
-            from pdfminer.high_level import extract_text_to_fp
-
-            # source should be a file path or raw bytes
-            # If it's a file path, read it
-            if isinstance(source, str) and os.path.isfile(source):
-                with open(source, 'rb') as f:
-                    pdf_bytes = f.read()
-            else:
-                # Assume source is raw bytes or data, skip PDF processing
-                text_content = f"[PDF data - {len(str(source))} chars]"
-                text_content = ""  # Empty fallback
-
-            # Extract text from PDF
-            try:
-                from pdfminer.layout import LAParams
-                from pdfminer.converter import TextConverter
-                from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
-                from pdfminer.pdfpage import PDFPage
-
-                pdf_file = BytesIO(pdf_bytes)
-                resource_manager = PDFResourceManager()
-                output = BytesIO()
-                converter = TextConverter(resource_manager, output, laparams=LAParams())
-                interpreter = PDFPageInterpreter(resource_manager, converter)
-
-                for page in PDFPage.get_pages(pdf_file):
-                    interpreter.process_page(page)
-
-                text_content = output.getvalue().decode('utf-8')
-                converter.close()
-                output.close()
-            except Exception as pdf_error:
-                print(f"Warning: PDF text extraction failed: {pdf_error}")
-                text_content = ""
-        except ImportError:
-            # pdfminer not installed, treat as empty
-            print("Warning: pdfminer.six not installed, cannot process PDFs")
-            text_content = ""
-        except Exception as e:
-            print(f"Warning: Failed to process PDF: {e}")
-            text_content = ""
-    else:
-        # Text loader
-        text_content = source
-
-    # Build chunks from the processed content
-    all_chunks, total = _build_chunks(text_content)
+    # Build chunks from the processed content using stored splitter config
+    splitter_id = loader.get("splitterId")
+    splitter_config = loader.get("splitterConfig") or {}
+    all_chunks, total = _split_text(text_content, splitter_id, splitter_config)
 
     # Update the loader with final chunks
     loader["chunks"] = all_chunks
@@ -1197,26 +1534,366 @@ def process_document_loader(
     }
 
 
+def _process_loader_text(loader: dict[str, Any]) -> str:
+    """Extract text from a loader based on its type. Returns the text content."""
+    loader_id = loader.get("loaderId", "")
+    loader_config = loader.get("loaderConfig") or {}
+    source = loader.get("source") or ""
+
+    # Web/Cheerio loaders
+    if "web" in loader_id.lower() or "cheerio" in loader_id.lower():
+        try:
+            from bs4 import BeautifulSoup
+            response = httpx.get(source, timeout=10.0)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, "html.parser")
+            # Optional: use CSS selector if provided
+            selector = loader_config.get("selector")
+            if selector:
+                elements = soup.select(selector)
+                text = "\n".join([elem.get_text() for elem in elements])
+                return text
+            return soup.get_text()
+        except Exception as e:
+            print(f"Warning: Failed to fetch URL: {e}")
+            return ""
+
+    # PDF loader
+    elif "pdf" in loader_id.lower():
+        try:
+            if isinstance(source, str) and os.path.isfile(source):
+                with open(source, 'rb') as f:
+                    pdf_bytes = f.read()
+            else:
+                return ""
+
+            from io import BytesIO
+            from pdfminer.layout import LAParams
+            from pdfminer.converter import TextConverter
+            from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+            from pdfminer.pdfpage import PDFPage
+
+            pdf_file = BytesIO(pdf_bytes)
+            resource_manager = PDFResourceManager()
+            output = BytesIO()
+            converter = TextConverter(resource_manager, output, laparams=LAParams())
+            interpreter = PDFPageInterpreter(resource_manager, converter)
+
+            for page in PDFPage.get_pages(pdf_file):
+                interpreter.process_page(page)
+
+            text = output.getvalue().decode('utf-8')
+            converter.close()
+            output.close()
+            return text
+        except ImportError:
+            print("Warning: pdfminer.six not installed")
+            return ""
+        except Exception as e:
+            print(f"Warning: Failed to process PDF: {e}")
+            return ""
+
+    # CSV loader
+    elif "csv" in loader_id.lower():
+        try:
+            import csv
+            if isinstance(source, str) and os.path.isfile(source):
+                chunks = []
+                with open(source, 'r', encoding='utf-8') as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        chunks.append("\n".join([f"{k}: {v}" for k, v in row.items()]))
+                return "\n\n".join(chunks)
+            return ""
+        except Exception as e:
+            print(f"Warning: Failed to process CSV: {e}")
+            return ""
+
+    # JSON loader
+    elif loader_id.lower() == "jsonfileloader":
+        try:
+            if isinstance(source, str) and os.path.isfile(source):
+                with open(source, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                return json.dumps(data, indent=2)
+            return ""
+        except Exception as e:
+            print(f"Warning: Failed to process JSON: {e}")
+            return ""
+
+    # JSON Lines loader
+    elif "jsonlines" in loader_id.lower():
+        try:
+            import jsonlines
+            if isinstance(source, str) and os.path.isfile(source):
+                chunks = []
+                with jsonlines.open(source) as reader:
+                    text_key = loader_config.get("textKey", "text")
+                    for obj in reader:
+                        if text_key in obj:
+                            chunks.append(str(obj[text_key]))
+                        else:
+                            chunks.append(json.dumps(obj))
+                return "\n\n".join(chunks)
+            return ""
+        except Exception as e:
+            print(f"Warning: Failed to process JSONL: {e}")
+            return ""
+
+    # Docx loader
+    elif "docx" in loader_id.lower():
+        try:
+            from docx import Document
+            if isinstance(source, str) and os.path.isfile(source):
+                doc = Document(source)
+                return "\n".join([p.text for p in doc.paragraphs])
+            return ""
+        except Exception as e:
+            print(f"Warning: Failed to process Docx: {e}")
+            return ""
+
+    # Excel loader
+    elif "excel" in loader_id.lower():
+        try:
+            from openpyxl import load_workbook
+            if isinstance(source, str) and os.path.isfile(source):
+                wb = load_workbook(source)
+                sheet_name = loader_config.get("sheetName")
+                if sheet_name:
+                    ws = wb[sheet_name]
+                else:
+                    ws = wb.active
+
+                chunks = []
+                for row in ws.iter_rows(values_only=True):
+                    chunks.append(" | ".join([str(cell) if cell is not None else "" for cell in row]))
+                return "\n".join(chunks)
+            return ""
+        except Exception as e:
+            print(f"Warning: Failed to process Excel: {e}")
+            return ""
+
+    # Notion loader
+    elif "notion" in loader_id.lower():
+        try:
+            notion_page_id = loader_config.get("notionPageId", "")
+            notion_api_key = loader.get("credential") or os.getenv("NOTION_API_KEY", "")
+            if not notion_api_key or not notion_page_id:
+                return "Notion API key or page ID not configured"
+
+            headers = {
+                "Authorization": f"Bearer {notion_api_key}",
+                "Notion-Version": "2022-06-28"
+            }
+            response = httpx.get(
+                f"https://api.notion.com/v1/blocks/{notion_page_id}/children",
+                headers=headers,
+                timeout=10.0
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            chunks = []
+            for block in data.get("results", []):
+                block_type = block.get("type")
+                if block_type == "paragraph":
+                    text = block.get("paragraph", {}).get("rich_text", [])
+                    chunks.append("".join([t.get("plain_text", "") for t in text]))
+            return "\n".join(chunks)
+        except Exception as e:
+            print(f"Warning: Failed to fetch from Notion: {e}")
+            return ""
+
+    # GitHub loader
+    elif "github" in loader_id.lower():
+        try:
+            repo_url = loader_config.get("repoLink", "")
+            branch = loader_config.get("branch", "main")
+            extensions = loader_config.get("fileExtensions", ".md,.txt,.py,.js,.ts").split(",")
+            github_token = loader.get("credential") or os.getenv("GITHUB_ACCESS_TOKEN", "")
+
+            if not repo_url:
+                return "GitHub repo URL not configured"
+
+            # Parse repo URL
+            parts = repo_url.replace("https://github.com/", "").replace(".git", "").split("/")
+            if len(parts) < 2:
+                return "Invalid GitHub URL"
+
+            owner, repo = parts[0], parts[1]
+            headers = {}
+            if github_token:
+                headers["Authorization"] = f"token {github_token}"
+
+            chunks = []
+
+            # Recursive function to fetch files
+            def fetch_dir(path=""):
+                try:
+                    url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}?ref={branch}"
+                    response = httpx.get(url, headers=headers, timeout=10.0)
+                    response.raise_for_status()
+                    items = response.json()
+
+                    if not isinstance(items, list):
+                        items = [items]
+
+                    for item in items:
+                        if item.get("type") == "file":
+                            file_ext = Path(item["name"]).suffix
+                            if any(file_ext == ext.strip() for ext in extensions):
+                                file_url = item.get("download_url")
+                                if file_url:
+                                    file_response = httpx.get(file_url, timeout=10.0)
+                                    chunks.append(f"# {item['path']}\n{file_response.text}")
+                        elif item.get("type") == "dir" and loader_config.get("recursive", True):
+                            fetch_dir(item["path"])
+                except Exception as e:
+                    print(f"Warning: Failed to fetch GitHub path: {e}")
+
+            fetch_dir()
+            return "\n\n".join(chunks)
+        except Exception as e:
+            print(f"Warning: Failed to fetch from GitHub: {e}")
+            return ""
+
+    # Confluence loader
+    elif "confluence" in loader_id.lower():
+        try:
+            space_key = loader_config.get("spaceKey", "")
+            base_url = loader_config.get("baseUrl", "")
+            username = loader_config.get("confluenceUsername") or os.getenv("CONFLUENCE_USERNAME", "")
+            api_token = loader.get("credential") or os.getenv("CONFLUENCE_API_TOKEN", "")
+
+            if not base_url or not space_key or not api_token:
+                return "Confluence configuration incomplete"
+
+            from base64 import b64encode
+            auth = b64encode(f"{username}:{api_token}".encode()).decode()
+            headers = {
+                "Authorization": f"Basic {auth}",
+                "Accept": "application/json"
+            }
+
+            url = f"{base_url}/rest/api/content?spaceKey={space_key}&expand=body.storage&limit=50"
+            response = httpx.get(url, headers=headers, timeout=10.0)
+            response.raise_for_status()
+            data = response.json()
+
+            chunks = []
+            from bs4 import BeautifulSoup
+            for page in data.get("results", []):
+                title = page.get("title", "")
+                body = page.get("body", {}).get("storage", {}).get("value", "")
+                soup = BeautifulSoup(body, "html.parser")
+                text = soup.get_text()
+                chunks.append(f"# {title}\n{text}")
+
+            return "\n\n".join(chunks)
+        except Exception as e:
+            print(f"Warning: Failed to fetch from Confluence: {e}")
+            return ""
+
+    # S3 loader
+    elif "s3" in loader_id.lower():
+        try:
+            import boto3
+            bucket = loader_config.get("bucket", "")
+            key_prefix = loader_config.get("keyPrefix", "")
+
+            if not bucket:
+                return "S3 bucket not configured"
+
+            s3_client = boto3.client('s3')
+            chunks = []
+
+            # List objects
+            response = s3_client.list_objects_v2(Bucket=bucket, Prefix=key_prefix)
+            for obj in response.get("Contents", []):
+                key = obj["Key"]
+                try:
+                    obj_response = s3_client.get_object(Bucket=bucket, Key=key)
+                    body = obj_response['Body'].read()
+
+                    # Try to decode as text
+                    try:
+                        text = body.decode('utf-8')
+                        chunks.append(f"# {key}\n{text}")
+                    except:
+                        chunks.append(f"# {key}\n[Binary content]")
+                except Exception as e:
+                    print(f"Warning: Failed to read S3 object {key}: {e}")
+
+            return "\n\n".join(chunks)
+        except Exception as e:
+            print(f"Warning: Failed to access S3: {e}")
+            return ""
+
+    # Airtable loader
+    elif "airtable" in loader_id.lower():
+        try:
+            base_id = loader_config.get("baseId", "")
+            table_id = loader_config.get("tableId", "")
+            api_key = loader.get("credential") or os.getenv("AIRTABLE_API_KEY", "")
+
+            if not base_id or not table_id or not api_key:
+                return "Airtable configuration incomplete"
+
+            url = f"https://api.airtable.com/v0/{base_id}/{table_id}"
+            headers = {"Authorization": f"Bearer {api_key}"}
+
+            response = httpx.get(url, headers=headers, timeout=10.0)
+            response.raise_for_status()
+            data = response.json()
+
+            chunks = []
+            for record in data.get("records", []):
+                fields = record.get("fields", {})
+                chunks.append("\n".join([f"{k}: {v}" for k, v in fields.items()]))
+
+            return "\n\n".join(chunks)
+        except Exception as e:
+            print(f"Warning: Failed to fetch from Airtable: {e}")
+            return ""
+
+    else:
+        # Default: Text loader
+        return source
+
+
 @router.post("/document-store/refresh/{store_id}")
 def refresh_document_store(
     store_id: str,
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
 ) -> dict[str, Any]:
+    """Refresh document store by re-processing all loaders."""
     row = _get_resource(db, user["tenant_id"], "document_store", store_id)
     payload = row.payload or {}
+    loaders = payload.get("loaders") or []
+
+    # Re-process each loader
+    for loader in loaders:
+        # Extract text from source
+        text_content = _process_loader_text(loader)
+
+        # Re-split with stored splitter config
+        splitter_id = loader.get("splitterId")
+        splitter_config = loader.get("splitterConfig") or {}
+        all_chunks, total = _split_text(text_content, splitter_id, splitter_config)
+
+        # Update the loader
+        loader["chunks"] = all_chunks
+        loader["totalChunks"] = total
+        loader["totalChars"] = sum(len(chunk.get("pageContent", "")) for chunk in all_chunks)
+        loader["status"] = "SYNC"
+        loader["updatedDate"] = _now_iso()
+
+    payload["loaders"] = loaders
     payload["status"] = "READY"
-    payload["loaders"] = [
-        {
-            **loader,
-            "status": "SYNC",
-            "updatedDate": _now_iso(),
-        }
-        for loader in (payload.get("loaders") or [])
-    ]
     _update_resource(row, user.get("user_id"), payload=payload)
     db.commit()
-    return {"status": "ok"}
+    return {"status": "ok", "loaders_refreshed": len(loaders)}
 
 
 @router.get("/document-store/chunks/{store_id}/{file_id}/{page_no}")
@@ -1357,24 +2034,282 @@ def update_vector_store_config(
     return save_vector_store_config(body, db=db, user=user)
 
 
+def _upsert_to_vector_store(
+    provider: str,
+    config: dict[str, Any],
+    chunks: list[dict[str, Any]],
+    embedder_func,
+    tenant_id: str,
+) -> tuple[int, list[dict[str, Any]]]:
+    """Upsert chunks to the specified vector store provider. Returns (num_added, added_docs)."""
+    num_added = 0
+    added_docs = []
+
+    if provider == "qdrant":
+        # This is handled by the existing Qdrant logic, return 0 here
+        return 0, []
+
+    elif provider == "chroma":
+        try:
+            import chromadb
+            client = chromadb.HttpClient(host=config.get("host", "localhost"), port=config.get("port", 8000))
+            collection_name = config.get("collectionName", "documents")
+
+            collection = client.get_or_create_collection(name=collection_name, metadata={"hnsw:space": "cosine"})
+
+            ids = []
+            embeddings = []
+            metadatas = []
+            documents = []
+
+            for chunk in chunks:
+                page_content = chunk.get("pageContent", "")
+                if not page_content:
+                    continue
+
+                embedding = embedder_func(page_content)
+                if not embedding:
+                    continue
+
+                ids.append(chunk.get("id"))
+                embeddings.append(embedding)
+                documents.append(page_content[:5000])
+                metadatas.append(chunk.get("metadata", {}))
+                num_added += 1
+                if num_added <= 5:
+                    added_docs.append(chunk)
+
+            if ids:
+                collection.upsert(ids=ids, embeddings=embeddings, documents=documents, metadatas=metadatas)
+
+            return num_added, added_docs
+        except Exception as e:
+            print(f"Warning: Failed to upsert to Chroma: {e}")
+            return 0, []
+
+    elif provider == "pinecone":
+        try:
+            import pinecone
+            index_name = config.get("indexName", "documents")
+            namespace = config.get("namespace", "")
+            api_key = config.get("apiKey", os.getenv("PINECONE_API_KEY", ""))
+
+            if not api_key:
+                print("Warning: Pinecone API key not provided")
+                return 0, []
+
+            pinecone.init(api_key=api_key)
+            index = pinecone.Index(index_name)
+
+            vectors = []
+            for chunk in chunks:
+                page_content = chunk.get("pageContent", "")
+                if not page_content:
+                    continue
+
+                embedding = embedder_func(page_content)
+                if not embedding:
+                    continue
+
+                vectors.append((
+                    chunk.get("id"),
+                    embedding,
+                    {
+                        "pageContent": page_content[:5000],
+                        **chunk.get("metadata", {}),
+                    }
+                ))
+                num_added += 1
+                if num_added <= 5:
+                    added_docs.append(chunk)
+
+            if vectors:
+                # Upsert in batches of 100
+                for i in range(0, len(vectors), 100):
+                    batch = vectors[i:i+100]
+                    index.upsert(vectors=batch, namespace=namespace)
+
+            return num_added, added_docs
+        except Exception as e:
+            print(f"Warning: Failed to upsert to Pinecone: {e}")
+            return 0, []
+
+    elif provider == "weaviate":
+        try:
+            import weaviate
+            host = config.get("host", "localhost")
+            port = config.get("port", 8080)
+            weaviate_host = f"http://{host}:{port}"
+            class_name = config.get("className", "Document")
+            api_key = config.get("apiKey", "")
+
+            client = weaviate.connect_to_custom(
+                http_host=host,
+                http_port=port,
+                http_secure=False,
+                grpc_host=host,
+                grpc_port=50051,
+                grpc_secure=False
+            )
+
+            # Prepare data objects
+            data_objs = []
+            for chunk in chunks:
+                page_content = chunk.get("pageContent", "")
+                if not page_content:
+                    continue
+
+                embedding = embedder_func(page_content)
+                if not embedding:
+                    continue
+
+                data_objs.append({
+                    "pageContent": page_content[:5000],
+                    "chunkId": chunk.get("id"),
+                    "metadata": json.dumps(chunk.get("metadata", {})),
+                })
+                num_added += 1
+                if num_added <= 5:
+                    added_docs.append(chunk)
+
+            if data_objs:
+                with client.batch.fixed_size(size=100) as batch:
+                    for obj in data_objs:
+                        batch.add_object(
+                            class_name=class_name,
+                            properties=obj,
+                        )
+
+            client.close()
+            return num_added, added_docs
+        except Exception as e:
+            print(f"Warning: Failed to upsert to Weaviate: {e}")
+            return 0, []
+
+    else:
+        print(f"Warning: Unknown vector store provider: {provider}")
+        return 0, []
+
+
+def _query_vector_store(
+    provider: str,
+    config: dict[str, Any],
+    query_vector: list[float],
+    query_text: str,
+    embedder_func,
+    k: int = 5,
+) -> list[dict[str, Any]]:
+    """Query a vector store and return similar chunks."""
+
+    if provider == "qdrant":
+        # This is handled by the existing Qdrant logic, return empty here
+        return []
+
+    elif provider == "chroma":
+        try:
+            import chromadb
+            client = chromadb.HttpClient(host=config.get("host", "localhost"), port=config.get("port", 8000))
+            collection_name = config.get("collectionName", "documents")
+
+            collection = client.get_collection(name=collection_name)
+            results = collection.query(query_embeddings=[query_vector], n_results=k)
+
+            docs = []
+            for i, doc in enumerate(results.get("documents", [[]])[0]):
+                docs.append({
+                    "pageContent": doc,
+                    "score": 1 - (results.get("distances", [[]])[0][i] if i < len(results.get("distances", [[]])[0]) else 0),
+                    "metadata": results.get("metadatas", [[]])[0][i] if i < len(results.get("metadatas", [[]])[0]) else {},
+                })
+            return docs
+        except Exception as e:
+            print(f"Warning: Failed to query Chroma: {e}")
+            return []
+
+    elif provider == "pinecone":
+        try:
+            import pinecone
+            index_name = config.get("indexName", "documents")
+            namespace = config.get("namespace", "")
+            api_key = config.get("apiKey", os.getenv("PINECONE_API_KEY", ""))
+
+            if not api_key:
+                return []
+
+            pinecone.init(api_key=api_key)
+            index = pinecone.Index(index_name)
+
+            results = index.query(vector=query_vector, top_k=k, namespace=namespace, include_metadata=True)
+
+            docs = []
+            for match in results.get("matches", []):
+                docs.append({
+                    "pageContent": match.get("metadata", {}).get("pageContent", ""),
+                    "score": match.get("score", 0),
+                    "metadata": {k: v for k, v in match.get("metadata", {}).items() if k != "pageContent"},
+                })
+            return docs
+        except Exception as e:
+            print(f"Warning: Failed to query Pinecone: {e}")
+            return []
+
+    elif provider == "weaviate":
+        try:
+            import weaviate
+            host = config.get("host", "localhost")
+            port = config.get("port", 8080)
+            class_name = config.get("className", "Document")
+
+            client = weaviate.connect_to_custom(
+                http_host=host,
+                http_port=port,
+                http_secure=False,
+                grpc_host=host,
+                grpc_port=50051,
+                grpc_secure=False
+            )
+
+            # Weaviate uses vector search with near_vector
+            results = client.query.get(class_name, ["pageContent", "metadata", "_additional {vector distance}"]).with_near_vector(
+                {"vector": query_vector}
+            ).with_limit(k).do()
+
+            docs = []
+            for obj in results.get("data", {}).get("Get", {}).get(class_name, []):
+                docs.append({
+                    "pageContent": obj.get("pageContent", ""),
+                    "score": 1 - obj.get("_additional", {}).get("distance", 1),
+                    "metadata": json.loads(obj.get("metadata", "{}")),
+                })
+
+            client.close()
+            return docs
+        except Exception as e:
+            print(f"Warning: Failed to query Weaviate: {e}")
+            return []
+
+    else:
+        return []
+
+
 @router.post("/document-store/vectorstore/insert")
 def insert_into_vector_store(
     body: dict[str, Any],
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
 ) -> dict[str, Any]:
-    """Upsert chunks to Qdrant vector store."""
-    if not qdrant_client:
-        raise HTTPException(status_code=503, detail="Qdrant service unavailable")
-
+    """Upsert chunks to the configured vector store."""
     row = _get_resource(db, user["tenant_id"], "document_store", body.get("storeId"))
     payload = row.payload or {}
 
     store_id = body.get("storeId")
     tenant_id = user["tenant_id"]
 
-    # Generate collection name
-    collection_name = f"tenant_{tenant_id[:8]}_store_{store_id[:8]}"
+    # Get vector store provider from config
+    vec_config = payload.get("vectorStoreConfig") or {}
+    vector_provider = body.get("vectorStoreConfig", {}).get("provider") or vec_config.get("provider", "qdrant")
+    vector_config = body.get("vectorStoreConfig", {}) or vec_config
+    vector_config.setdefault("collectionName", f"tenant_{tenant_id[:8]}_store_{store_id[:8]}")
 
     # Collect all chunks from loaders
     all_chunks = []
@@ -1392,63 +2327,114 @@ def insert_into_vector_store(
             "docs": [],
         }
 
-    # Recreate collection
-    try:
-        qdrant_client.recreate_collection(
-            collection_name=collection_name,
-            vectors_config=VectorParams(size=EMBEDDING_DIM, distance=Distance.COSINE),
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create Qdrant collection: {str(e)}")
+    # Get embedding provider configuration
+    embedding_provider = vec_config.get("embeddingProvider", "ollamaEmbeddings")
+    embedding_config = vec_config.get("embeddingConfig") or {}
 
-    # Embed and upsert chunks
-    points = []
-    num_added = 0
+    # Determine embedding dimension
+    embedding_dim = EMBEDDING_DIM  # default
+    if embedding_provider in EMBEDDING_DIMS:
+        dims = EMBEDDING_DIMS[embedding_provider]
+        if isinstance(dims, dict):
+            model = embedding_config.get("model") or (embedding_config.get("modelId") if "huggingFace" in embedding_provider else None)
+            embedding_dim = dims.get(model, 384)
+        else:
+            embedding_dim = dims
 
-    for idx, chunk in enumerate(all_chunks):
-        page_content = chunk.get("pageContent", "")
-        if not page_content:
-            continue
+    # Handle Qdrant specifically (requires pre-creating the collection)
+    if vector_provider == "qdrant":
+        if not qdrant_client:
+            raise HTTPException(status_code=503, detail="Qdrant service unavailable")
 
-        # Get embedding
-        embedding = _get_ollama_embedding(page_content)
-        if not embedding:
-            continue
-
-        # Create point for Qdrant
-        point = PointStruct(
-            id=hash(f"{chunk.get('id')}_{tenant_id}") & 0x7fffffff,  # Positive hash
-            vector=embedding,
-            payload={
-                "chunkId": chunk.get("id"),
-                "pageContent": page_content[:5000],  # Limit payload size
-                "metadata": chunk.get("metadata", {}),
-                "loaderIndex": idx,
-            }
-        )
-        points.append(point)
-        num_added += 1
-
-    # Upsert to Qdrant
-    if points:
+        collection_name = vector_config.get("collectionName", f"tenant_{tenant_id[:8]}_store_{store_id[:8]}")
         try:
-            qdrant_client.upsert(
+            qdrant_client.recreate_collection(
                 collection_name=collection_name,
-                points=points,
+                vectors_config=VectorParams(size=embedding_dim, distance=Distance.COSINE),
             )
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to upsert to Qdrant: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Failed to create Qdrant collection: {str(e)}")
+
+        # Embed and upsert chunks
+        points = []
+        num_added = 0
+        added_docs = []
+
+        for idx, chunk in enumerate(all_chunks):
+            page_content = chunk.get("pageContent", "")
+            if not page_content:
+                continue
+
+            # Get embedding using the configured provider
+            embedding = _get_embedding(page_content, embedding_provider, embedding_config)
+            if not embedding:
+                continue
+
+            # Create point for Qdrant
+            point = PointStruct(
+                id=hash(f"{chunk.get('id')}_{tenant_id}") & 0x7fffffff,  # Positive hash
+                vector=embedding,
+                payload={
+                    "chunkId": chunk.get("id"),
+                    "pageContent": page_content[:5000],  # Limit payload size
+                    "metadata": chunk.get("metadata", {}),
+                    "loaderIndex": idx,
+                }
+            )
+            points.append(point)
+            num_added += 1
+            if num_added <= 5:
+                added_docs.append(chunk)
+
+        # Upsert to Qdrant
+        if points:
+            try:
+                qdrant_client.upsert(
+                    collection_name=collection_name,
+                    points=points,
+                )
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Failed to upsert to Qdrant: {str(e)}")
+
+    else:
+        # Use provider-specific upsert functions
+        def embedder_func(text):
+            return _get_embedding(text, embedding_provider, embedding_config)
+
+        num_added, added_docs = _upsert_to_vector_store(
+            vector_provider,
+            vector_config,
+            all_chunks,
+            embedder_func,
+            tenant_id
+        )
 
     # Store collection name and config in document store
     payload["vectorStoreConfig"] = {
         "collectionName": collection_name,
         "provider": "qdrant",
-        "embeddingModel": EMBEDDING_MODEL,
-        "embeddingDim": EMBEDDING_DIM,
+        "embeddingProvider": embedding_provider,
+        "embeddingConfig": embedding_config,
+        "embeddingDim": embedding_dim,
         **body.get("vectorStoreConfig", {})
     }
     payload["recordManagerConfig"] = body.get("recordManagerConfig") or payload.get("recordManagerConfig") or {}
     payload["status"] = "SYNC"
+
+    # Add upsert history entry
+    upsert_history = payload.get("upsert_history") or []
+    history_entry = {
+        "date": _now_iso(),
+        "result": {
+            "numAdded": num_added,
+            "numUpdated": 0,
+            "numSkipped": len(all_chunks) - num_added,
+            "numDeleted": 0,
+        },
+        "addedDocs": all_chunks[:5],
+    }
+    upsert_history.append(history_entry)
+    payload["upsert_history"] = upsert_history
 
     _update_resource(row, user.get("user_id"), payload=payload)
     db.commit()
@@ -1489,6 +2475,43 @@ def delete_vector_store_data(
     return {"status": "ok"}
 
 
+@router.get("/upsert-history/{store_id}")
+def get_upsert_history(
+    store_id: str,
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_roles("admin", "editor", "viewer"))] = None,
+) -> list[dict[str, Any]]:
+    """Get upsert history for a document store."""
+    row = _get_resource(db, user["tenant_id"], "document_store", store_id)
+    payload = row.payload or {}
+    history = payload.get("upsert_history") or []
+    # Sort by date descending
+    return sorted(history, key=lambda x: x.get("date", ""), reverse=True)
+
+
+@router.patch("/upsert-history")
+def delete_upsert_history(
+    body: dict[str, Any],
+    db: Session = Depends(get_db),
+    user: Annotated[dict, Depends(require_roles("admin", "editor"))] = None,
+) -> dict[str, Any]:
+    """Delete upsert history entries by date."""
+    store_id = body.get("storeId")
+    dates_to_delete = body.get("ids") or []  # list of date strings
+
+    row = _get_resource(db, user["tenant_id"], "document_store", store_id)
+    payload = row.payload or {}
+    history = payload.get("upsert_history") or []
+
+    # Filter out entries with matching dates
+    filtered_history = [h for h in history if h.get("date") not in dates_to_delete]
+    payload["upsert_history"] = filtered_history
+
+    _update_resource(row, user.get("user_id"), payload=payload)
+    db.commit()
+    return {"status": "ok", "deleted": len(history) - len(filtered_history)}
+
+
 @router.post("/document-store/vectorstore/query")
 def query_vector_store(
     body: dict[str, Any],
@@ -1500,31 +2523,16 @@ def query_vector_store(
 
     start_time = time.time()
 
-    if not qdrant_client:
-        # Fallback: return all chunks if Qdrant unavailable
-        row = _get_resource(db, user["tenant_id"], "document_store", body.get("storeId"))
-        payload = row.payload or {}
-        docs = []
-        for loader in payload.get("loaders") or []:
-            for chunk in loader.get("chunks") or []:
-                docs.append(
-                    {
-                        "pageContent": chunk.get("pageContent", ""),
-                        "metadata": chunk.get("metadata", {}),
-                        "score": 0.5,
-                    }
-                )
-        elapsed = time.time() - start_time
-        return {"docs": docs[:5], "timeTaken": elapsed}
-
     row = _get_resource(db, user["tenant_id"], "document_store", body.get("storeId"))
     payload = row.payload or {}
 
     # Get vector store config
     vec_config = payload.get("vectorStoreConfig") or {}
-    collection_name = vec_config.get("collectionName")
+    vector_provider = vec_config.get("provider", "qdrant")
+    embedding_provider = vec_config.get("embeddingProvider", "ollamaEmbeddings")
+    embedding_config = vec_config.get("embeddingConfig") or {}
 
-    if not collection_name:
+    if not vec_config:
         # Fallback if no vector store configured
         docs = []
         for loader in payload.get("loaders") or []:
@@ -1545,35 +2553,81 @@ def query_vector_store(
         elapsed = time.time() - start_time
         return {"docs": [], "timeTaken": elapsed}
 
-    # Embed the query
-    query_embedding = _get_ollama_embedding(query_text)
+    # Embed the query using the configured embedding provider
+    query_embedding = _get_embedding(query_text, embedding_provider, embedding_config)
     if not query_embedding:
+        # Fallback: return all chunks if embedding fails
+        docs = []
+        for loader in payload.get("loaders") or []:
+            for chunk in loader.get("chunks") or []:
+                docs.append(
+                    {
+                        "pageContent": chunk.get("pageContent", ""),
+                        "metadata": chunk.get("metadata", {}),
+                        "score": 0.5,
+                    }
+                )
         elapsed = time.time() - start_time
-        return {"docs": [], "timeTaken": elapsed}
+        return {"docs": docs[:5], "timeTaken": elapsed}
 
-    # Search in Qdrant
-    try:
-        results = qdrant_client.search(
-            collection_name=collection_name,
-            query_vector=query_embedding,
-            limit=body.get("k", 5),
-            score_threshold=0.0,  # Return all results, let client filter by score
-        )
-    except Exception as e:
-        print(f"Warning: Qdrant search failed: {e}")
-        elapsed = time.time() - start_time
-        return {"docs": [], "timeTaken": elapsed}
+    # Query the vector store
+    if vector_provider == "qdrant":
+        if not qdrant_client:
+            # Fallback if Qdrant unavailable
+            docs = []
+            for loader in payload.get("loaders") or []:
+                for chunk in loader.get("chunks") or []:
+                    docs.append(
+                        {
+                            "pageContent": chunk.get("pageContent", ""),
+                            "metadata": chunk.get("metadata", {}),
+                            "score": 0.5,
+                        }
+                    )
+            elapsed = time.time() - start_time
+            return {"docs": docs[:5], "timeTaken": elapsed}
 
-    # Map results to document format
-    docs = []
-    for result in results:
-        payload_data = result.payload or {}
-        docs.append(
-            {
-                "pageContent": payload_data.get("pageContent", ""),
-                "metadata": payload_data.get("metadata", {}),
-                "score": result.score,
-            }
+        collection_name = vec_config.get("collectionName")
+        if not collection_name:
+            elapsed = time.time() - start_time
+            return {"docs": [], "timeTaken": elapsed}
+
+        # Search in Qdrant
+        try:
+            results = qdrant_client.search(
+                collection_name=collection_name,
+                query_vector=query_embedding,
+                limit=body.get("k", 5),
+                score_threshold=0.0,
+            )
+        except Exception as e:
+            print(f"Warning: Qdrant search failed: {e}")
+            elapsed = time.time() - start_time
+            return {"docs": [], "timeTaken": elapsed}
+
+        # Map results to document format
+        docs = []
+        for result in results:
+            payload_data = result.payload or {}
+            docs.append(
+                {
+                    "pageContent": payload_data.get("pageContent", ""),
+                    "metadata": payload_data.get("metadata", {}),
+                    "score": result.score,
+                }
+            )
+    else:
+        # Use provider-specific query functions
+        def embedder_func(text):
+            return _get_embedding(text, embedding_provider, embedding_config)
+
+        docs = _query_vector_store(
+            vector_provider,
+            vec_config,
+            query_embedding,
+            query_text,
+            embedder_func,
+            body.get("k", 5)
         )
 
     elapsed = time.time() - start_time
