@@ -10,50 +10,20 @@ const apiClient = axios.create({
     withCredentials: false
 })
 
-let bootstrapTokenPromise = null
-
-const getBootstrapIdentity = () => {
-    return {
-        email: localStorage.getItem('username') || 'admin@vetrai.com',
-        tenant_id: localStorage.getItem('vetrai_tenant_id') || '00000000-0000-0000-0000-000000000001',
-        role: localStorage.getItem('vetrai_role') || 'admin'
-    }
+const ensureAccessToken = () => {
+    // Return the stored token if present; otherwise return null and let
+    // the 401 interceptor redirect to the login page.
+    // The old bootstrap call (posting email+tenant_id without a password)
+    // always resulted in a 422 because the password field was missing.
+    return localStorage.getItem('vetrai_access_token') || null
 }
 
-const ensureAccessToken = async () => {
-    const existing = localStorage.getItem('vetrai_access_token')
-    if (existing) {
-        return existing
-    }
-
-    if (bootstrapTokenPromise) {
-        return bootstrapTokenPromise
-    }
-
-    const identity = getBootstrapIdentity()
-    bootstrapTokenPromise = axios
-        .post(`${baseURL}/api/auth/token`, identity)
-        .then((response) => {
-            const token = response?.data?.access_token
-            if (token) {
-                localStorage.setItem('vetrai_access_token', token)
-            }
-            return token
-        })
-        .catch(() => null)
-        .finally(() => {
-            bootstrapTokenPromise = null
-        })
-
-    return bootstrapTokenPromise
-}
-
-apiClient.interceptors.request.use(async (config) => {
+apiClient.interceptors.request.use((config) => {
     if (config?.skipAuth) {
         return config
     }
 
-    const token = await ensureAccessToken()
+    const token = ensureAccessToken()
     if (token) {
         config.headers = {
             ...(config.headers || {}),

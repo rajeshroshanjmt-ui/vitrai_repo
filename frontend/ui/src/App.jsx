@@ -1,4 +1,5 @@
 import { useSelector } from 'react-redux'
+import { useEffect } from 'react'
 
 import { ThemeProvider } from '@mui/material/styles'
 import { CssBaseline, StyledEngineProvider } from '@mui/material'
@@ -16,6 +17,12 @@ import NavigationScroll from '@/layout/NavigationScroll'
 
 const App = () => {
     const customization = useSelector((state) => state.customization)
+
+    useEffect(() => {
+        const themeMode = customization.isDarkMode ? 'dark' : 'light'
+        document.documentElement.setAttribute('data-theme', themeMode)
+        document.documentElement.style.colorScheme = themeMode
+    }, [customization.isDarkMode])
 
     return (
         <StyledEngineProvider injectFirst>

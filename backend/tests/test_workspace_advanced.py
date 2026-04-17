@@ -51,7 +51,7 @@ class WorkspaceHttpTests(unittest.TestCase):
         self.db.workspaces[ws1.id] = ws1
         self.db.workspaces[ws2.id] = ws2
 
-        with patch('workspace._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.get(
                 "/api/workspace/",
                 headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id)
@@ -66,7 +66,7 @@ class WorkspaceHttpTests(unittest.TestCase):
             "description": "A new workspace"
         }
 
-        with patch('workspace._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.post(
                 "/api/workspace/",
                 json=request_body,
@@ -85,7 +85,7 @@ class WorkspaceHttpTests(unittest.TestCase):
             "description": "Another workspace"
         }
 
-        with patch('workspace._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.post(
                 "/api/workspace/",
                 json=request_body,
@@ -100,7 +100,7 @@ class WorkspaceHttpTests(unittest.TestCase):
         ws = MockWorkspace(id="ws-1", name="Main Workspace", tenant_id=self.tenant_id)
         self.db.workspaces[ws.id] = ws
 
-        with patch('workspace._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.get(
                 f"/api/workspace/{ws.id}",
                 headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id)
@@ -118,7 +118,7 @@ class WorkspaceHttpTests(unittest.TestCase):
             "description": "Updated description"
         }
 
-        with patch('workspace._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.put(
                 f"/api/workspace/{ws.id}",
                 json=request_body,
@@ -132,7 +132,7 @@ class WorkspaceHttpTests(unittest.TestCase):
         ws = MockWorkspace(id="ws-1", name="Workspace", tenant_id=self.tenant_id)
         self.db.workspaces[ws.id] = ws
 
-        with patch('workspace._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.delete(
                 f"/api/workspace/{ws.id}",
                 headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id, role="admin")
@@ -148,7 +148,7 @@ class WorkspaceHttpTests(unittest.TestCase):
 
         request_body = {"workspace_id": ws.id}
 
-        with patch('workspace._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.post(
                 "/api/workspace/switch",
                 json=request_body,
@@ -165,7 +165,7 @@ class WorkspaceHttpTests(unittest.TestCase):
 
         request_body = {"workspace_id": ws.id}
 
-        with patch('workspace._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.post(
                 "/api/workspace/switch",
                 json=request_body,
@@ -188,7 +188,7 @@ class WorkspaceHttpTests(unittest.TestCase):
             "role": "editor"
         }
 
-        with patch('workspace._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.post(
                 f"/api/workspace/{ws.id}/users",
                 json=request_body,
@@ -205,7 +205,7 @@ class WorkspaceHttpTests(unittest.TestCase):
         self.db.workspaces[ws.id] = ws
         self.db.users[user.id] = user
 
-        with patch('workspace._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.delete(
                 f"/api/workspace/{ws.id}/users/{user.id}",
                 headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id, role="admin")
@@ -222,7 +222,7 @@ class WorkspaceHttpTests(unittest.TestCase):
         self.db.workspaces[ws.id] = ws
         self.db.users[user.id] = user
 
-        with patch('workspace._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.get(
                 f"/api/workspace/{ws.id}/users",
                 headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id)
@@ -240,7 +240,7 @@ class WorkspaceHttpTests(unittest.TestCase):
 
         request_body = {"user_id": user.id, "role": "editor"}
 
-        with patch('workspace._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             # First addition
             response1 = self.client.post(
                 f"/api/workspace/{ws.id}/users",
@@ -267,7 +267,7 @@ class WorkspaceHttpTests(unittest.TestCase):
         pref = MockUserPreference(user_id=self.user_id, tenant_id=self.tenant_id, active_workspace=ws.id)
         self.db.user_preferences[pref.id] = pref
 
-        with patch('workspace._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.delete(
                 f"/api/workspace/{ws.id}",
                 headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id)
@@ -286,7 +286,7 @@ class WorkspaceHttpTests(unittest.TestCase):
 
         request_body = {"user_id": user.id, "role": "editor"}
 
-        with patch('workspace._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "editor-1"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "editor-1"}):
             response = self.client.post(
                 f"/api/workspace/{ws.id}/users",
                 json=request_body,

@@ -9,6 +9,7 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+import os
 from auth import require_roles, require_permission, _write_audit_log, create_reset_token
 from email_service import send_invitation_email
 from database import get_db
@@ -20,17 +21,22 @@ router = APIRouter()
 class UserInviteRequest(BaseModel):
     email: EmailStr
     role: str = "viewer"
+    full_name: str | None = None
 
 
 class UserUpdateRequest(BaseModel):
     role: str
+    full_name: str | None = None
+    is_active: bool | None = None
 
 
 class UserResponse(BaseModel):
     id: str
     email: str
+    full_name: str | None = None
     role: str
-    status: str  # active or pending
+    is_active: bool = True
+    status: str  # active, pending, or deactivated
     last_login: str | None = None
     created_at: str | None = None
 
@@ -58,8 +64,13 @@ def list_users(
 
     user_responses = []
     for u in users:
-        # Status is "active" if password_hash exists, "pending" if invited but no password
-        status = "active" if u.password_hash else "pending"
+        # Status: "pending" if never set a password, "deactivated" if disabled, else "active"
+        if not u.password_hash:
+            status = "pending"
+        elif not getattr(u, "is_active", True):
+            status = "deactivated"
+        else:
+            status = "active"
         last_login_str = u.last_login.isoformat() if u.last_login else None
         created_at_str = u.created_at.isoformat() if u.created_at else None
 
@@ -67,7 +78,9 @@ def list_users(
             UserResponse(
                 id=u.id,
                 email=u.email,
+                full_name=u.full_name,
                 role=u.role,
+                is_active=getattr(u, "is_active", True),
                 status=status,
                 last_login=last_login_str,
                 created_at=created_at_str
@@ -104,8 +117,10 @@ def invite_user(
         id=str(uuid4()),
         tenant_id=tenant_id,
         email=email,
+        full_name=payload.full_name,
         password_hash=None,  # Invited users have no password yet
-        role=payload.role
+        role=payload.role,
+        is_active=True,
     )
     db.add(new_user)
     db.flush()  # Flush to get the user ID
@@ -113,7 +128,7 @@ def invite_user(
     # Generate invitation token (valid for 1 hour)
     invitation_token = create_reset_token(new_user.id)
 
-    # Write audit log
+    # Write audit log (never include secrets in details)
     _write_audit_log(
         db, tenant_id, actor_user_id, actor_email, "user.invited", "user",
         resource_id=new_user.id, details={"invited_email": email, "invited_role": payload.role}
@@ -121,12 +136,17 @@ def invite_user(
     db.commit()
 
     # Send invitation email with password setup link
-    send_invitation_email(email, tenant_id, invitation_token)
+    base_url = os.getenv("VETRAI_BASE_URL", "http://localhost:3000")
+    setup_url = f"{base_url}/reset-password?token={invitation_token}&email={email}"
+    display_name = payload.full_name or email
+    send_invitation_email(email, display_name, setup_url)
 
     return UserResponse(
         id=new_user.id,
         email=new_user.email,
+        full_name=new_user.full_name,
         role=new_user.role,
+        is_active=True,
         status="pending",
         last_login=None,
         created_at=new_user.created_at.isoformat() if new_user.created_at else None
@@ -151,23 +171,47 @@ def update_user(
         raise HTTPException(status_code=404, detail="User not found")
 
     old_role = target_user.role
-    target_user.role = payload.role
+    audit_details: dict = {}
+
+    if payload.role != old_role:
+        target_user.role = payload.role
+        audit_details["old_role"] = old_role
+        audit_details["new_role"] = payload.role
+
+    if payload.full_name is not None:
+        target_user.full_name = payload.full_name
+
+    if payload.is_active is not None:
+        old_active = getattr(target_user, "is_active", True)
+        target_user.is_active = payload.is_active
+        audit_details["is_active"] = payload.is_active
+        if not payload.is_active and old_active:
+            audit_details["action_detail"] = "user_deactivated"
+
     db.commit()
 
-    # Write audit log
-    _write_audit_log(
-        db, tenant_id, actor_user_id, actor_email, "user.role_changed", "user",
-        resource_id=user_id, details={"old_role": old_role, "new_role": payload.role}
-    )
+    if audit_details:
+        _write_audit_log(
+            db, tenant_id, actor_user_id, actor_email, "user.updated", "user",
+            resource_id=user_id, details=audit_details
+        )
 
-    status = "active" if target_user.password_hash else "pending"
+    if not target_user.password_hash:
+        status = "pending"
+    elif not getattr(target_user, "is_active", True):
+        status = "deactivated"
+    else:
+        status = "active"
+
     last_login_str = target_user.last_login.isoformat() if target_user.last_login else None
     created_at_str = target_user.created_at.isoformat() if target_user.created_at else None
 
     return UserResponse(
         id=target_user.id,
         email=target_user.email,
+        full_name=target_user.full_name,
         role=target_user.role,
+        is_active=getattr(target_user, "is_active", True),
         status=status,
         last_login=last_login_str,
         created_at=created_at_str
@@ -240,7 +284,10 @@ def resend_invitation(
     invitation_token = create_reset_token(target_user.id)
 
     # Send invitation email with password setup link
-    send_invitation_email(target_user.email, tenant_id, invitation_token)
+    base_url = os.getenv("VETRAI_BASE_URL", "http://localhost:3000")
+    setup_url = f"{base_url}/reset-password?token={invitation_token}&email={target_user.email}"
+    display_name = getattr(target_user, "full_name", None) or target_user.email
+    send_invitation_email(target_user.email, display_name, setup_url)
 
     # Write audit log
     _write_audit_log(

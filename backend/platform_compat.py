@@ -2410,9 +2410,11 @@ def insert_into_vector_store(
         )
 
     # Store collection name and config in document store
+    # collection_name is only assigned in the Qdrant branch; use a safe default for other providers
+    final_collection_name = collection_name if vector_provider == "qdrant" else body.get("vectorStoreConfig", {}).get("collectionName", f"store_{store_id[:8]}")
     payload["vectorStoreConfig"] = {
-        "collectionName": collection_name,
-        "provider": "qdrant",
+        "collectionName": final_collection_name,
+        "provider": vector_provider,
         "embeddingProvider": embedding_provider,
         "embeddingConfig": embedding_config,
         "embeddingDim": embedding_dim,
@@ -3753,15 +3755,9 @@ def predict_public(
         if not question:
             raise HTTPException(status_code=400, detail="Missing 'question' field")
 
-        # TODO: Execute flow synchronously
-        # In production, this should:
-        # 1. Parse the flow definition from published.json_definition
-        # 2. Execute LLM calls, tools, and chains
-        # 3. Return the result
-        # For now, return a placeholder response
-
+        text = _run_flow_for_evaluation(chatflow_id, question, db, flow.tenant_id)
         result = {
-            "text": f"[Placeholder] Response to: {question}",
+            "text": text,
             "chatId": str(uuid4()),
             "sessionId": str(uuid4()),
             "sourceDocuments": [],
@@ -3816,15 +3812,9 @@ def predict_internal(
         if not question:
             raise HTTPException(status_code=400, detail="Missing 'question' field")
 
-        # TODO: Execute flow synchronously
-        # In production, this should:
-        # 1. Parse the flow definition from published.json_definition
-        # 2. Execute LLM calls, tools, and chains
-        # 3. Return the result
-        # For now, return a placeholder response
-
+        text = _run_flow_for_evaluation(chatflow_id, question, db, flow.tenant_id)
         result = {
-            "text": f"[Placeholder] Response to: {question}",
+            "text": text,
             "chatId": str(uuid4()),
             "sessionId": str(uuid4()),
             "sourceDocuments": [],
@@ -3886,9 +3876,8 @@ async def predict_streaming(
         if not question:
             raise HTTPException(status_code=400, detail="Missing 'question' field")
 
-        # Generate response text
-        # TODO: Execute flow with LLM to get real tokens
-        full_response = f"[Placeholder] Response to: {question}"
+        # Generate response text by executing the flow with the LLM
+        full_response = _run_flow_for_evaluation(chatflow_id, question, db, flow.tenant_id)
 
         async def event_generator():
             """Generate SSE events with tokens."""
@@ -3997,14 +3986,18 @@ def export_data(
                     .first()
                 )
 
+                flow_def = latest_version.json_definition if latest_version else {}
+                raw_type = flow_def.get("flowType", "CHATFLOW").upper()
+                flow_type = "agentflow" if raw_type == "AGENTFLOW" else "chatflow"
+
                 flow_data = {
                     "id": flow.id,
                     "name": flow.name,
-                    "flowData": latest_version.json_definition if latest_version else {},
-                    "type": "chatflow",  # TODO: Determine from metadata
+                    "flowData": flow_def,
+                    "type": flow_type,
                 }
 
-                if body.get("agentflows"):
+                if flow_type == "agentflow":
                     agentflows.append(flow_data)
                 else:
                     chatflows.append(flow_data)
@@ -4444,9 +4437,57 @@ def link_users_alias(
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_permission("workspaces:manage"))] = None,
 ) -> dict:
-    """Alias for POST /workspaces/link-users/{id}."""
-    # Stub: just acknowledge
-    return {"status": "ok", "workspaceId": workspace_id}
+    """Alias for POST /workspaces/link-users/{id}. Links one or more users to a workspace."""
+    from models import User as UserModel
+
+    tenant_id = user["tenant_id"]
+    actor_user_id = user["user_id"]
+    actor_email = user.get("sub")
+
+    # Verify workspace exists
+    workspace_resource = (
+        db.query(TenantResource)
+        .filter(
+            TenantResource.id == workspace_id,
+            TenantResource.tenant_id == tenant_id,
+            TenantResource.resource_type == "workspace",
+        )
+        .one_or_none()
+    )
+    if workspace_resource is None:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+
+    # Accept both "userId" (single) and "userIds" (list)
+    user_ids: list[str] = body.get("userIds") or ([body["userId"]] if body.get("userId") else [])
+
+    linked = 0
+    for uid in user_ids:
+        target = db.query(UserModel).filter(UserModel.id == uid, UserModel.tenant_id == tenant_id).one_or_none()
+        if not target:
+            continue
+        pref_key = f"workspace_role_{workspace_id}"
+        existing = db.query(UserPreference).filter(
+            UserPreference.tenant_id == tenant_id,
+            UserPreference.user_id == uid,
+            UserPreference.pref_key == pref_key,
+        ).one_or_none()
+        if existing:
+            continue
+        db.add(UserPreference(
+            id=str(uuid4()),
+            tenant_id=tenant_id,
+            user_id=uid,
+            pref_key=pref_key,
+            pref_value={"workspace_id": workspace_id, "role": "member"},
+        ))
+        _write_audit_log(
+            db, tenant_id, actor_user_id, actor_email, "workspace_user.added", "workspace",
+            resource_id=workspace_id, details={"user_id": uid, "user_email": target.email},
+        )
+        linked += 1
+
+    db.commit()
+    return {"status": "ok", "workspaceId": workspace_id, "linked": linked}
 
 
 @router.post("/workspace/unlink-users/{workspace_id}")
@@ -4456,9 +4497,37 @@ def unlink_users_alias(
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_permission("workspaces:manage"))] = None,
 ) -> dict:
-    """Alias for POST /workspaces/unlink-users/{id}."""
-    # Stub: just acknowledge
-    return {"status": "ok", "workspaceId": workspace_id}
+    """Alias for POST /workspaces/unlink-users/{id}. Removes one or more users from a workspace."""
+    from models import User as UserModel
+
+    tenant_id = user["tenant_id"]
+    actor_user_id = user["user_id"]
+    actor_email = user.get("sub")
+
+    user_ids: list[str] = body.get("userIds") or ([body["userId"]] if body.get("userId") else [])
+
+    unlinked = 0
+    for uid in user_ids:
+        pref = (
+            db.query(UserPreference)
+            .filter(
+                UserPreference.tenant_id == tenant_id,
+                UserPreference.user_id == uid,
+                UserPreference.pref_key == f"workspace_role_{workspace_id}",
+            )
+            .one_or_none()
+        )
+        if pref:
+            db.delete(pref)
+            target = db.query(UserModel).filter(UserModel.id == uid, UserModel.tenant_id == tenant_id).one_or_none()
+            _write_audit_log(
+                db, tenant_id, actor_user_id, actor_email, "workspace_user.removed", "workspace",
+                resource_id=workspace_id, details={"user_id": uid, "user_email": target.email if target else None},
+            )
+            unlinked += 1
+
+    db.commit()
+    return {"status": "ok", "workspaceId": workspace_id, "unlinked": unlinked}
 
 
 @router.get("/workspace/shared/{workspace_id}")
@@ -4490,13 +4559,42 @@ def vector_upsert(
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_permission("document_stores:edit"))] = None,
 ) -> dict:
-    """Stub: Accept vector upsert, return success."""
+    """Record a vector upsert event and return counts from the payload."""
+    body = body or {}
+    num_added = int(body.get("numAdded", 0))
+    num_deleted = int(body.get("numDeleted", 0))
+    num_updated = int(body.get("numUpdated", 0))
+
+    # Persist the upsert event in the document store resource payload
+    store = (
+        db.query(TenantResource)
+        .filter(
+            TenantResource.id == store_id,
+            TenantResource.tenant_id == user["tenant_id"],
+            TenantResource.resource_type == "document_store",
+        )
+        .one_or_none()
+    )
+    if store:
+        payload = store.payload or {}
+        history: list = payload.get("upsert_history", [])
+        history.append({
+            "id": str(uuid4()),
+            "date": _now_iso(),
+            "numAdded": num_added,
+            "numDeleted": num_deleted,
+            "numUpdated": num_updated,
+            "status": "completed",
+        })
+        store.payload = {**payload, "upsert_history": history}
+        db.commit()
+
     return {
         "status": "ok",
-        "numAdded": 0,
-        "numDeleted": 0,
-        "numUpdated": 0,
-        "storageProvider": "vector-store"
+        "numAdded": num_added,
+        "numDeleted": num_deleted,
+        "numUpdated": num_updated,
+        "storageProvider": "vector-store",
     }
 
 
@@ -4509,13 +4607,24 @@ def get_upsert_history(
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_permission("document_stores:view"))] = None,
 ) -> dict:
-    """Stub: Return empty upsert history."""
-    return {
-        "data": [],
-        "total": 0,
-        "limit": limit,
-        "offset": offset
-    }
+    """Return upsert history for a document store."""
+    store = (
+        db.query(TenantResource)
+        .filter(
+            TenantResource.id == store_id,
+            TenantResource.tenant_id == user["tenant_id"],
+            TenantResource.resource_type == "document_store",
+        )
+        .one_or_none()
+    )
+    history: list = (store.payload or {}).get("upsert_history", []) if store else []
+
+    if order.upper() == "DESC":
+        history = list(reversed(history))
+
+    total = len(history)
+    page = history[offset: offset + limit]
+    return {"data": page, "total": total, "limit": limit, "offset": offset}
 
 
 @router.patch("/upsert-history")
@@ -4524,8 +4633,35 @@ def update_upsert_history(
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_permission("document_stores:edit"))] = None,
 ) -> dict:
-    """Stub: Mark upsert history records as processed."""
-    return {"status": "ok", "updated": 0}
+    """Mark upsert history records as processed."""
+    ids_to_mark: list[str] = body.get("ids", [])
+    store_id: str | None = body.get("storeId")
+    if not store_id:
+        return {"status": "ok", "updated": 0}
+
+    store = (
+        db.query(TenantResource)
+        .filter(
+            TenantResource.id == store_id,
+            TenantResource.tenant_id == user["tenant_id"],
+            TenantResource.resource_type == "document_store",
+        )
+        .one_or_none()
+    )
+    if not store:
+        return {"status": "ok", "updated": 0}
+
+    payload = store.payload or {}
+    history: list = payload.get("upsert_history", [])
+    updated = 0
+    for entry in history:
+        if not ids_to_mark or entry.get("id") in ids_to_mark:
+            entry["status"] = "processed"
+            updated += 1
+
+    store.payload = {**payload, "upsert_history": history}
+    db.commit()
+    return {"status": "ok", "updated": updated}
 
 
 # UI Gap D: Chat message feedback with simplified path

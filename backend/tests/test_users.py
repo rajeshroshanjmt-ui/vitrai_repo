@@ -51,7 +51,7 @@ class UsersHttpTests(unittest.TestCase):
         self.db.users[user1.id] = user1
         self.db.users[user2.id] = user2
 
-        with patch('users._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.get(
                 "/api/users/",
                 headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id, role="admin")
@@ -70,7 +70,7 @@ class UsersHttpTests(unittest.TestCase):
         self.db.users[user_same_tenant.id] = user_same_tenant
         self.db.users[user_other_tenant.id] = user_other_tenant
 
-        with patch('users._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "user-1"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "user-1"}):
             response = self.client.get(
                 "/api/users/",
                 headers=create_test_headers(tenant_id=self.tenant_id)
@@ -84,7 +84,7 @@ class UsersHttpTests(unittest.TestCase):
         user = MockUser(id="user-1", email="user@example.com", tenant_id=self.tenant_id, role="admin")
         self.db.users[user.id] = user
 
-        with patch('users._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "user-1"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "user-1"}):
             response = self.client.get(
                 f"/api/users/{user.id}",
                 headers=create_test_headers(tenant_id=self.tenant_id)
@@ -101,8 +101,8 @@ class UsersHttpTests(unittest.TestCase):
             "role": "editor"
         }
 
-        with patch('users._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "admin-1", "role": "admin"}):
-            with patch('users._send_invitation_email'):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "admin-1", "role": "admin"}):
+            with patch('users.send_invitation_email'):
                 response = self.client.post(
                     "/api/users/",
                     json=request_body,
@@ -120,7 +120,7 @@ class UsersHttpTests(unittest.TestCase):
             "role": "editor"
         }
 
-        with patch('users._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "admin-1", "role": "admin"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "admin-1", "role": "admin"}):
             response = self.client.post(
                 "/api/users/",
                 json=request_body,
@@ -137,7 +137,7 @@ class UsersHttpTests(unittest.TestCase):
 
         request_body = {"role": "editor"}
 
-        with patch('users._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "admin-1", "role": "admin"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "admin-1", "role": "admin"}):
             response = self.client.put(
                 f"/api/users/{user.id}",
                 json=request_body,
@@ -151,7 +151,7 @@ class UsersHttpTests(unittest.TestCase):
         user = MockUser(id="user-2", email="user2@example.com", tenant_id=self.tenant_id, role="editor")
         self.db.users[user.id] = user
 
-        with patch('users._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "admin-1", "role": "admin"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "admin-1", "role": "admin"}):
             response = self.client.delete(
                 f"/api/users/{user.id}",
                 headers=create_test_headers(user_id="admin-1", tenant_id=self.tenant_id, role="admin")
@@ -168,8 +168,8 @@ class UsersHttpTests(unittest.TestCase):
             "role": "editor"
         }
 
-        with patch('users._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "admin-1", "role": "admin"}):
-            with patch('users._send_invitation_email') as mock_email:
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "admin-1", "role": "admin"}):
+            with patch('users.send_invitation_email') as mock_email:
                 response = self.client.post(
                     "/api/users/invite",
                     json=request_body,
@@ -186,8 +186,8 @@ class UsersHttpTests(unittest.TestCase):
         user = MockUser(id="user-2", email="user2@example.com", tenant_id=self.tenant_id, role="editor")
         self.db.users[user.id] = user
 
-        with patch('users._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "admin-1", "role": "admin"}):
-            with patch('users._send_invitation_email') as mock_email:
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "admin-1", "role": "admin"}):
+            with patch('users.send_invitation_email') as mock_email:
                 response = self.client.post(
                     f"/api/users/{user.id}/resend-invitation",
                     headers=create_test_headers(user_id="admin-1", tenant_id=self.tenant_id, role="admin")
@@ -204,7 +204,7 @@ class UsersHttpTests(unittest.TestCase):
 
         request_body = {"email": user.email}
 
-        with patch('users._send_password_reset_email'):
+        with patch('email_service.send_password_reset_email'):
             response = self.client.post(
                 "/api/auth/password-reset/request",
                 json=request_body,
@@ -235,7 +235,7 @@ class UsersHttpTests(unittest.TestCase):
         user = MockUser(id="user-1", email="user@example.com", tenant_id=self.tenant_id, role="admin")
         self.db.users[user.id] = user
 
-        with patch('users._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": user.id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": user.id}):
             response = self.client.get(
                 f"/api/users/{user.id}/workspaces",
                 headers=create_test_headers(user_id=user.id, tenant_id=self.tenant_id)
@@ -251,7 +251,7 @@ class UsersHttpTests(unittest.TestCase):
         self.db.users[user1.id] = user1
         self.db.users[user2.id] = user2
 
-        with patch('users._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "admin-1", "role": "admin"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "admin-1", "role": "admin"}):
             response = self.client.get(
                 "/api/users/export/csv",
                 headers=create_test_headers(user_id="admin-1", tenant_id=self.tenant_id, role="admin")
@@ -267,7 +267,7 @@ class UsersHttpTests(unittest.TestCase):
         workspace_id = str(uuid4())
         request_body = {"active_workspace": workspace_id}
 
-        with patch('users._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "user-1"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "user-1"}):
             response = self.client.put(
                 "/api/users/user-1/workspace",
                 json=request_body,
@@ -279,32 +279,34 @@ class UsersHttpTests(unittest.TestCase):
 
     def test_non_admin_cannot_invite_users(self):
         """Verify non-admin cannot invite users."""
+        viewer = MockUser(id="viewer-1", tenant_id=self.tenant_id, role="viewer")
+        self.db.users["viewer-1"] = viewer
         request_body = {
             "email": "newuser@example.com",
             "full_name": "New User",
             "role": "editor"
         }
 
-        with patch('users._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "viewer-1", "role": "viewer"}):
-            response = self.client.post(
-                "/api/users/invite",
-                json=request_body,
-                headers=create_test_headers(user_id="viewer-1", tenant_id=self.tenant_id, role="viewer")
-            )
+        response = self.client.post(
+            "/api/users/invite",
+            json=request_body,
+            headers=create_test_headers(user_id="viewer-1", tenant_id=self.tenant_id, role="viewer")
+        )
 
         # Should return 403 Forbidden
         assert response.status_code in [403, 404]
 
     def test_non_admin_cannot_delete_users(self):
         """Verify non-admin cannot delete users."""
+        editor = MockUser(id="editor-1", tenant_id=self.tenant_id, role="editor")
+        self.db.users["editor-1"] = editor
         user = MockUser(id="user-2", email="user2@example.com", tenant_id=self.tenant_id)
         self.db.users[user.id] = user
 
-        with patch('users._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "editor-1", "role": "editor"}):
-            response = self.client.delete(
-                f"/api/users/{user.id}",
-                headers=create_test_headers(user_id="editor-1", tenant_id=self.tenant_id, role="editor")
-            )
+        response = self.client.delete(
+            f"/api/users/{user.id}",
+            headers=create_test_headers(user_id="editor-1", tenant_id=self.tenant_id, role="editor")
+        )
 
         # Should return 403 Forbidden
         assert response.status_code in [403, 404]

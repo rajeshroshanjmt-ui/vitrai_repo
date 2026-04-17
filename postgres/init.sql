@@ -10,16 +10,22 @@ CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY,
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     email TEXT NOT NULL,
+    full_name TEXT,
     password_hash TEXT,
     role TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    last_login TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS flows (
     id UUID PRIMARY KEY,
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    flow_type TEXT NOT NULL DEFAULT 'chatflow',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS flow_versions (
@@ -55,9 +61,10 @@ CREATE TABLE IF NOT EXISTS ingestion_jobs (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- tenant_id is nullable so audit records survive tenant deletion (SOC2/GDPR)
 CREATE TABLE IF NOT EXISTS audit_logs (
     id UUID PRIMARY KEY,
-    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    tenant_id UUID REFERENCES tenants(id) ON DELETE SET NULL,
     actor_user_id UUID,
     actor_email TEXT,
     actor_role TEXT,

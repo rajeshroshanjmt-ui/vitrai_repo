@@ -65,28 +65,27 @@ def send_email(
         return False
 
 
-def send_invitation_email(email: str, tenant_id: str, invitation_token: str) -> bool:
-    """Send user invitation email with password setup link.
+def send_invitation_email(recipient_email: str, recipient_name: str, setup_url: str) -> bool:
+    """Send user invitation email with a pre-built password setup link.
 
     Args:
-        email: User email address
-        tenant_id: Tenant ID
-        invitation_token: Password reset/setup token
+        recipient_email: Recipient email address
+        recipient_name: Recipient display name
+        setup_url: Full URL for password setup (pre-built by caller)
 
     Returns:
         True if successful, False otherwise
     """
-    setup_link = f"{VETRAI_BASE_URL}/reset-password?token={invitation_token}&email={email}"
-
     html_content = f"""
     <html>
         <body style="font-family: Arial, sans-serif;">
             <h2>Welcome to Vetrai!</h2>
+            <p>Hi {recipient_name},</p>
             <p>You have been invited to join a Vetrai workspace.</p>
             <p>Click the link below to set your password and get started:</p>
-            <p><a href="{setup_link}" style="background-color: #42a5f5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">Set Your Password</a></p>
+            <p><a href="{setup_url}" style="background-color: #42a5f5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">Set Your Password</a></p>
             <p>Or copy and paste this link in your browser:</p>
-            <p><code>{setup_link}</code></p>
+            <p><code>{setup_url}</code></p>
             <p>This link will expire in 1 hour.</p>
             <p>If you didn't expect this invitation, you can ignore this email.</p>
         </body>
@@ -96,10 +95,12 @@ def send_invitation_email(email: str, tenant_id: str, invitation_token: str) -> 
     text_content = f"""
 Welcome to Vetrai!
 
+Hi {recipient_name},
+
 You have been invited to join a Vetrai workspace.
 
 Set your password here:
-{setup_link}
+{setup_url}
 
 This link will expire in 1 hour.
 
@@ -107,24 +108,24 @@ If you didn't expect this invitation, you can ignore this email.
     """
 
     return send_email(
-        to_email=email,
+        to_email=recipient_email,
         subject="Welcome to Vetrai - Set Your Password",
         html_content=html_content,
         text_content=text_content
     )
 
 
-def send_password_reset_email(email: str, reset_token: str) -> bool:
+def send_password_reset_email(recipient_email: str, reset_url: str) -> bool:
     """Send password reset email.
 
     Args:
-        email: User email address
-        reset_token: Password reset token
+        recipient_email: User email address
+        reset_url: Full URL for password reset (pre-built by caller)
 
     Returns:
         True if successful, False otherwise
     """
-    reset_link = f"{VETRAI_BASE_URL}/reset-password?token={reset_token}&email={email}"
+    reset_link = reset_url
 
     html_content = f"""
     <html>
@@ -153,7 +154,7 @@ If you didn't request a password reset, you can ignore this email and your passw
     """
 
     return send_email(
-        to_email=email,
+        to_email=recipient_email,
         subject="Vetrai - Password Reset",
         html_content=html_content,
         text_content=text_content

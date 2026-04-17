@@ -53,7 +53,7 @@ class FilesHttpTests(unittest.TestCase):
         self.db.files[file1.id] = file1
         self.db.files[file2.id] = file2
 
-        with patch('files._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.get(
                 "/api/files/",
                 headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id)
@@ -65,7 +65,7 @@ class FilesHttpTests(unittest.TestCase):
         """Verify file upload."""
         file_content = b"Test file content"
 
-        with patch('files._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.post(
                 "/api/files/upload",
                 files={"file": ("test.txt", BytesIO(file_content), "text/plain")},
@@ -79,7 +79,7 @@ class FilesHttpTests(unittest.TestCase):
         file = MockFile(id="file-1", filename="doc.txt", tenant_id=self.tenant_id, workspace_id=self.workspace_id)
         self.db.files[file.id] = file
 
-        with patch('files._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.get(
                 f"/api/files/{file.id}",
                 headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id)
@@ -92,7 +92,7 @@ class FilesHttpTests(unittest.TestCase):
         file = MockFile(id="file-1", filename="doc.txt", tenant_id=self.tenant_id, workspace_id=self.workspace_id)
         self.db.files[file.id] = file
 
-        with patch('files._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.delete(
                 f"/api/files/{file.id}",
                 headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id)
@@ -106,7 +106,7 @@ class FilesHttpTests(unittest.TestCase):
         file = MockFile(id="file-1", filename="doc.txt", tenant_id=self.tenant_id, workspace_id=self.workspace_id)
         self.db.files[file.id] = file
 
-        with patch('files._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.get(
                 f"/api/files/{file.id}/download",
                 headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id)
@@ -119,7 +119,7 @@ class FilesHttpTests(unittest.TestCase):
         file = MockFile(id="file-1", filename="doc.txt", tenant_id=self.tenant_id, workspace_id="ws-2")
         self.db.files[file.id] = file
 
-        with patch('files._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "active_workspace": "ws-1"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "active_workspace": "ws-1"}):
             response = self.client.get(
                 f"/api/files/{file.id}",
                 headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id)
@@ -133,7 +133,7 @@ class FilesHttpTests(unittest.TestCase):
         # Create a large file (> 100MB)
         large_content = b"x" * (101 * 1024 * 1024)
 
-        with patch('files._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.post(
                 "/api/files/upload",
                 files={"file": ("large.bin", BytesIO(large_content), "application/octet-stream")},
@@ -150,7 +150,7 @@ class FilesHttpTests(unittest.TestCase):
             ("file2.pdf", BytesIO(b"Content 2"), "application/pdf"),
         ]
 
-        with patch('files._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             for filename, content, mime_type in files_to_upload:
                 response = self.client.post(
                     "/api/files/upload",

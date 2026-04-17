@@ -29,10 +29,13 @@ class User(Base):
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
     tenant_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
     email: Mapped[str] = mapped_column(Text, nullable=False)
+    full_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     password_hash: Mapped[str | None] = mapped_column(Text)
     role: Mapped[str] = mapped_column(Text, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     last_login: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     tenant: Mapped["Tenant"] = relationship(back_populates="users")
     preferences: Mapped[list["UserPreference"]] = relationship(back_populates="user")
@@ -45,7 +48,10 @@ class Flow(Base):
     tenant_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
     workspace_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), ForeignKey("tenant_resources.id", ondelete="SET NULL"), nullable=True)
     name: Mapped[str] = mapped_column(Text, nullable=False)
+    # Discriminates chatflow vs agentflow vs evalflow at the data layer
+    flow_type: Mapped[str] = mapped_column(Text, nullable=False, default="chatflow")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     tenant: Mapped["Tenant"] = relationship(back_populates="flows")
     versions: Mapped[list["FlowVersion"]] = relationship(back_populates="flow")
@@ -102,10 +108,17 @@ class IngestionJob(Base):
 
 
 class AuditLog(Base):
+    """Immutable compliance audit trail.
+
+    tenant_id uses SET NULL (not CASCADE) so that audit records survive
+    tenant deletion — required for SOC2 / GDPR data-retention obligations.
+    """
+
     __tablename__ = "audit_logs"
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
-    tenant_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    # Nullable so records are preserved when a tenant is deleted (SET NULL, not CASCADE)
+    tenant_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False), ForeignKey("tenants.id", ondelete="SET NULL"), nullable=True)
     actor_user_id: Mapped[str | None] = mapped_column(UUID(as_uuid=False))
     actor_email: Mapped[str | None] = mapped_column(Text)
     actor_role: Mapped[str | None] = mapped_column(Text)

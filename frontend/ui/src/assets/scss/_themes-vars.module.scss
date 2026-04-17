@@ -1,114 +1,114 @@
 // ==============================|| CORE SURFACES ||============================== //
 
 $paper: #ffffff;
-$canvasLight: #f8f9fc;
-$canvasDark: #111827;
+$canvasLight: #f5f7fb;
+$canvasDark: #0b1220;
 
 // ==============================|| BRAND (LIGHT) ||============================== //
 
 $primaryLight: #dbeafe;
 $primaryMain: #2563eb;
 $primaryDark: #1d4ed8;
-$primary200: #93b5f8;
-$primary800: #123f8a;
+$primary200: #93c5fd;
+$primary800: #1e40af;
 
-$secondaryLight: #e0e7ff;
-$secondaryMain: #4f46e5;
-$secondaryDark: #3730a3;
-$secondary200: #7ccfe8;
-$secondary800: #0b4e6b;
+$secondaryLight: #ede9fe;
+$secondaryMain: #7c3aed;
+$secondaryDark: #5b21b6;
+$secondary200: #c4b5fd;
+$secondary800: #4c1d95;
 
-$successLight: #d1fae5;
-$success200: #6ee7b7;
-$successMain: #059669;
-$successDark: #047857;
+$successLight: #dcfce7;
+$success200: #86efac;
+$successMain: #15803d;
+$successDark: #166534;
 
 $errorLight: #fee2e2;
-$errorMain: #dc2626;
-$errorDark: #991b1b;
+$errorMain: #b42318;
+$errorDark: #912018;
 
-$orangeLight: #fed7aa;
-$orangeMain: #ea580c;
-$orangeDark: #7c2d12;
+$orangeLight: #ffedd5;
+$orangeMain: #c2410c;
+$orangeDark: #9a3412;
 
 $tealLight: #ccfbf1;
-$tealMain: #14b8a6;
-$tealDark: #0d9488;
+$tealMain: #0f766e;
+$tealDark: #115e59;
 
 $warningLight: #fef3c7;
-$warningMain: #d97706;
+$warningMain: #b45309;
 $warningDark: #92400e;
 
-$grey50: #f9fafb;
-$grey100: #f3f4f6;
-$grey200: #e5e7eb;
-$grey300: #d1d5db;
-$grey400: #9ca3af;
-$grey500: #6b7280;
-$grey600: #4b5563;
-$grey700: #374151;
-$grey900: #111827;
+$grey50: #f8fafc;
+$grey100: #f1f5f9;
+$grey200: #e2e8f0;
+$grey300: #cbd5e1;
+$grey400: #94a3b8;
+$grey500: #64748b;
+$grey600: #475569;
+$grey700: #334155;
+$grey900: #0f172a;
 
 $transparent: #ffffff00;
 
 // ==============================|| SEMANTIC (LIGHT) ||============================== //
 
-$brandLight: #dbeafe;
+$brandLight: #eaf2ff;
 $brandMain: #2563eb;
 $brandDark: #1d4ed8;
 
-$surfaceBaseLight: #f8f9fc;
+$surfaceBaseLight: #f5f7fb;
 $surfaceRaisedLight: #ffffff;
-$surfaceSunkenLight: #f1f5f9;
+$surfaceSunkenLight: #eef3f8;
 
-$outlineSubtleLight: rgba(17, 24, 39, 0.08);
-$outlineStrongLight: rgba(17, 24, 39, 0.15);
+$outlineSubtleLight: rgba(15, 23, 42, 0.10);
+$outlineStrongLight: rgba(15, 23, 42, 0.18);
 
-$glowSoftLight: rgba(37, 99, 235, 0.10);
-$glowElevatedLight: rgba(37, 99, 235, 0.15);
+$glowSoftLight: rgba(37, 99, 235, 0.14);
+$glowElevatedLight: rgba(37, 99, 235, 0.22);
 
-$focusRingLight: rgba(20, 108, 255, 0.5);
+$focusRingLight: rgba(37, 99, 235, 0.28);
 
 // ==============================|| DARK THEME TOKENS ||============================== //
 
-$darkBackground: #111827;
-$darkPaper: #1f2937;
-$darkLevel1: #374151;
-$darkLevel2: #374151;
+$darkBackground: #0b1220;
+$darkPaper: #111c2d;
+$darkLevel1: #172235;
+$darkLevel2: #0f1728;
 
-$darkPrimaryLight: #1a3c60;
-$darkPrimaryMain: #2363d4;
-$darkPrimaryDark: #103055;
-$darkPrimary200: #9bc0f5;
-$darkPrimary800: #1a4eaa;
+$darkPrimaryLight: #17355c;
+$darkPrimaryMain: #60a5fa;
+$darkPrimaryDark: #3b82f6;
+$darkPrimary200: #93c5fd;
+$darkPrimary800: #1d4ed8;
 
-$darkSecondaryLight: #12394b;
-$darkSecondaryMain: #3aa9cd;
-$darkSecondaryDark: #d8f2fd;
-$darkSecondary200: #1f5f7d;
-$darkSecondary800: #0e4a63;
+$darkSecondaryLight: #2f1d57;
+$darkSecondaryMain: #a78bfa;
+$darkSecondaryDark: #ddd6fe;
+$darkSecondary200: #7c3aed;
+$darkSecondary800: #5b21b6;
 
-$darkTextTitle: #f9fafb;
-$darkTextPrimary: #e5e7eb;
-$darkTextSecondary: #9ca3af;
+$darkTextTitle: #f8fafc;
+$darkTextPrimary: #e5eefc;
+$darkTextSecondary: #8ea5c4;
 
 // ==============================|| SEMANTIC (DARK) ||============================== //
 
 $darkBrandLight: #bfdbfe;
 $darkBrandMain: #60a5fa;
-$darkBrandDark: #1d4ed8;
+$darkBrandDark: #3b82f6;
 
-$surfaceBaseDark: #111827;
-$surfaceRaisedDark: #1f2937;
-$surfaceSunkenDark: #0f172a;
+$surfaceBaseDark: #0b1220;
+$surfaceRaisedDark: #111c2d;
+$surfaceSunkenDark: #0f1728;
 
-$outlineSubtleDark: rgba(249, 250, 251, 0.08);
-$outlineStrongDark: rgba(249, 250, 251, 0.15);
+$outlineSubtleDark: rgba(191, 208, 234, 0.10);
+$outlineStrongDark: rgba(191, 208, 234, 0.18);
 
-$glowSoftDark: rgba(96, 165, 250, 0.10);
-$glowElevatedDark: rgba(96, 165, 250, 0.15);
+$glowSoftDark: rgba(96, 165, 250, 0.18);
+$glowElevatedDark: rgba(96, 165, 250, 0.24);
 
-$focusRingDark: rgba(126, 183, 255, 0.65);
+$focusRingDark: rgba(96, 165, 250, 0.34);
 
 // ==============================|| JAVASCRIPT EXPORTS ||============================== //
 

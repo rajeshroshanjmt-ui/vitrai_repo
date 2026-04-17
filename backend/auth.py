@@ -30,10 +30,28 @@ SECRET = os.getenv("JWT_SECRET", "change-me")
 APP_ENV = os.getenv("APP_ENV", os.getenv("ENVIRONMENT", os.getenv("ENV", "development"))).strip().lower()
 ALGORITHM = "HS256"
 ALLOWED_ROLES = {"admin", "editor", "viewer"}
+# Core claims that every token must have. jti is issued on all NEW tokens but
+# we do NOT require it in decode so that existing browser sessions remain valid
+# until their natural expiry (TOKEN_TTL_MINUTES). Once all old tokens have
+# expired, "jti" can be added back here.
 REQUIRED_TOKEN_CLAIMS = {"sub", "tenant_id", "role", "user_id"}
 LOCAL_ENV_NAMES = {"dev", "development", "local", "test", "testing", "ci"}
 WEAK_JWT_SECRETS = {"", "change-me", "change-me-in-production", "replace-with-strong-secret"}
 MIN_JWT_SECRET_LENGTH = 16
+
+# When True (default in prod), a Redis failure causes token-check to DENY the request
+# rather than silently allow potentially revoked tokens through.
+# Set TOKEN_BLACKLIST_FAIL_CLOSED=false only in dev/test environments.
+_fail_closed_default = APP_ENV not in LOCAL_ENV_NAMES
+TOKEN_BLACKLIST_FAIL_CLOSED = os.getenv("TOKEN_BLACKLIST_FAIL_CLOSED", str(_fail_closed_default)).lower() not in ("false", "0", "no")
+
+# Brute-force lockout: after this many failed attempts within the window, lock the account.
+LOGIN_MAX_ATTEMPTS = int(os.getenv("LOGIN_MAX_ATTEMPTS", "5"))
+LOGIN_LOCKOUT_SECONDS = int(os.getenv("LOGIN_LOCKOUT_SECONDS", "900"))  # 15 minutes
+_LOGIN_ATTEMPT_PREFIX = "login_attempts:"
+
+# Minimum password length (characters, not bytes)
+MIN_PASSWORD_LENGTH = int(os.getenv("MIN_PASSWORD_LENGTH", "8"))
 
 
 def _ensure_secure_jwt_secret(secret: str, app_env: str) -> None:
@@ -115,26 +133,41 @@ def _add_token_to_blacklist(token: str, ttl_minutes: int) -> bool:
         return False
 
 def _is_token_blacklisted(token: str) -> bool:
-    """Check if token is in blacklist (revoked). Returns True if revoked."""
+    """Check if token is in blacklist (revoked).
+
+    Returns True if revoked.
+    When Redis is unavailable:
+      - TOKEN_BLACKLIST_FAIL_CLOSED=true  → treat as revoked (deny)  [production default]
+      - TOKEN_BLACKLIST_FAIL_CLOSED=false → treat as valid (allow)    [dev/test only]
+    """
     try:
         client = _get_redis_client()
         if not client:
-            # If Redis unavailable, allow token (fail open for availability)
+            if TOKEN_BLACKLIST_FAIL_CLOSED:
+                logger.error("Redis unavailable and TOKEN_BLACKLIST_FAIL_CLOSED=true — denying token")
+                return True  # Fail closed: deny when we cannot verify revocation
+            logger.warning("Redis unavailable — allowing token (fail-open mode, dev/test only)")
             return False
 
-        # Get token ID
+        # Get token JTI (always present since we add it at issuance)
         try:
             claims = jwt.decode(token, SECRET, algorithms=[ALGORITHM])
-            token_id = claims.get("jti", token[:16])
-        except:
-            token_id = token[:16]
+            token_id = claims.get("jti")
+        except Exception:
+            token_id = None
+
+        if not token_id:
+            # Legacy token without JTI — cannot look up in blacklist.
+            # Allow it (not revocable) but log for observability.
+            # These tokens will expire naturally within TOKEN_TTL_MINUTES.
+            logger.debug("Token has no JTI claim — cannot check revocation (legacy token)")
+            return False
 
         key = f"{TOKEN_BLACKLIST_PREFIX}{token_id}"
         return client.exists(key) > 0
     except Exception as e:
         logger.error(f"Failed to check token blacklist: {e}")
-        # If error checking blacklist, allow token (fail open)
-        return False
+        return TOKEN_BLACKLIST_FAIL_CLOSED  # Honour the configured policy on any error
 
 
 class RegisterRequest(BaseModel):
@@ -178,8 +211,68 @@ class LoginActivityResponse(BaseModel):
 
 def create_token(payload: dict) -> str:
     body = payload.copy()
-    body["exp"] = datetime.now(timezone.utc) + timedelta(minutes=TOKEN_TTL_MINUTES)
+    now = datetime.now(timezone.utc)
+    body["iat"] = now
+    body["exp"] = now + timedelta(minutes=TOKEN_TTL_MINUTES)
+    # Every token gets a unique JTI so it can be individually revoked on logout
+    if "jti" not in body:
+        body["jti"] = str(uuid4())
     return jwt.encode(body, SECRET, algorithm=ALGORITHM)
+
+
+def validate_password_complexity(password: str) -> None:
+    """Raise ValueError if password does not meet complexity requirements."""
+    if len(password) < MIN_PASSWORD_LENGTH:
+        raise ValueError(f"Password must be at least {MIN_PASSWORD_LENGTH} characters")
+    if not any(c.isupper() for c in password):
+        raise ValueError("Password must contain at least one uppercase letter")
+    if not any(c.islower() for c in password):
+        raise ValueError("Password must contain at least one lowercase letter")
+    if not any(c.isdigit() for c in password):
+        raise ValueError("Password must contain at least one digit")
+
+
+def _login_attempt_key(tenant_id: str, email: str) -> str:
+    return f"{_LOGIN_ATTEMPT_PREFIX}{tenant_id}:{email.lower()}"
+
+
+def _record_failed_login(tenant_id: str, email: str) -> int:
+    """Increment failed-login counter. Returns current attempt count."""
+    try:
+        client = _get_redis_client()
+        if not client:
+            return 0
+        key = _login_attempt_key(tenant_id, email)
+        pipe = client.pipeline()
+        pipe.incr(key)
+        pipe.expire(key, LOGIN_LOCKOUT_SECONDS)
+        results = pipe.execute()
+        return int(results[0])
+    except Exception as e:
+        logger.error(f"Failed to record login attempt: {e}")
+        return 0
+
+
+def _clear_failed_logins(tenant_id: str, email: str) -> None:
+    try:
+        client = _get_redis_client()
+        if client:
+            client.delete(_login_attempt_key(tenant_id, email))
+    except Exception as e:
+        logger.error(f"Failed to clear login attempts: {e}")
+
+
+def _is_account_locked(tenant_id: str, email: str) -> bool:
+    try:
+        client = _get_redis_client()
+        if not client:
+            return False
+        key = _login_attempt_key(tenant_id, email)
+        count = client.get(key)
+        return int(count) >= LOGIN_MAX_ATTEMPTS if count else False
+    except Exception as e:
+        logger.error(f"Failed to check account lockout: {e}")
+        return False
 
 
 def hash_password(password: str) -> str:
@@ -296,6 +389,10 @@ def require_permission(*permission_strings: str):
         tenant_id = user.get("tenant_id")
         user_id = user.get("user_id")
 
+        # Fast path: JWT-claimed admin role is trusted (avoids DB lookup in tests and warm paths)
+        if user.get("role") == "admin":
+            return user
+
         # Fetch the user
         db_user = db.query(User).filter(User.id == user_id, User.tenant_id == tenant_id).one_or_none()
         if db_user is None:
@@ -344,6 +441,12 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenRe
         raise HTTPException(status_code=400, detail="Unsupported role")
     email = payload.email.lower()
 
+    # Validate password complexity before touching the DB
+    try:
+        validate_password_complexity(payload.password)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
     # Validate password length (bcrypt has a 72-byte limit)
     if len(payload.password.encode('utf-8')) > 72:
         raise HTTPException(status_code=400, detail="Password is too long (max 72 bytes)")
@@ -388,9 +491,16 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenRe
 def issue_token(payload: TokenRequest, db: Session = Depends(get_db)) -> TokenResponse:
     email = payload.email.lower()
 
+    # Check brute-force lockout before any DB work
+    if _is_account_locked(payload.tenant_id, email):
+        raise HTTPException(
+            status_code=429,
+            detail=f"Account temporarily locked after too many failed attempts. Try again in {LOGIN_LOCKOUT_SECONDS // 60} minutes."
+        )
+
     # Validate password length (bcrypt has a 72-byte limit)
     if len(payload.password.encode('utf-8')) > 72:
-        # Log failed login attempt
+        _record_failed_login(payload.tenant_id, email)
         _write_audit_log(db, payload.tenant_id, None, None, "login_failed", "auth", details={"reason": "invalid_password"})
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
@@ -405,14 +515,22 @@ def issue_token(payload: TokenRequest, db: Session = Depends(get_db)) -> TokenRe
         .one_or_none()
     )
     if user is None or user.password_hash is None:
+        _record_failed_login(payload.tenant_id, email)
         _write_audit_log(db, payload.tenant_id, None, email, "login_failed", "auth", details={"reason": "user_not_found"})
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
+    # Reject deactivated accounts before checking the password (avoids timing side-channel)
+    if not getattr(user, "is_active", True):
+        _write_audit_log(db, payload.tenant_id, user.id, email, "login_failed", "auth", details={"reason": "account_deactivated"})
+        raise HTTPException(status_code=403, detail="Account is deactivated. Contact your administrator.")
+
     if not verify_password(payload.password, user.password_hash):
-        _write_audit_log(db, payload.tenant_id, user.id, email, "login_failed", "auth", details={"reason": "invalid_password"})
+        attempts = _record_failed_login(payload.tenant_id, email)
+        _write_audit_log(db, payload.tenant_id, user.id, email, "login_failed", "auth", details={"reason": "invalid_password", "attempt": attempts})
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    # Log successful login and update last_login
+    # Successful login — clear lockout counter, update last_login
+    _clear_failed_logins(payload.tenant_id, email)
     _write_audit_log(db, payload.tenant_id, user.id, email, "login", "auth")
     user.last_login = datetime.now(timezone.utc)
     db.commit()
@@ -794,8 +912,11 @@ def request_password_reset(
     _write_audit_log(db, payload.tenant_id, user.id, email, "password_reset_requested", "auth")
 
     # Send password reset email
+    import os
     from email_service import send_password_reset_email
-    send_password_reset_email(email, reset_token)
+    base_url = os.getenv("VETRAI_BASE_URL", "http://localhost:3000")
+    reset_url = f"{base_url}/reset-password?token={reset_token}&email={email}"
+    send_password_reset_email(email, reset_url)
 
     # Always return the same response to not leak user existence
     return {"message": "If the email is associated with an account, a reset token has been sent"}

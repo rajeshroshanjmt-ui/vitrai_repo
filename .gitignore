@@ -23,17 +23,29 @@ pnpm-debug.log*
 
 # Python
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *.pyo
 *.pyd
 .venv/
 venv/
+.pytest_cache/
+**/.pytest_cache/
+*.egg-info/
+.mypy_cache/
 
 # OS / editor
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+
+# Test artifacts and temp files
+tmp/
+test-artifacts/
+*.mjs.tmp
+browser-test-detailed.js
+BROWSER_TEST_*.json
 
 # Local temp workspace clone not part of main repo
 flowise_temp/
@@ -44,4 +56,9 @@ postgres/data/
 # AWS / SSH keys (do NOT commit private keys)
 LightsailDefaultKey-us-east-1.pem
 *.pem
-!nginx/certs/
+!nginx/certs/*.pem
+!nginx/ssl/*.pem
+
+# Backend uploads (runtime-generated, not source)
+backend/uploads/*
+!backend/uploads/.gitkeep

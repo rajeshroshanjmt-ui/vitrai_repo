@@ -13,63 +13,69 @@ export default function themeTypography(theme) {
         h6: {
             fontWeight: 600,
             color: theme.heading,
-            fontSize: '0.8rem',
-            letterSpacing: '0.01em'
-        },
-        h5: {
-            fontSize: '0.95rem',
-            color: theme.heading,
-            fontWeight: 600,
-            letterSpacing: '0.01em'
-        },
-        h4: {
-            fontSize: '1.06rem',
-            color: theme.heading,
-            fontWeight: 600,
-            letterSpacing: '0.01em'
-        },
-        h3: {
-            fontSize: '1.25rem',
-            color: theme.heading,
-            fontWeight: 700,
-            letterSpacing: '0.005em'
-        },
-        h2: {
-            fontSize: '1.72rem',
-            color: theme.heading,
-            fontWeight: 700,
+            fontSize: '0.875rem',
+            lineHeight: 1.35,
             letterSpacing: '-0.01em'
         },
-        h1: {
-            fontSize: '2.22rem',
+        h5: {
+            fontSize: '1rem',
+            color: theme.heading,
+            fontWeight: 600,
+            lineHeight: 1.4,
+            letterSpacing: '-0.01em'
+        },
+        h4: {
+            fontSize: '1.125rem',
+            color: theme.heading,
+            fontWeight: 600,
+            lineHeight: 1.4,
+            letterSpacing: '-0.015em'
+        },
+        h3: {
+            fontSize: '1.375rem',
             color: theme.heading,
             fontWeight: 700,
-            letterSpacing: '-0.018em',
-            lineHeight: 1.15
+            lineHeight: 1.3,
+            letterSpacing: '-0.02em'
+        },
+        h2: {
+            fontSize: '1.875rem',
+            color: theme.heading,
+            fontWeight: 700,
+            lineHeight: 1.15,
+            letterSpacing: '-0.03em'
+        },
+        h1: {
+            fontSize: '2.25rem',
+            color: theme.heading,
+            fontWeight: 800,
+            letterSpacing: '-0.035em',
+            lineHeight: 1.05
         },
         subtitle1: {
-            fontSize: '0.875rem',
+            fontSize: '0.9375rem',
             fontWeight: 600,
             color: theme.textDark
         },
         subtitle2: {
-            fontSize: '0.78rem',
-            fontWeight: 500,
+            fontSize: '0.8125rem',
+            fontWeight: 600,
             color: theme.darkTextSecondary
         },
         caption: {
-            fontSize: '0.76rem',
+            fontSize: '0.75rem',
             color: theme.darkTextSecondary,
-            fontWeight: 500
+            fontWeight: 500,
+            letterSpacing: '0.01em'
         },
         body1: {
             fontSize: '0.9375rem',
             fontWeight: 400,
-            lineHeight: 1.6,
+            lineHeight: 1.65,
             color: theme.darkTextPrimary
         },
         body2: {
-            fontSize: '0.86rem',
+            fontSize: '0.875rem',
             letterSpacing: '0.005em',
             fontWeight: 400,
             lineHeight: 1.6,
@@ -117,7 +123,7 @@ export default function themeTypography(theme) {
             color: theme.darkTextSecondary,
             padding: '4px 6px',
             textTransform: 'uppercase',
-            letterSpacing: '0.08em',
+            letterSpacing: '0.1em',
             marginTop: '6px'
         },
         subMenuCaption: {

@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from auth import require_roles, require_permission, _get_active_workspace
+from crypto import decrypt_payload, encrypt_payload, generate_api_key, hash_api_key, is_encrypted
 from database import get_db
 from models import AuditLog, Tenant, TenantResource
 
@@ -26,7 +27,15 @@ ALLOWED_RESOURCE_TYPES = {
     "variable",
 }
 
+# These types contain secrets — payloads are encrypted at rest and masked in responses.
 SECURITY_RESOURCE_TYPES = {"credential", "api_key"}
+
+# Fields within a security payload that must be masked in API responses.
+# Values are replaced with "****" except the last 4 characters (where length ≥ 8).
+_SENSITIVE_FIELD_NAMES = {
+    "api_key", "apiKey", "secret", "token", "password", "private_key",
+    "client_secret", "access_token", "refresh_token", "key",
+}
 
 
 class ResourceCreateRequest(BaseModel):
@@ -48,23 +57,70 @@ def _ensure_resource_type(resource_type: str) -> str:
 
 
 def _ensure_tenant(db: Session, tenant_id: str) -> None:
+    """Verify the tenant exists. Raises 400 if it does not.
+
+    Previously this silently auto-created tenants, which bypassed all
+    onboarding flows and allowed arbitrary tenant IDs to be injected.
+    """
     tenant = db.get(Tenant, tenant_id)
     if tenant is None:
-        db.add(Tenant(id=tenant_id, name=f"tenant-{tenant_id[:8]}"))
-        db.flush()
+        raise HTTPException(
+            status_code=400,
+            detail=f"Tenant '{tenant_id}' does not exist. Resources can only be created for existing tenants.",
+        )
 
 
-def _serialize_resource(resource: TenantResource) -> dict[str, Any]:
+def _mask_sensitive_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    """Return a copy of payload with secret field values replaced by '****...xxxx'.
+
+    Only the last 4 characters are shown when the value is long enough to be a
+    real secret (≥ 8 chars). This lets support staff identify key prefixes
+    without exposing the full secret.
+    """
+    masked: dict[str, Any] = {}
+    for k, v in payload.items():
+        if k in _SENSITIVE_FIELD_NAMES and isinstance(v, str):
+            if len(v) >= 8:
+                masked[k] = f"****{v[-4:]}"
+            else:
+                masked[k] = "****"
+        else:
+            masked[k] = v
+    return masked
+
+
+def _serialize_resource(resource: TenantResource, *, reveal_secrets: bool = False) -> dict[str, Any]:
+    """Serialise a resource for an API response.
+
+    For SECURITY_RESOURCE_TYPES the payload is always masked unless
+    `reveal_secrets=True` is explicitly requested (e.g., at execution time —
+    never in a list/get endpoint).
+    """
+    payload = resource.payload or {}
+    if not reveal_secrets and resource.resource_type in SECURITY_RESOURCE_TYPES:
+        payload = _mask_sensitive_payload(payload)
     return {
         "resource_id": resource.id,
         "resource_type": resource.resource_type,
         "name": resource.name,
-        "payload": resource.payload or {},
+        "payload": payload,
         "created_by": resource.created_by,
         "updated_by": resource.updated_by,
         "created_at": resource.created_at.isoformat() if resource.created_at else None,
         "updated_at": resource.updated_at.isoformat() if resource.updated_at else None,
     }
+
+
+def _safe_audit_details(resource: TenantResource) -> dict[str, Any]:
+    """Build audit log details without logging raw secret values."""
+    details: dict[str, Any] = {"name": resource.name}
+    if resource.resource_type in SECURITY_RESOURCE_TYPES:
+        # Record only non-sensitive metadata — never the payload itself
+        details["resource_type"] = resource.resource_type
+        details["has_payload"] = bool(resource.payload)
+    else:
+        details["payload"] = resource.payload
+    return details
 
 
 def _append_audit_log(
@@ -82,7 +138,7 @@ def _append_audit_log(
         action=action,
         resource_type=f"resource:{resource.resource_type}",
         resource_id=resource.id,
-        details={"name": resource.name, "payload": resource.payload},
+        details=_safe_audit_details(resource),
     )
     db.add(entry)
 
@@ -166,12 +222,24 @@ def create_resource(
     _ensure_tenant(db, user["tenant_id"])
 
     now_utc = datetime.now(timezone.utc)
+
+    # For api_key resources: auto-generate the key (caller must not supply their own raw key)
+    raw_api_key: str | None = None
+    payload = body.payload
+    if normalized_type == "api_key":
+        raw_api_key, key_hash, key_prefix = generate_api_key()
+        # Store only the hash + prefix — never the raw key
+        payload = {**payload, "key_hash": key_hash, "key_prefix": key_prefix}
+
+    # Encrypt payload for security-sensitive resource types
+    stored_payload = encrypt_payload(payload) if normalized_type in SECURITY_RESOURCE_TYPES else payload
+
     resource = TenantResource(
         id=str(uuid4()),
         tenant_id=user["tenant_id"],
         resource_type=normalized_type,
         name=body.name.strip(),
-        payload=body.payload,
+        payload=stored_payload,
         created_by=user.get("user_id"),
         updated_by=user.get("user_id"),
         created_at=now_utc,
@@ -180,7 +248,13 @@ def create_resource(
     db.add(resource)
     _append_audit_log(db, user, f"resource_create:{normalized_type}", resource)
     db.commit()
-    return _serialize_resource(resource)
+
+    response = _serialize_resource(resource)
+    # For api_key: include the raw key ONCE in the creation response only
+    if raw_api_key is not None:
+        response["raw_api_key"] = raw_api_key
+        response["_raw_key_notice"] = "This is the only time the raw API key is shown. Store it securely."
+    return response
 
 
 @router.put("/{resource_type}/{resource_id}")
@@ -207,7 +281,16 @@ def update_resource(
     if body.name is not None:
         resource.name = body.name.strip()
     if body.payload is not None:
-        resource.payload = body.payload
+        # api_key raw values cannot be updated via this endpoint — rotate instead
+        if normalized_type == "api_key" and "key_hash" not in body.payload:
+            raise HTTPException(
+                status_code=400,
+                detail="API key values cannot be updated directly. Delete this key and create a new one to rotate.",
+            )
+        stored_payload = (
+            encrypt_payload(body.payload) if normalized_type in SECURITY_RESOURCE_TYPES else body.payload
+        )
+        resource.payload = stored_payload
 
     resource.updated_by = user.get("user_id")
     resource.updated_at = datetime.now(timezone.utc)
@@ -244,3 +327,32 @@ def delete_resource(
         "resource_id": resource_id,
         "resource_type": normalized_type,
     }
+
+
+# ---------------------------------------------------------------------------
+# Internal helper — used by the execution engine, NOT exposed as an HTTP route
+# ---------------------------------------------------------------------------
+
+def get_decrypted_payload(db: Session, tenant_id: str, resource_id: str, resource_type: str) -> dict[str, Any]:
+    """Retrieve and decrypt a security-sensitive resource payload for internal use.
+
+    This is intentionally NOT a FastAPI route. Call it from the execution worker
+    or platform_compat logic where the credential is actually needed.
+    Never return the result of this function directly in an HTTP response.
+    """
+    resource = (
+        db.query(TenantResource)
+        .filter(
+            TenantResource.id == resource_id,
+            TenantResource.tenant_id == tenant_id,
+            TenantResource.resource_type == resource_type,
+        )
+        .one_or_none()
+    )
+    if resource is None:
+        raise ValueError(f"Resource {resource_id} of type {resource_type} not found for tenant {tenant_id}")
+
+    payload = resource.payload or {}
+    if is_encrypted(payload):
+        return decrypt_payload(payload)
+    return payload

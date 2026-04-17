@@ -1,24 +1,43 @@
+# ── Core web framework ────────────────────────────────────────────────────────
 fastapi==0.115.8
 uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# ── Database ──────────────────────────────────────────────────────────────────
 SQLAlchemy==2.0.38
 psycopg2-binary==2.9.10
+
+# ── Auth / Security ───────────────────────────────────────────────────────────
 python-jose[cryptography]==3.3.0
-redis==5.2.1
-pydantic[email]==2.10.6
-python-multipart==0.0.20
+PyJWT>=2.8.0                  # Used by platform_compat SSO token verification
 passlib==1.7.4
 bcrypt==4.0.1
+cryptography>=42.0.0          # Required by python-jose and crypto.py (AES-GCM)
+
+# ── Validation ────────────────────────────────────────────────────────────────
+pydantic[email]==2.10.6
+
+# ── Cache / Queue ─────────────────────────────────────────────────────────────
+redis==5.2.1
+
+# ── HTTP client ───────────────────────────────────────────────────────────────
 httpx==0.27.0
+
+# ── Document parsing (for ingestion pipeline) ─────────────────────────────────
 beautifulsoup4==4.12.2
 pdfminer.six==20221105
-qdrant-client==1.17.1
-alembic>=1.13.0
 python-docx==1.1.2
 openpyxl==3.1.3
 jsonlines==4.0.0
-boto3==1.35.0
-chromadb==0.5.0
-pinecone-client==3.2.2
-weaviate-client==4.5.0
-PyJWT>=2.8.0
-cryptography>=42.0.0
+
+# ── Vector store: default (Qdrant) ────────────────────────────────────────────
+qdrant-client==1.17.1
+
+# ── Vector store: optional integrations ──────────────────────────────────────
+# These are loaded lazily in platform_compat.py only when the user configures
+# the corresponding provider. If you do not use these providers, you can
+# remove them to reduce image size (~500 MB combined).
+boto3==1.35.0                  # S3 document source / AWS integrations
+chromadb==0.5.0                # ChromaDB vector store
+pinecone-client==3.2.2         # Pinecone vector store
+weaviate-client==4.5.0         # Weaviate vector store

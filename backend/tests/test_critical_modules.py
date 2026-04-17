@@ -127,7 +127,7 @@ class UserModuleTests(ModuleTestBase):
         mock_query.filter.return_value.all.return_value = [user1, user2]
         self.db.query.return_value = mock_query
 
-        with patch('users._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "user-1"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "user-1"}):
             response = self.client.get("/api/users/", headers=self._create_token())
 
         # Should be successful
@@ -138,7 +138,7 @@ class UserModuleTests(ModuleTestBase):
         new_user = self._mock_user("user-2", "newuser@example.com", "editor")
 
         with patch('users.User') as MockUser:
-            with patch('users._send_invitation_email') as mock_email:
+            with patch('users.send_invitation_email') as mock_email:
                 # Mock the database operations
                 self.db.add = MagicMock()
                 self.db.commit = MagicMock()

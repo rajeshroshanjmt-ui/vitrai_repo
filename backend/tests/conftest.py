@@ -116,6 +116,24 @@ class FakeQuery:
             raise Exception("Multiple results found")
         return results[0] if results else None
 
+    @staticmethod
+    def _parse_filter_dict(criteria):
+        """Parse SQLAlchemy binary expression criteria into a {column_key: value} dict."""
+        parsed = {}
+        for criterion in criteria:
+            try:
+                left = getattr(criterion, "left", None)
+                right = getattr(criterion, "right", None)
+                if left is None or right is None:
+                    continue
+                key = getattr(left, "key", None)
+                value = getattr(right, "value", None)
+                if key is not None and value is not None:
+                    parsed[key] = value
+            except Exception:
+                pass
+        return parsed
+
     def all(self):
         """Get all results."""
         if self.model.__name__ == 'User':
@@ -133,10 +151,13 @@ class FakeQuery:
         else:
             results = []
 
-        # Apply filters (simplified)
-        for criterion in self.filters:
-            # This is a simplified filter - real implementation would parse criteria
-            pass
+        # Apply parsed equality filters
+        filter_dict = self._parse_filter_dict(self.filters)
+        if filter_dict:
+            results = [
+                item for item in results
+                if all(getattr(item, k, None) == v for k, v in filter_dict.items())
+            ]
 
         # Apply offset/limit
         if self.offset_val > 0:

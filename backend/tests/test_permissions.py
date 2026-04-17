@@ -51,7 +51,7 @@ class PermissionsHttpTests(unittest.TestCase):
         self.db.roles[admin_role.id] = admin_role
         self.db.roles[custom_role.id] = custom_role
 
-        with patch('permissions._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "role": "admin"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "role": "admin"}):
             response = self.client.get(
                 "/api/permissions/roles",
                 headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id, role="admin")
@@ -67,7 +67,7 @@ class PermissionsHttpTests(unittest.TestCase):
         self.db.permissions[perm1.id] = perm1
         self.db.permissions[perm2.id] = perm2
 
-        with patch('permissions._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "role": "admin"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "role": "admin"}):
             response = self.client.get(
                 "/api/permissions/permissions",
                 headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id, role="admin")
@@ -82,7 +82,7 @@ class PermissionsHttpTests(unittest.TestCase):
             "description": "Custom editor role"
         }
 
-        with patch('permissions._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "role": "admin"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "role": "admin"}):
             response = self.client.post(
                 "/api/permissions/roles",
                 json=request_body,
@@ -102,7 +102,7 @@ class PermissionsHttpTests(unittest.TestCase):
             "description": "Another editor role"
         }
 
-        with patch('permissions._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "role": "admin"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "role": "admin"}):
             response = self.client.post(
                 "/api/permissions/roles",
                 json=request_body,
@@ -122,7 +122,7 @@ class PermissionsHttpTests(unittest.TestCase):
             "description": "Updated description"
         }
 
-        with patch('permissions._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "role": "admin"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "role": "admin"}):
             response = self.client.put(
                 f"/api/permissions/roles/{custom_role.id}",
                 json=request_body,
@@ -141,7 +141,7 @@ class PermissionsHttpTests(unittest.TestCase):
             "description": "New description"
         }
 
-        with patch('permissions._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "role": "admin"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "role": "admin"}):
             response = self.client.put(
                 f"/api/permissions/roles/{admin_role.id}",
                 json=request_body,
@@ -156,7 +156,7 @@ class PermissionsHttpTests(unittest.TestCase):
         custom_role = MockRole(id="role-1", name="Custom Role", tenant_id=self.tenant_id, is_system=False)
         self.db.roles[custom_role.id] = custom_role
 
-        with patch('permissions._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "role": "admin"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "role": "admin"}):
             response = self.client.delete(
                 f"/api/permissions/roles/{custom_role.id}",
                 headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id, role="admin")
@@ -170,7 +170,7 @@ class PermissionsHttpTests(unittest.TestCase):
         admin_role = MockRole(id="role-admin", name="admin", is_system=True)
         self.db.roles[admin_role.id] = admin_role
 
-        with patch('permissions._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "role": "admin"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "role": "admin"}):
             response = self.client.delete(
                 f"/api/permissions/roles/{admin_role.id}",
                 headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id, role="admin")
@@ -191,7 +191,7 @@ class PermissionsHttpTests(unittest.TestCase):
             "permission_id": permission.id
         }
 
-        with patch('permissions._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "role": "admin"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "role": "admin"}):
             response = self.client.post(
                 f"/api/permissions/roles/{custom_role.id}/permissions",
                 json=request_body,
@@ -208,7 +208,7 @@ class PermissionsHttpTests(unittest.TestCase):
         self.db.roles[custom_role.id] = custom_role
         self.db.permissions[permission.id] = permission
 
-        with patch('permissions._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "role": "admin"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "role": "admin"}):
             response = self.client.delete(
                 f"/api/permissions/roles/{custom_role.id}/permissions/{permission.id}",
                 headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id, role="admin")
@@ -221,7 +221,7 @@ class PermissionsHttpTests(unittest.TestCase):
         custom_role = MockRole(id="role-1", name="Custom Role", tenant_id=self.tenant_id, is_system=False)
         self.db.roles[custom_role.id] = custom_role
 
-        with patch('permissions._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "role": "admin"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "role": "admin"}):
             response = self.client.get(
                 f"/api/permissions/roles/{custom_role.id}/permissions",
                 headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id, role="admin")
@@ -236,7 +236,7 @@ class PermissionsHttpTests(unittest.TestCase):
             "description": "Custom role"
         }
 
-        with patch('permissions._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "editor-1", "role": "editor"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "editor-1", "role": "editor"}):
             response = self.client.post(
                 "/api/permissions/roles",
                 json=request_body,
@@ -251,7 +251,7 @@ class PermissionsHttpTests(unittest.TestCase):
         custom_role = MockRole(id="role-1", name="Custom Role", tenant_id=self.tenant_id, is_system=False)
         self.db.roles[custom_role.id] = custom_role
 
-        with patch('permissions._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "editor-1", "role": "editor"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": "editor-1", "role": "editor"}):
             response = self.client.delete(
                 f"/api/permissions/roles/{custom_role.id}",
                 headers=create_test_headers(user_id="editor-1", tenant_id=self.tenant_id, role="editor")

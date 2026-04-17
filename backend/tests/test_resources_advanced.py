@@ -52,7 +52,7 @@ class ResourcesHttpTests(unittest.TestCase):
         self.db.resources[credential.id] = credential
         self.db.resources[variable.id] = variable
 
-        with patch('resources._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.get(
                 "/api/resources/credential",
                 headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id)
@@ -65,7 +65,7 @@ class ResourcesHttpTests(unittest.TestCase):
         resource = MockResource(id="res-1", resource_type="credential", tenant_id=self.tenant_id, workspace_id=self.workspace_id)
         self.db.resources[resource.id] = resource
 
-        with patch('resources._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.get(
                 f"/api/resources/credential/{resource.id}",
                 headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id)
@@ -82,7 +82,7 @@ class ResourcesHttpTests(unittest.TestCase):
             }
         }
 
-        with patch('resources._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.post(
                 "/api/resources/credential",
                 json=request_body,
@@ -100,7 +100,7 @@ class ResourcesHttpTests(unittest.TestCase):
             }
         }
 
-        with patch('resources._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.post(
                 "/api/resources/variable",
                 json=request_body,
@@ -119,7 +119,7 @@ class ResourcesHttpTests(unittest.TestCase):
             }
         }
 
-        with patch('resources._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.post(
                 "/api/resources/tool",
                 json=request_body,
@@ -138,7 +138,7 @@ class ResourcesHttpTests(unittest.TestCase):
             }
         }
 
-        with patch('resources._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.post(
                 "/api/resources/dataset",
                 json=request_body,
@@ -157,7 +157,7 @@ class ResourcesHttpTests(unittest.TestCase):
             "payload": {"value": "new-value"}
         }
 
-        with patch('resources._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.put(
                 f"/api/resources/variable/{resource.id}",
                 json=request_body,
@@ -171,7 +171,7 @@ class ResourcesHttpTests(unittest.TestCase):
         resource = MockResource(id="res-1", resource_type="variable", tenant_id=self.tenant_id, workspace_id=self.workspace_id)
         self.db.resources[resource.id] = resource
 
-        with patch('resources._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.delete(
                 f"/api/resources/variable/{resource.id}",
                 headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id)
@@ -185,7 +185,7 @@ class ResourcesHttpTests(unittest.TestCase):
         resource = MockResource(id="res-1", resource_type="credential", tenant_id=self.tenant_id, workspace_id="ws-2")
         self.db.resources[resource.id] = resource
 
-        with patch('resources._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "active_workspace": "ws-1"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "active_workspace": "ws-1"}):
             response = self.client.get(
                 f"/api/resources/credential/{resource.id}",
                 headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id)
@@ -202,7 +202,7 @@ class ResourcesHttpTests(unittest.TestCase):
         self.db.resources[ws1_resource.id] = ws1_resource
         self.db.resources[ws2_resource.id] = ws2_resource
 
-        with patch('resources._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "active_workspace": "ws-1"}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id, "active_workspace": "ws-1"}):
             response = self.client.get(
                 "/api/resources/credential",
                 headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id)
@@ -220,7 +220,7 @@ class ResourcesHttpTests(unittest.TestCase):
             }
         }
 
-        with patch('resources._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.post(
                 "/api/resources/credential",
                 json=request_body,
@@ -236,7 +236,7 @@ class ResourcesHttpTests(unittest.TestCase):
             "payload": {"value": "test"}
         }
 
-        with patch('resources._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+        with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
             response = self.client.post(
                 "/api/resources/variable",
                 json=request_body,
@@ -258,7 +258,7 @@ class ResourcesHttpTests(unittest.TestCase):
         ]
 
         for resource_type in resource_types:
-            with patch('resources._get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
+            with patch('auth.get_current_user', return_value={"tenant_id": self.tenant_id, "user_id": self.user_id}):
                 response = self.client.get(
                     f"/api/resources/{resource_type}",
                     headers=create_test_headers(user_id=self.user_id, tenant_id=self.tenant_id)
