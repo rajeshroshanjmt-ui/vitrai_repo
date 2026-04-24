@@ -1291,56 +1291,58 @@ const Marketplace = () => {
                                                 <Skeleton variant='rounded' height={160} />
                                             </Box>
                                         ) : (
-                                            <Box display='grid' gridTemplateColumns='repeat(3, 1fr)' gap={gridSpacing}>
-                                                {paginatedCommunityData.map((data, index) => (
-                                                        <Box key={index}>
-                                                            {data.badge && (
-                                                                <Badge
-                                                                    sx={{
-                                                                        width: '100%',
-                                                                        height: '100%',
-                                                                        '& .MuiBadge-badge': {
-                                                                            right: 20
-                                                                        }
-                                                                    }}
-                                                                    badgeContent={data.badge}
-                                                                    color={data.badge === 'POPULAR' ? 'primary' : 'error'}
-                                                                >
+                                            <>
+                                                <Box display='grid' gridTemplateColumns='repeat(3, 1fr)' gap={gridSpacing}>
+                                                    {paginatedCommunityData.map((data, index) => (
+                                                            <Box key={index}>
+                                                                {data.badge && (
+                                                                    <Badge
+                                                                        sx={{
+                                                                            width: '100%',
+                                                                            height: '100%',
+                                                                            '& .MuiBadge-badge': {
+                                                                                right: 20
+                                                                            }
+                                                                        }}
+                                                                        badgeContent={data.badge}
+                                                                        color={data.badge === 'POPULAR' ? 'primary' : 'error'}
+                                                                    >
+                                                                        <ItemCard
+                                                                            onClick={() => openTemplate(data)}
+                                                                            data={data}
+                                                                            images={data.flowData ? images[data.id] : []}
+                                                                            icons={data.flowData ? icons[data.id] : []}
+                                                                        />
+                                                                    </Badge>
+                                                                )}
+                                                                {!data.badge && (
                                                                     <ItemCard
                                                                         onClick={() => openTemplate(data)}
                                                                         data={data}
                                                                         images={data.flowData ? images[data.id] : []}
                                                                         icons={data.flowData ? icons[data.id] : []}
                                                                     />
-                                                                </Badge>
-                                                            )}
-                                                            {!data.badge && (
-                                                                <ItemCard
-                                                                    onClick={() => openTemplate(data)}
-                                                                    data={data}
-                                                                    images={data.flowData ? images[data.id] : []}
-                                                                    icons={data.flowData ? icons[data.id] : []}
-                                                                />
-                                                            )}
-                                                        </Box>
-                                                    ))}
-                                            </Box>
-                                            {totalPages > 1 && (
-                                                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 3, gap: 2 }}>
-                                                    <Typography variant='body2' sx={{ color: 'text.secondary' }}>
-                                                        {filteredCommunityData.length} templates
-                                                    </Typography>
-                                                    <Pagination
-                                                        count={totalPages}
-                                                        page={currentPage}
-                                                        onChange={(_, p) => { setCurrentPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-                                                        color='primary'
-                                                        shape='rounded'
-                                                        showFirstButton
-                                                        showLastButton
-                                                    />
+                                                                )}
+                                                            </Box>
+                                                        ))}
                                                 </Box>
-                                            )}
+                                                {totalPages > 1 && (
+                                                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 3, gap: 2 }}>
+                                                        <Typography variant='body2' sx={{ color: 'text.secondary' }}>
+                                                            {filteredCommunityData.length} templates
+                                                        </Typography>
+                                                        <Pagination
+                                                            count={totalPages}
+                                                            page={currentPage}
+                                                            onChange={(_, p) => { setCurrentPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                                                            color='primary'
+                                                            shape='rounded'
+                                                            showFirstButton
+                                                            showLastButton
+                                                        />
+                                                    </Box>
+                                                )}
+                                            </>
                                         )}
                                     </>
                                 ) : (
