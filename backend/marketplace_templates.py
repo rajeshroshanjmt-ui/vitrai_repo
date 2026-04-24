@@ -3,6 +3,9 @@ Vetrai Marketplace: 1000+ Real-World AI Templates
 Complete collection of production-ready Chatflows, Agentflows, and Assistants
 organized across 35 categories with practical use cases
 """
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Template metadata for 1000+ pre-built templates
 MARKETPLACE_TEMPLATES = {

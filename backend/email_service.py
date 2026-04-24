@@ -1,8 +1,11 @@
 """Email service for sending invitations and password reset emails."""
+import logging
 import os
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+
+logger = logging.getLogger(__name__)
 
 # Email configuration from environment variables
 SMTP_HOST = os.getenv("SMTP_HOST", "")

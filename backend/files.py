@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 from typing import Annotated
@@ -12,6 +13,7 @@ from database import get_db
 from models import TenantResource
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 # Get uploads base directory
 UPLOADS_BASE_DIR = os.getenv("UPLOADS_DIR", "./uploads")
