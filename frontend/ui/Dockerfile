@@ -21,4 +21,4 @@ COPY --from=builder /app/dist ./dist
 
 EXPOSE 3000
 
-CMD ["http-server", "dist", "-p", "3000", "--gzip", "--cors", "-f"]
+CMD ["http-server", "dist", "-p", "3000", "--gzip", "--cors", "--fallback", "index.html"]
