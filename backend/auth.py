@@ -211,6 +211,7 @@ class LoginActivityResponse(BaseModel):
 
 
 def create_token(payload: dict) -> str:
+    """Create a JWT token with expiration and unique JTI for revocation."""
     body = payload.copy()
     now = datetime.now(timezone.utc)
     body["iat"] = now
@@ -277,6 +278,7 @@ def _is_account_locked(tenant_id: str, email: str) -> bool:
 
 
 def hash_password(password: str) -> str:
+    """Hash a password using bcrypt. Raises ValueError if hashing fails."""
     if not password:
         raise ValueError("Password cannot be empty")
     hashed = pwd_context.hash(password)
@@ -286,6 +288,7 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a plain password against a bcrypt hash. Returns True if match."""
     return pwd_context.verify(plain_password, hashed_password)
 
 
@@ -439,18 +442,18 @@ def require_permission(*permission_strings: str):
 @router.post("/register", response_model=TokenResponse)
 def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenResponse:
     if payload.role not in ALLOWED_ROLES:
-        raise HTTPException(status_code=400, detail="Unsupported role")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported role")
     email = payload.email.lower()
 
     # Validate password complexity before touching the DB
     try:
         validate_password_complexity(payload.password)
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
     # Validate password length (bcrypt has a 72-byte limit)
     if len(payload.password.encode('utf-8')) > 72:
-        raise HTTPException(status_code=400, detail="Password is too long (max 72 bytes)")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password is too long (max 72 bytes)")
 
     tenant = db.get(Tenant, payload.tenant_id)
     if tenant is None:
@@ -463,15 +466,15 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)) -> TokenRe
         .one_or_none()
     )
     if user is not None:
-        raise HTTPException(status_code=400, detail="User already exists")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User already exists")
 
     try:
         password_hash = hash_password(payload.password)
     except Exception as hash_error:
-        raise HTTPException(status_code=500, detail=f"Password hashing failed: {str(hash_error)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Password hashing failed: {str(hash_error)}")
 
     if not password_hash:
-        raise HTTPException(status_code=500, detail="Password hash is empty")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Password hash is empty")
 
     user = User(id=str(uuid4()), tenant_id=payload.tenant_id, email=email, password_hash=password_hash, role=payload.role)
     db.add(user)
@@ -495,7 +498,7 @@ def issue_token(payload: TokenRequest, db: Session = Depends(get_db)) -> TokenRe
     # Check brute-force lockout before any DB work
     if _is_account_locked(payload.tenant_id, email):
         raise HTTPException(
-            status_code=429,
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=f"Account temporarily locked after too many failed attempts. Try again in {LOGIN_LOCKOUT_SECONDS // 60} minutes."
         )
 
@@ -503,12 +506,12 @@ def issue_token(payload: TokenRequest, db: Session = Depends(get_db)) -> TokenRe
     if len(payload.password.encode('utf-8')) > 72:
         _record_failed_login(payload.tenant_id, email)
         _write_audit_log(db, payload.tenant_id, None, None, "login_failed", "auth", details={"reason": "invalid_password"})
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     tenant = db.get(Tenant, payload.tenant_id)
     if tenant is None:
         _write_audit_log(db, payload.tenant_id, None, None, "login_failed", "auth", details={"reason": "tenant_not_found"})
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     user = (
         db.query(User)
@@ -518,17 +521,17 @@ def issue_token(payload: TokenRequest, db: Session = Depends(get_db)) -> TokenRe
     if user is None or user.password_hash is None:
         _record_failed_login(payload.tenant_id, email)
         _write_audit_log(db, payload.tenant_id, None, email, "login_failed", "auth", details={"reason": "user_not_found"})
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     # Reject deactivated accounts before checking the password (avoids timing side-channel)
     if not getattr(user, "is_active", True):
         _write_audit_log(db, payload.tenant_id, user.id, email, "login_failed", "auth", details={"reason": "account_deactivated"})
-        raise HTTPException(status_code=403, detail="Account is deactivated. Contact your administrator.")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is deactivated. Contact your administrator.")
 
     if not verify_password(payload.password, user.password_hash):
         attempts = _record_failed_login(payload.tenant_id, email)
         _write_audit_log(db, payload.tenant_id, user.id, email, "login_failed", "auth", details={"reason": "invalid_password", "attempt": attempts})
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     # Successful login — clear lockout counter, update last_login
     _clear_failed_logins(payload.tenant_id, email)
@@ -657,13 +660,11 @@ def get_login_activity(
 
     # Optional date range filter
     if payload.startDate:
-        from datetime import datetime as dt
-        start = dt.fromisoformat(payload.startDate.replace('Z', '+00:00'))
+        start = datetime.fromisoformat(payload.startDate.replace('Z', '+00:00'))
         filters.append(AuditLog.created_at >= start)
 
     if payload.endDate:
-        from datetime import datetime as dt
-        end = dt.fromisoformat(payload.endDate.replace('Z', '+00:00'))
+        end = datetime.fromisoformat(payload.endDate.replace('Z', '+00:00'))
         filters.append(AuditLog.created_at <= end)
 
     # Optional action filter
@@ -913,7 +914,6 @@ def request_password_reset(
     _write_audit_log(db, payload.tenant_id, user.id, email, "password_reset_requested", "auth")
 
     # Send password reset email
-    import os
     from email_service import send_password_reset_email
     base_url = os.getenv("VETRAI_BASE_URL", "http://localhost:3000")
     reset_url = f"{base_url}/reset-password?token={reset_token}&email={email}"
@@ -932,25 +932,25 @@ def confirm_password_reset(
     # Validate reset token
     claims = decode_reset_token(payload.token)
     if claims is None:
-        raise HTTPException(status_code=401, detail="Invalid or expired reset token")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired reset token")
 
     user_id = claims.get("sub")
     if not user_id:
-        raise HTTPException(status_code=401, detail="Invalid reset token")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid reset token")
 
     # Validate password length
     if len(payload.new_password.encode('utf-8')) > 72:
-        raise HTTPException(status_code=400, detail="Password is too long (max 72 bytes)")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password is too long (max 72 bytes)")
 
     # Get user and update password
     user = db.query(User).filter(User.id == user_id).one_or_none()
     if user is None:
-        raise HTTPException(status_code=401, detail="Invalid reset token")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid reset token")
 
     try:
         user.password_hash = hash_password(payload.new_password)
     except Exception as hash_error:
-        raise HTTPException(status_code=500, detail=f"Password update failed: {str(hash_error)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Password update failed: {str(hash_error)}")
 
     db.commit()
 
@@ -1348,7 +1348,7 @@ def sso_success_handler(
         email = payload.get("sub")
 
         if not all([user_id, tenant_id, email]):
-            raise HTTPException(status_code=401, detail="Invalid token claims")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token claims")
 
         # Verify user exists
         user = db.query(User).filter(
@@ -1358,7 +1358,7 @@ def sso_success_handler(
         ).one_or_none()
 
         if not user:
-            raise HTTPException(status_code=401, detail="User not found")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
         # Return user data (similar to login endpoint)
         return {
@@ -1374,7 +1374,7 @@ def sso_success_handler(
         }
 
     except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     except Exception as e:
         logger.error(f"SSO success handler error: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")

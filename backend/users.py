@@ -5,7 +5,7 @@ import logging
 from io import StringIO
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, EmailStr, field_validator
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -18,6 +18,8 @@ from models import User, Tenant
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+DEFAULT_PAGE_LIMIT = 100
 
 
 class UserInviteRequest(BaseModel):
@@ -70,7 +72,7 @@ def list_users(
     user: Annotated[dict, Depends(require_permission("users:manage"))],
     db: Session = Depends(get_db),
     skip: int = 0,
-    limit: int = 100
+    limit: int = DEFAULT_PAGE_LIMIT
 ) -> UsersListResponse:
     """List all users in the tenant. Requires users:manage permission."""
     tenant_id = user.get("tenant_id")
@@ -108,7 +110,7 @@ def list_users(
     return UsersListResponse(data=user_responses, total=total)
 
 
-@router.post("/users/invite", response_model=UserResponse)
+@router.post("/users/invite", response_model=UserResponse, status_code=201)
 def invite_user(
     payload: UserInviteRequest,
     user: Annotated[dict, Depends(require_permission("users:manage"))],

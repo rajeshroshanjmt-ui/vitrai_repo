@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, joinedload
 from auth import require_roles, require_permission, _write_audit_log
 from database import get_db
 from models import Permission, Role, RolePermission
+from utils import build_permission_responses
 
 router = APIRouter()
 
@@ -69,7 +70,7 @@ def list_permissions(
     return permissions
 
 
-@router.post("/permissions", response_model=PermissionResponse)
+@router.post("/permissions", response_model=PermissionResponse, status_code=201)
 def create_permission(
     payload: PermissionCreateRequest,
     user: Annotated[dict, Depends(require_permission("admin:manage"))],
@@ -105,28 +106,17 @@ def list_roles(
     tenant_id = user.get("tenant_id")
     roles = db.query(Role).filter(Role.tenant_id == tenant_id).options(joinedload(Role.role_permissions)).all()
 
-    role_responses = []
-    for role in roles:
-        permissions = [
-            PermissionResponse(
-                id=rp.permission.id,
-                name=rp.permission.name,
-                resource=rp.permission.resource,
-                action=rp.permission.action,
-                description=rp.permission.description
-            )
-            for rp in role.role_permissions
-        ]
-        role_responses.append(
-            RoleResponse(
-                id=role.id,
-                name=role.name,
-                description=role.description,
-                is_custom=role.is_custom,
-                is_system=role.is_system,
-                permissions=permissions
-            )
+    role_responses = [
+        RoleResponse(
+            id=role.id,
+            name=role.name,
+            description=role.description,
+            is_custom=role.is_custom,
+            is_system=role.is_system,
+            permissions=build_permission_responses(role)
         )
+        for role in roles
+    ]
 
     return role_responses
 
@@ -144,24 +134,13 @@ def get_role(
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
 
-    permissions = [
-        PermissionResponse(
-            id=rp.permission.id,
-            name=rp.permission.name,
-            resource=rp.permission.resource,
-            action=rp.permission.action,
-            description=rp.permission.description
-        )
-        for rp in role.role_permissions
-    ]
-
     return RoleResponse(
         id=role.id,
         name=role.name,
         description=role.description,
         is_custom=role.is_custom,
         is_system=role.is_system,
-        permissions=permissions
+        permissions=build_permission_responses(role)
     )
 
 
@@ -244,24 +223,13 @@ def update_role(
         resource_id=role.id, details={"old_name": old_name, "new_name": role.name}
     )
 
-    permissions = [
-        PermissionResponse(
-            id=rp.permission.id,
-            name=rp.permission.name,
-            resource=rp.permission.resource,
-            action=rp.permission.action,
-            description=rp.permission.description
-        )
-        for rp in role.role_permissions
-    ]
-
     return RoleResponse(
         id=role.id,
         name=role.name,
         description=role.description,
         is_custom=role.is_custom,
         is_system=role.is_system,
-        permissions=permissions
+        permissions=build_permission_responses(role)
     )
 
 
@@ -352,15 +320,4 @@ def get_role_permissions(
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
 
-    permissions = [
-        PermissionResponse(
-            id=rp.permission.id,
-            name=rp.permission.name,
-            resource=rp.permission.resource,
-            action=rp.permission.action,
-            description=rp.permission.description
-        )
-        for rp in role.role_permissions
-    ]
-
-    return permissions
+    return build_permission_responses(role)

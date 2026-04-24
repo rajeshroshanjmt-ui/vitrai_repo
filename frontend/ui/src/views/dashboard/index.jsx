@@ -373,14 +373,24 @@ const Dashboard = () => {
     if (error) {
         return (
             <MainCard>
-                <ErrorBoundary error={error} />
+                <ErrorBoundary>
+                    <Box sx={{ border: 1, borderColor: 'error.main', borderRadius: 2, padding: '20px' }}>
+                        <Typography variant='h6' color='error'>
+                            Error loading dashboard
+                        </Typography>
+                        <Typography variant='body2' color='text.secondary' sx={{ mt: 1 }}>
+                            {error?.message || 'An unexpected error occurred'}
+                        </Typography>
+                    </Box>
+                </ErrorBoundary>
             </MainCard>
         )
     }
 
     return (
-        <MainCard>
-            <Stack sx={{ gap: 3 }}>
+        <ErrorBoundary>
+            <MainCard>
+                <Stack sx={{ gap: 3 }}>
                 <ViewHeader title='Dashboard' description='System overview, trends, quick actions, and service health' />
 
                 <Box
@@ -645,7 +655,8 @@ const Dashboard = () => {
                     </Table>
                 </Paper>
             </Stack>
-        </MainCard>
+            </MainCard>
+        </ErrorBoundary>
     )
 }
 

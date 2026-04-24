@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from auth import require_roles
 from database import get_db
 from models import AuditLog
+from utils import parse_iso_datetime
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -95,22 +96,6 @@ class AgentTaskReportRequest(BaseModel):
     branch_name: str | None = None
     pr_url: str | None = None
     error_summary: str | None = None
-
-
-def _parse_iso_datetime(value: str, field_name: str) -> datetime:
-    normalized = value.strip()
-    if normalized.endswith("Z"):
-        normalized = f"{normalized[:-1]}+00:00"
-    try:
-        parsed = datetime.fromisoformat(normalized)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=400,
-            detail=f"{field_name} must be ISO-8601 datetime (example: 2026-02-19T00:00:00Z)",
-        ) from exc
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
-    return parsed
 
 
 def _normalize_project_path(raw_path: str) -> str:
@@ -437,11 +422,11 @@ def get_agent_task_audit(
         query = query.filter(AuditLog.resource_id == task_id.strip())
 
     if created_from:
-        from_dt = _parse_iso_datetime(created_from, "created_from")
+        from_dt = parse_iso_datetime(created_from, "created_from")
         query = query.filter(AuditLog.created_at >= from_dt)
 
     if created_to:
-        to_dt = _parse_iso_datetime(created_to, "created_to")
+        to_dt = parse_iso_datetime(created_to, "created_to")
         query = query.filter(AuditLog.created_at <= to_dt)
 
     total_count = query.count()

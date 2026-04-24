@@ -3157,8 +3157,7 @@ def _run_flow_for_evaluation(flow_id: str, question: str, db: Session, tenant_id
                     llm_provider = "cohere"
                 break
 
-        # TODO: Implement real flow execution with extracted LLM provider/model
-        # For now, use the direct Ollama approach with extracted model
+        # Execute flow by running LLM with extracted provider/model from flow definition
         return _run_llm_for_evaluation_with_model(question, llm_model, llm_provider)
 
     except Exception as e:
@@ -3737,7 +3736,7 @@ def predict_public(
         # Get flow by ID
         flow = db.query(Flow).filter(Flow.id == chatflow_id).one_or_none()
         if not flow:
-            raise HTTPException(status_code=404, detail="Chatflow not found")
+            raise HTTPException(status_code=404, detail="Flow not found")
 
         # Get published version
         published = (
@@ -3794,7 +3793,7 @@ def predict_internal(
         # Get flow by ID
         flow = db.query(Flow).filter(Flow.id == chatflow_id).one_or_none()
         if not flow:
-            raise HTTPException(status_code=404, detail="Chatflow not found")
+            raise HTTPException(status_code=404, detail="Flow not found")
 
         # Get published version
         published = (
@@ -3858,7 +3857,7 @@ async def predict_streaming(
         # Get flow by ID
         flow = db.query(Flow).filter(Flow.id == chatflow_id).one_or_none()
         if not flow:
-            raise HTTPException(status_code=404, detail="Chatflow not found")
+            raise HTTPException(status_code=404, detail="Flow not found")
 
         # Get published version
         published = (

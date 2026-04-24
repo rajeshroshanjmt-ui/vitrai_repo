@@ -1,6 +1,5 @@
 """Email service for sending invitations and password reset emails."""
 import os
-from typing import Optional
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -24,7 +23,7 @@ def send_email(
     to_email: str,
     subject: str,
     html_content: str,
-    text_content: Optional[str] = None
+    text_content: str | None = None
 ) -> bool:
     """Send email via SMTP.
 

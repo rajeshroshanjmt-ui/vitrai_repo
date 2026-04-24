@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from auth import require_permission
 from database import get_db
 from models import ChatMessage, Flow
+from utils import require_tenant_flow
 
 router = APIRouter()
 
@@ -83,13 +84,7 @@ def list_chat_messages(
     - limit: Messages per page (max 200)
     """
     # Verify chatflow exists and belongs to tenant
-    flow = (
-        db.query(Flow)
-        .filter(Flow.id == chatflow_id, Flow.tenant_id == user["tenant_id"])
-        .one_or_none()
-    )
-    if not flow:
-        raise HTTPException(status_code=404, detail="Chatflow not found")
+    flow = require_tenant_flow(db, chatflow_id, user["tenant_id"])
 
     # Build query
     query = db.query(ChatMessage).filter(ChatMessage.chatflow_id == chatflow_id)
@@ -113,7 +108,7 @@ def list_chat_messages(
     }
 
 
-@router.post("/chatmessage/{chatflow_id}")
+@router.post("/chatmessage/{chatflow_id}", status_code=201)
 def create_chat_message(
     chatflow_id: str,
     body: ChatMessageRequest,
@@ -126,13 +121,7 @@ def create_chat_message(
     Called by prediction endpoints after each exchange to populate history.
     """
     # Verify chatflow exists and belongs to tenant
-    flow = (
-        db.query(Flow)
-        .filter(Flow.id == chatflow_id, Flow.tenant_id == user["tenant_id"])
-        .one_or_none()
-    )
-    if not flow:
-        raise HTTPException(status_code=404, detail="Chatflow not found")
+    flow = require_tenant_flow(db, chatflow_id, user["tenant_id"])
 
     now_utc = datetime.now(timezone.utc)
     message = ChatMessage(
@@ -165,20 +154,14 @@ def delete_chat_messages(
 ) -> dict[str, str]:
     """Delete all chat messages for a chatflow."""
     # Verify chatflow exists and belongs to tenant
-    flow = (
-        db.query(Flow)
-        .filter(Flow.id == chatflow_id, Flow.tenant_id == user["tenant_id"])
-        .one_or_none()
-    )
-    if not flow:
-        raise HTTPException(status_code=404, detail="Chatflow not found")
+    flow = require_tenant_flow(db, chatflow_id, user["tenant_id"])
 
     count = db.query(ChatMessage).filter(ChatMessage.chatflow_id == chatflow_id).delete(
         synchronize_session=False
     )
     db.commit()
 
-    return {"status": "ok", "deleted_count": count}
+    return {"status": "ok", "message": f"Deleted {count} chat messages", "deleted_count": count}
 
 
 @router.put("/chatmessage/abort/{chatflow_id}/{session_id}")
@@ -194,13 +177,7 @@ def abort_chat_session(
     This can be used to cancel ongoing message processing.
     """
     # Verify chatflow exists and belongs to tenant
-    flow = (
-        db.query(Flow)
-        .filter(Flow.id == chatflow_id, Flow.tenant_id == user["tenant_id"])
-        .one_or_none()
-    )
-    if not flow:
-        raise HTTPException(status_code=404, detail="Chatflow not found")
+    flow = require_tenant_flow(db, chatflow_id, user["tenant_id"])
 
     # Find messages for this session
     count = db.query(ChatMessage).filter(
@@ -230,13 +207,7 @@ def save_message_feedback(
     Allows users to provide quality feedback on LLM responses.
     """
     # Verify chatflow exists and belongs to tenant
-    flow = (
-        db.query(Flow)
-        .filter(Flow.id == chatflow_id, Flow.tenant_id == user["tenant_id"])
-        .one_or_none()
-    )
-    if not flow:
-        raise HTTPException(status_code=404, detail="Chatflow not found")
+    flow = require_tenant_flow(db, chatflow_id, user["tenant_id"])
 
     # Find message
     message = (

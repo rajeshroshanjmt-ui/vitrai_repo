@@ -26,6 +26,7 @@ import AddNodes from './AddNodes'
 import ConfirmDialog from '@/ui-component/dialog/ConfirmDialog'
 import ChatPopUp from '@/views/chatmessage/ChatPopUp'
 import VectorStorePopUp from '@/views/vectorstore/VectorStorePopUp'
+import ErrorBoundary from '@/ErrorBoundary'
 import { flowContext } from '@/store/context/ReactFlowContext'
 
 // API
@@ -675,7 +676,7 @@ const Canvas = () => {
     usePrompt('You have unsaved changes! Do you want to navigate away?', canvasDataStore.isDirty)
 
     return (
-        <>
+        <ErrorBoundary>
             <Box>
                 <AppBar
                     enableColorOnDark
@@ -779,7 +780,7 @@ const Canvas = () => {
                 </Box>
                 <ConfirmDialog />
             </Box>
-        </>
+        </ErrorBoundary>
     )
 }
 

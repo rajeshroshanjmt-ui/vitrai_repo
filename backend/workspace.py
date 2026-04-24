@@ -84,7 +84,7 @@ def list_workspaces(
     return WorkspacesListResponse(data=workspaces, total=len(workspaces))
 
 
-@router.post("/workspaces", response_model=WorkspaceResponse)
+@router.post("/workspaces", response_model=WorkspaceResponse, status_code=201)
 def create_workspace(
     payload: WorkspaceCreate,
     user: Annotated[dict, Depends(require_permission("workspaces:manage"))],

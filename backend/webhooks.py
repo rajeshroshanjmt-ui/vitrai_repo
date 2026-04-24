@@ -170,7 +170,7 @@ def get_webhook(
     return _serialize_webhook(webhook)
 
 
-@router.post("/webhooks")
+@router.post("/webhooks", status_code=201)
 def create_webhook(
     body: WebhookCreateRequest,
     db: Session = Depends(get_db),

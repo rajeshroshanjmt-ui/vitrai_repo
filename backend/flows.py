@@ -7,7 +7,7 @@ from typing import Annotated, Any
 from uuid import uuid4
 
 import redis
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, ConfigDict
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from auth import get_current_user, require_roles, require_permission, _get_active_workspace
 from database import get_db
 from models import AuditLog, ExecutionLog, Flow, FlowVersion, IngestionJob, Tenant, User, UserPreference
+from utils import parse_iso_datetime
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -32,6 +33,7 @@ INGESTION_DLQ = os.getenv("INGESTION_DLQ", "ingestion_dlq")
 PLAN_LIMIT = int(os.getenv("TENANT_TOKEN_PLAN_LIMIT", "200000"))
 BLOCKING_INGEST_STATUSES = {"queued", "processing", "retrying"}
 USAGE_DAILY_DAYS = int(os.getenv("USAGE_DAILY_DAYS", "7"))
+MAX_PAGE_LIMIT = 200
 SUPPORTED_USAGE_WINDOWS = {7, 30}
 SLO_EXECUTE_P95_MS = int(os.getenv("SLO_EXECUTE_P95_MS", "300"))
 TOOL_STATE_PREF_KEY = "tool_states"
@@ -122,6 +124,7 @@ def _require_tenant_flow(db: Session, tenant_id: str, flow_id: str) -> Flow:
 
 
 def _monthly_tokens(db: Session, tenant_id: str) -> int:
+    """Get total tokens used by tenant in current calendar month."""
     month_start = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     total = (
         db.query(func.coalesce(func.sum(ExecutionLog.tokens_used), 0))
@@ -177,7 +180,7 @@ def _ensure_tenant_user(db: Session, user: dict) -> None:
     tenant_id = user.get("tenant_id")
     user_id = user.get("user_id")
     if not tenant_id or not user_id:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
     user_row = db.get(User, user_id)
     if user_row is None:
@@ -267,22 +270,6 @@ def _persist_user_tool_states(
         "states": normalized,
         "updated_at": preference.updated_at.isoformat() if preference.updated_at else None,
     }
-
-
-def _parse_iso_datetime(value: str, field_name: str) -> datetime:
-    normalized = value.strip()
-    if normalized.endswith("Z"):
-        normalized = f"{normalized[:-1]}+00:00"
-    try:
-        parsed = datetime.fromisoformat(normalized)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=400,
-            detail=f"{field_name} must be ISO-8601 datetime (example: 2026-02-19T00:00:00Z)",
-        ) from exc
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
-    return parsed
 
 
 def _compute_percentile(values: list[float], percentile: float) -> float:
@@ -459,7 +446,7 @@ def _collect_queue_depth() -> dict[str, int]:
     }
 
 
-@router.post("/create", response_model=APIResponse)
+@router.post("/create", response_model=APIResponse, status_code=201)
 def create_flow(
     body: FlowCreateRequest,
     db: Session = Depends(get_db),
@@ -646,7 +633,7 @@ def execute_flow(
     return _success_payload({"execution_log_id": execution.id, "status": "queued"})
 
 
-@router.post("/{flow_id}/documents")
+@router.post("/{flow_id}/documents", status_code=202)
 def ingest_documents(
     flow_id: str,
     body: IngestRequest,
@@ -710,7 +697,7 @@ def get_ingestions(
         db.query(IngestionJob)
         .filter(IngestionJob.tenant_id == user["tenant_id"], IngestionJob.flow_id == flow.id)
         .order_by(IngestionJob.created_at.desc())
-        .limit(max(1, min(limit, 200)))
+        .limit(max(1, min(limit, MAX_PAGE_LIMIT)))
         .all()
     )
 
@@ -773,7 +760,7 @@ def get_logs(
         .join(Flow, Flow.id == FlowVersion.flow_id)
         .filter(Flow.tenant_id == user["tenant_id"])
         .order_by(ExecutionLog.created_at.desc())
-        .limit(max(1, min(limit, 200)))
+        .limit(max(1, min(limit, MAX_PAGE_LIMIT)))
         .all()
     )
 
@@ -825,7 +812,7 @@ def delete_log(
     )
     db.commit()
 
-    return {"status": "deleted"}
+    return {"status": "ok", "message": "Execution log deleted"}
 
 
 @router.get("/list", response_model=dict)
@@ -836,7 +823,7 @@ def list_flows(
 ) -> dict[str, Any]:
     # Note: workspace_id filtering would be applied here if the Flow table had that column
     # For now, using tenant_id for isolation which is sufficient for multi-tenant apps
-    safe_limit = max(1, min(limit, 200))
+    safe_limit = max(1, min(limit, MAX_PAGE_LIMIT))
     flows = (
         db.query(Flow)
         .filter(Flow.tenant_id == user["tenant_id"])
@@ -1051,7 +1038,7 @@ def delete_flow(
     )
     db.delete(flow)
     db.commit()
-    return _success_payload({"status": "deleted", "flow_id": flow_id})
+    return {"status": "ok", "message": "Flow deleted", "flow_id": flow_id}
 
 
 @router.get("/dlq/{dlq_type}")
@@ -1061,7 +1048,7 @@ def list_dlq_jobs(
     user: Annotated[dict, Depends(require_permission("admin:manage"))] = None,
 ) -> dict[str, Any]:
     dlq_name, _ = _resolve_dlq(dlq_type)
-    items = redis_client.lrange(dlq_name, 0, max(0, min(limit, 200)) - 1)
+    items = redis_client.lrange(dlq_name, 0, max(0, min(limit, MAX_PAGE_LIMIT)) - 1)
 
     jobs: list[dict[str, Any]] = []
     for index, raw in enumerate(items):
@@ -1211,7 +1198,8 @@ def delete_dlq_job(
         logger.exception("Failed to persist audit log for DLQ delete")
 
     return {
-        "status": "deleted",
+        "status": "ok",
+        "message": "DLQ entry deleted",
         "dlq_type": dlq_type,
         "queue": dlq_name,
         "redis_index": redis_index,
@@ -1229,7 +1217,7 @@ def get_audit_logs(
     db: Session = Depends(get_db),
     user: Annotated[dict, Depends(require_permission("admin:manage"))] = None,
 ) -> dict[str, Any]:
-    safe_limit = max(1, min(limit, 200))
+    safe_limit = max(1, min(limit, MAX_PAGE_LIMIT))
     safe_offset = max(0, offset)
 
     query = db.query(AuditLog).filter(AuditLog.tenant_id == user["tenant_id"])
@@ -1238,10 +1226,10 @@ def get_audit_logs(
     if actor_email:
         query = query.filter(AuditLog.actor_email == actor_email.strip())
     if created_from:
-        from_dt = _parse_iso_datetime(created_from, "created_from")
+        from_dt = parse_iso_datetime(created_from, "created_from")
         query = query.filter(AuditLog.created_at >= from_dt)
     if created_to:
-        to_dt = _parse_iso_datetime(created_to, "created_to")
+        to_dt = parse_iso_datetime(created_to, "created_to")
         query = query.filter(AuditLog.created_at <= to_dt)
 
     total_count = query.count()
