@@ -48,7 +48,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           'mui-core': ['@mui/material', '@mui/icons-material'],
-          'react-flow': ['react-flow-renderer'],
+          'react-flow': ['reactflow'],
           'tabler-icons': ['@tabler/icons-react']
         }
       }
