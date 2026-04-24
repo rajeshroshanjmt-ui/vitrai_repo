@@ -1819,7 +1819,7 @@ def _process_loader_text(loader: dict[str, Any]) -> str:
                     try:
                         text = body.decode('utf-8')
                         chunks.append(f"# {key}\n{text}")
-                    except:
+                    except (UnicodeDecodeError, AttributeError):
                         chunks.append(f"# {key}\n[Binary content]")
                 except Exception as e:
                     print(f"Warning: Failed to read S3 object {key}: {e}")
@@ -3251,7 +3251,7 @@ def create_evaluation(
         try:
             eval_resource = _get_resource(db, user["tenant_id"], "evaluator", eval_id)
             evaluators.append(eval_resource.payload or {})
-        except:
+        except Exception:
             pass  # Evaluator not found, skip
 
     # Get chatflow ID if provided

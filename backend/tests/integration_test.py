@@ -282,7 +282,7 @@ class VetraiIntegrationTest:
             try:
                 self.request("DELETE", f"/users/{self.test_user_id}", token=self.admin_token)
                 self.log("✓ Test user deleted", "INFO")
-            except:
+            except Exception:
                 pass
 
         # Delete test workspace
@@ -290,7 +290,7 @@ class VetraiIntegrationTest:
             try:
                 self.request("DELETE", f"/workspaces/{self.test_workspace_id}", token=self.admin_token)
                 self.log("✓ Test workspace deleted", "INFO")
-            except:
+            except Exception:
                 pass
 
     def run_all(self):

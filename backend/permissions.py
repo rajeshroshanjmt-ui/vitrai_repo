@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated
 from uuid import uuid4
 
@@ -12,6 +13,7 @@ from models import Permission, Role, RolePermission
 from utils import build_permission_responses
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 class PermissionCreateRequest(BaseModel):

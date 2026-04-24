@@ -1,4 +1,5 @@
 """Chat message history endpoints for chatflows and agentflows."""
+import logging
 from typing import Annotated, Any
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -13,6 +14,7 @@ from models import ChatMessage, Flow
 from utils import require_tenant_flow
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 class ChatMessageRequest(BaseModel):

@@ -2,6 +2,7 @@
 import hmac
 import hashlib
 import json
+import logging
 import secrets
 from typing import Annotated, Any
 from datetime import datetime, timezone
@@ -17,6 +18,7 @@ from database import get_db
 from models import Webhook, Flow
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 # Request timeout for webhook deliveries
 WEBHOOK_TIMEOUT = 10.0

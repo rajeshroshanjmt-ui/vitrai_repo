@@ -261,7 +261,7 @@ class DecodeTokenWithBlacklistTests(unittest.TestCase):
 
             try:
                 auth.decode_token(self.token)
-            except:
+            except Exception:
                 pass
 
             # Should have checked blacklist
