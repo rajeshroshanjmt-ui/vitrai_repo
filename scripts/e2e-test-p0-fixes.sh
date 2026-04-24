@@ -15,8 +15,8 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-API_BASE="http://localhost:8000/api"
-FRONTEND_URL="http://localhost:3000"
+API_BASE="http://localhost/api"
+FRONTEND_URL="http://localhost"
 TENANT_ID="00000000-0000-0000-0000-000000000001"
 
 TESTS_PASSED=0

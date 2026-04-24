@@ -1,21 +1,23 @@
 from typing import Annotated
 from uuid import uuid4
 import csv
+import logging
 from io import StringIO
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse, StreamingResponse
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 import os
-from auth import require_roles, require_permission, _write_audit_log, create_reset_token
+from auth import require_roles, require_permission, _write_audit_log, create_reset_token, ALLOWED_ROLES
 from email_service import send_invitation_email
 from database import get_db
 from models import User, Tenant
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 class UserInviteRequest(BaseModel):
@@ -23,11 +25,25 @@ class UserInviteRequest(BaseModel):
     role: str = "viewer"
     full_name: str | None = None
 
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: str) -> str:
+        if v not in ALLOWED_ROLES:
+            raise ValueError(f"role must be one of {ALLOWED_ROLES}")
+        return v
+
 
 class UserUpdateRequest(BaseModel):
     role: str
     full_name: str | None = None
     is_active: bool | None = None
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: str) -> str:
+        if v not in ALLOWED_ROLES:
+            raise ValueError(f"role must be one of {ALLOWED_ROLES}")
+        return v
 
 
 class UserResponse(BaseModel):
@@ -59,8 +75,10 @@ def list_users(
     """List all users in the tenant. Requires users:manage permission."""
     tenant_id = user.get("tenant_id")
 
-    users = db.query(User).filter(User.tenant_id == tenant_id).offset(skip).limit(limit).all()
-    total = db.query(User).filter(User.tenant_id == tenant_id).count()
+    # Build base query once
+    base_query = db.query(User).filter(User.tenant_id == tenant_id)
+    total = base_query.count()
+    users = base_query.offset(skip).limit(limit).all()
 
     user_responses = []
     for u in users:
@@ -124,6 +142,8 @@ def invite_user(
     )
     db.add(new_user)
     db.flush()  # Flush to get the user ID
+
+    logger.info(f"User invited: user_id={new_user.id}, email={email}, role={payload.role}, tenant_id={tenant_id}, actor={actor_email}")
 
     # Generate invitation token (valid for 1 hour)
     invitation_token = create_reset_token(new_user.id)
@@ -190,6 +210,8 @@ def update_user(
 
     db.commit()
 
+    logger.info(f"User updated: user_id={user_id}, changes={audit_details}, tenant_id={tenant_id}, actor={actor_email}")
+
     if audit_details:
         _write_audit_log(
             db, tenant_id, actor_user_id, actor_email, "user.updated", "user",
@@ -245,6 +267,8 @@ def delete_user(
             raise HTTPException(status_code=400, detail="Cannot delete the last admin user")
 
     db.delete(target_user)
+
+    logger.info(f"User deleted: user_id={user_id}, email={target_user.email}, tenant_id={tenant_id}, actor={actor_email}")
 
     # Write audit log
     _write_audit_log(

@@ -1,10 +1,13 @@
 import os
+import logging
 
 import redis
 from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
+
+logger = logging.getLogger(__name__)
 
 from agent_guardrails import router as agent_router
 from auth import router as auth_router
@@ -20,14 +23,19 @@ from webhooks import router as webhooks_router
 from database import Base, engine
 from middleware import APIKeyMiddleware
 
+# Set environment first
+APP_ENV = os.getenv("APP_ENV", "development").strip().lower()
+
+# Enable/disable docs based on environment
+docs_url = "/docs" if APP_ENV in {"dev", "development", "local", "test", "testing"} else None
+redoc_url = "/redoc" if APP_ENV in {"dev", "development", "local", "test", "testing"} else None
+
 app = FastAPI(
     title="Vetrai Backend",
     description="Vetrai AI Workflow Platform API",
     version="1.0.0",
-    # Disable problematic automatic docs, API is fully functional
-    openapi_url=None,
-    docs_url=None,
-    redoc_url=None
+    docs_url=docs_url,
+    redoc_url=redoc_url
 )
 
 readiness_redis = redis.Redis(
@@ -37,7 +45,6 @@ readiness_redis = redis.Redis(
 )
 
 # CORS configuration: restrict to specific origins
-APP_ENV = os.getenv("APP_ENV", "development").strip().lower()
 if APP_ENV in {"dev", "development", "local", "test", "testing"}:
     allowed_origins = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost", "http://127.0.0.1"]
 else:
@@ -113,14 +120,16 @@ def health_ready() -> dict:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
         checks["database"] = "ok"
-    except Exception:
+    except Exception as e:
+        logger.error(f"Health check failed for database: {e}")
         checks["database"] = "error"
         status = "degraded"
 
     try:
         readiness_redis.ping()
         checks["redis"] = "ok"
-    except Exception:
+    except Exception as e:
+        logger.error(f"Health check failed for redis: {e}")
         checks["redis"] = "error"
         status = "degraded"
 

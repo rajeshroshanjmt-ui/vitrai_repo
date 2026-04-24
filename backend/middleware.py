@@ -2,10 +2,11 @@
 import logging
 from typing import Callable
 
-from fastapi import Request
+from fastapi import Request, HTTPException
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy.orm import Session
+from uuid import uuid4
 
 from database import SessionLocal
 from models import TenantResource
@@ -43,8 +44,8 @@ async def _validate_api_key(key: str, db: Session) -> dict | None:
         return None
 
     except Exception as e:
-        logger.error(f"Error validating API key: {str(e)}")
-        return None
+        logger.error(f"API key validation database error: {str(e)}")
+        raise HTTPException(status_code=503, detail="Service temporarily unavailable")
 
 
 class APIKeyMiddleware(BaseHTTPMiddleware):
@@ -59,6 +60,10 @@ class APIKeyMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: Callable) -> JSONResponse:
         """Validate API key if request is to protected endpoint."""
+        # Inject/generate correlation ID for request tracing
+        request_id = request.headers.get("x-request-id") or str(uuid4())
+        request.state.request_id = request_id
+
         path = request.url.path
 
         # Check if this is a protected endpoint
@@ -98,4 +103,6 @@ class APIKeyMiddleware(BaseHTTPMiddleware):
 
         # Continue to next middleware/route handler
         response = await call_next(request)
+        # Inject request ID into response headers
+        response.headers["x-request-id"] = request_id
         return response

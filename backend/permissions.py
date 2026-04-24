@@ -4,13 +4,20 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from auth import require_roles, require_permission, _write_audit_log
 from database import get_db
 from models import Permission, Role, RolePermission
 
 router = APIRouter()
+
+
+class PermissionCreateRequest(BaseModel):
+    name: str
+    resource: str
+    action: str
+    description: str | None = None
 
 
 class PermissionResponse(BaseModel):
@@ -64,7 +71,7 @@ def list_permissions(
 
 @router.post("/permissions", response_model=PermissionResponse)
 def create_permission(
-    payload: PermissionResponse,
+    payload: PermissionCreateRequest,
     user: Annotated[dict, Depends(require_permission("admin:manage"))],
     db: Session = Depends(get_db)
 ) -> PermissionResponse:
@@ -96,7 +103,7 @@ def list_roles(
 ) -> list[RoleResponse]:
     """List all roles in the tenant. Requires admin role."""
     tenant_id = user.get("tenant_id")
-    roles = db.query(Role).filter(Role.tenant_id == tenant_id).all()
+    roles = db.query(Role).filter(Role.tenant_id == tenant_id).options(joinedload(Role.role_permissions)).all()
 
     role_responses = []
     for role in roles:

@@ -1,5 +1,6 @@
 from typing import Annotated
 from uuid import uuid4
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -10,6 +11,7 @@ from database import get_db
 from models import TenantResource, User, UserPreference
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 class WorkspaceCreate(BaseModel):
@@ -59,11 +61,12 @@ def list_workspaces(
         .all()
     )
 
+    # Query user count once (not per workspace)
+    user_count = db.query(User).filter(User.tenant_id == tenant_id).count()
+
     workspaces = []
     for resource in resources:
         payload = resource.payload or {}
-        # Count users in this workspace (simplified: count all users for now)
-        user_count = db.query(User).filter(User.tenant_id == tenant_id).count()
 
         workspaces.append(
             WorkspaceResponse(
@@ -106,6 +109,8 @@ def create_workspace(
         updated_by=actor_user_id
     )
     db.add(workspace_resource)
+
+    logger.info(f"Workspace created: workspace_id={workspace_id}, name={payload.name}, tenant_id={tenant_id}, actor={actor_email}")
 
     # Write audit log
     _write_audit_log(
@@ -161,6 +166,8 @@ def update_workspace(
 
     workspace_resource.updated_by = actor_user_id
     db.commit()
+
+    logger.info(f"Workspace updated: workspace_id={workspace_id}, name={payload.name}, tenant_id={tenant_id}, actor={actor_email}")
 
     # Write audit log
     _write_audit_log(
@@ -219,6 +226,8 @@ def delete_workspace(
         raise HTTPException(status_code=400, detail="Cannot delete the only workspace")
 
     db.delete(workspace_resource)
+
+    logger.info(f"Workspace deleted: workspace_id={workspace_id}, name={workspace_resource.name}, tenant_id={tenant_id}, actor={actor_email}")
 
     # Write audit log
     _write_audit_log(

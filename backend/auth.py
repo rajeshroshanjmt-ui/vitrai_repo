@@ -118,7 +118,8 @@ def _add_token_to_blacklist(token: str, ttl_minutes: int) -> bool:
         try:
             claims = jwt.decode(token, SECRET, algorithms=[ALGORITHM])
             token_id = claims.get("jti", token[:16])
-        except:
+        except Exception as e:
+            logger.warning(f"JTI extraction failed, using token prefix: {e}")
             token_id = token[:16]
 
         key = f"{TOKEN_BLACKLIST_PREFIX}{token_id}"

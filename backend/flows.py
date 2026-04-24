@@ -8,7 +8,7 @@ from uuid import uuid4
 
 import redis
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -44,7 +44,7 @@ DEFAULT_TOOL_STATES = {
 
 
 class FlowCreateRequest(BaseModel):
-    name: str
+    name: str = Field(..., min_length=1, max_length=255)
     json_definition: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -63,6 +63,8 @@ class ExecuteRequest(BaseModel):
     llm_provider: str | None = None
     llm_model: str | None = None
 
+    model_config = ConfigDict(extra="forbid")
+
 
 class DocumentChunk(BaseModel):
     text: str
@@ -78,6 +80,16 @@ class DLQReplayRequest(BaseModel):
     redis_index: int = Field(ge=0)
     keep_in_dlq: bool = False
     target_queue: str | None = None
+
+
+class APIResponse(BaseModel):
+    """Generic API response wrapper."""
+    success: bool
+    data: dict[str, Any] | None = None
+    error: str | None = None
+
+    class Config:
+        extra = "allow"  # Allow additional fields from _success_payload expansion
 
 
 class ToolStateUpdateRequest(BaseModel):
@@ -110,7 +122,7 @@ def _require_tenant_flow(db: Session, tenant_id: str, flow_id: str) -> Flow:
 
 
 def _monthly_tokens(db: Session, tenant_id: str) -> int:
-    month_start = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    month_start = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     total = (
         db.query(func.coalesce(func.sum(ExecutionLog.tokens_used), 0))
         .join(FlowVersion, FlowVersion.id == ExecutionLog.flow_version_id)
@@ -447,7 +459,7 @@ def _collect_queue_depth() -> dict[str, int]:
     }
 
 
-@router.post("/create")
+@router.post("/create", response_model=APIResponse)
 def create_flow(
     body: FlowCreateRequest,
     db: Session = Depends(get_db),
@@ -502,7 +514,7 @@ def save_draft(
     return _success_payload({"flow_id": flow.id, "draft_version_id": version.id, "version": next_version})
 
 
-@router.post("/{flow_id}/publish")
+@router.post("/{flow_id}/publish", response_model=APIResponse)
 def publish_flow(
     flow_id: str,
     body: FlowPublishRequest,
@@ -542,7 +554,7 @@ def publish_flow(
     return _success_payload({"flow_id": flow.id, "published_version": target.version, "flow_version_id": target.id})
 
 
-@router.post("/{flow_id}/execute")
+@router.post("/{flow_id}/execute", response_model=APIResponse)
 def execute_flow(
     flow_id: str,
     body: ExecuteRequest,
@@ -816,7 +828,7 @@ def delete_log(
     return {"status": "deleted"}
 
 
-@router.get("/list")
+@router.get("/list", response_model=dict)
 def list_flows(
     limit: int = 50,
     db: Session = Depends(get_db),
