@@ -15,7 +15,7 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-RUN npm install -g http-server
+RUN apk add --no-cache curl && npm install -g http-server
 
 COPY --from=builder /app/dist ./dist
 
