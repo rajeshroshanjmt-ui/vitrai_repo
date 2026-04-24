@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 from typing import Annotated, Any
 from uuid import uuid4
@@ -12,6 +13,7 @@ from database import get_db
 from models import AuditLog, Tenant, TenantResource
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 ALLOWED_RESOURCE_TYPES = {
     "agentflow",
@@ -248,6 +250,7 @@ def create_resource(
     db.add(resource)
     _append_audit_log(db, user, f"resource_create:{normalized_type}", resource)
     db.commit()
+    logger.info(f"Resource created: id={resource.id}, type={normalized_type}, name={resource.name}, tenant_id={user['tenant_id']}")
 
     response = _serialize_resource(resource)
     # For api_key: include the raw key ONCE in the creation response only
@@ -322,10 +325,11 @@ def delete_resource(
     _append_audit_log(db, user, f"resource_delete:{normalized_type}", resource)
     db.delete(resource)
     db.commit()
+    logger.info(f"Resource deleted: id={resource_id}, type={normalized_type}, tenant_id={user['tenant_id']}")
     return {
-        "status": "deleted",
+        "status": "ok",
+        "message": f"{normalized_type} resource deleted",
         "resource_id": resource_id,
-        "resource_type": normalized_type,
     }
 
 
