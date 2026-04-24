@@ -35,7 +35,7 @@ services:
   frontend:
     build:
       context: ./frontend/ui
-      dockerfile: Dockerfile.static
+      dockerfile: Dockerfile
     <<: *default-restart
     networks:
       - app
