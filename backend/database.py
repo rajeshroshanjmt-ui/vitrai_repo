@@ -1,3 +1,11 @@
+"""Database connection and session management.
+
+Provides:
+- SQLAlchemy engine initialization with connection pooling
+- Session factory for dependency injection
+- Declarative base for ORM models
+- Database session dependency for FastAPI endpoints
+"""
 import os
 from typing import Generator
 

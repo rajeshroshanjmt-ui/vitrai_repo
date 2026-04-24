@@ -1,3 +1,12 @@
+"""Agent action guardrails and safety evaluation endpoints.
+
+Enforces policies for:
+- Tool usage restrictions (allowed tools, protected paths)
+- Credential and secret protection (no .pem, .key, .env files)
+- Infrastructure protection (nginx, postgres configuration)
+- Risk assessment (low, medium, high, critical)
+- Action evaluation and approval workflow
+"""
 import logging
 import os
 import re

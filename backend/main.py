@@ -1,3 +1,12 @@
+"""FastAPI application entrypoint for Vetrai backend API.
+
+Configures:
+- Multi-tenant authentication and authorization
+- CORS and middleware pipeline
+- Health checks and readiness probes
+- API documentation endpoints (conditional)
+- All domain routers (flows, users, workspace, etc.)
+"""
 import os
 import logging
 
