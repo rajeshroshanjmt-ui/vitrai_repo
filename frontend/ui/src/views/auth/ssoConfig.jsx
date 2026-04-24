@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
 import { useDispatch, useSelector } from 'react-redux'
 import { closeSnackbar as closeSnackbarAction, enqueueSnackbar as enqueueSnackbarAction } from '@/store/actions'
 
@@ -1029,5 +1030,7 @@ const SSOConfigPage = () => {
         </>
     )
 }
+
+SSOConfigPage.propTypes = {}
 
 export default SSOConfigPage

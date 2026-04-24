@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useContext } from 'react'
+import PropTypes from 'prop-types'
 import ReactFlow, { addEdge, Controls, Background, useNodesState, useEdgesState } from 'reactflow'
 import 'reactflow/dist/style.css'
 
@@ -783,5 +784,7 @@ const Canvas = () => {
         </ErrorBoundary>
     )
 }
+
+Canvas.propTypes = {}
 
 export default Canvas

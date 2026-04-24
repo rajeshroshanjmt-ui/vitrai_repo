@@ -43,15 +43,15 @@ const normalizeWorkspace = (workspace, organizationId, user) => {
     const now = new Date().toISOString()
     return {
         id: workspace.id,
-        organizationId,
+        organization_id: organizationId,
         name: workspace.name || defaultWorkspaceName(organizationId),
         description: workspace.description || '',
-        userCount: Number(workspace.userCount || 1),
-        isOrgDefault: Boolean(workspace.isOrgDefault || workspace.id === organizationId),
-        createdBy: workspace.createdBy || user.id,
-        updatedBy: workspace.updatedBy || user.id,
-        createdDate: workspace.createdDate || now,
-        updatedDate: workspace.updatedDate || now
+        user_count: Number(workspace.user_count || workspace.userCount || 1),
+        is_org_default: Boolean(workspace.is_org_default || workspace.isOrgDefault || workspace.id === organizationId),
+        created_by: workspace.created_by || workspace.createdBy || user.id,
+        updated_by: workspace.updated_by || workspace.updatedBy || user.id,
+        created_date: workspace.created_date || workspace.createdDate || now,
+        updated_date: workspace.updated_date || workspace.updatedDate || now
     }
 }
 
@@ -65,8 +65,8 @@ const ensureWorkspacesForOrg = (organizationId, user) => {
                 id: organizationId,
                 name: defaultWorkspaceName(organizationId),
                 description: 'Default workspace',
-                userCount: 1,
-                isOrgDefault: true
+                user_count: 1,
+                is_org_default: true
             },
             organizationId,
             user
@@ -205,10 +205,10 @@ const createWorkspace = async (body = {}) => {
                     id,
                     name: body.name || `Workspace ${workspaces.length + 1}`,
                     description: body.description || '',
-                    userCount: 1,
-                    isOrgDefault: false,
-                    createdBy: body.createdBy || user.id,
-                    updatedBy: body.createdBy || user.id
+                    user_count: 1,
+                    is_org_default: false,
+                    created_by: body.created_by || user.id,
+                    updated_by: body.created_by || user.id
                 },
                 organizationId,
                 user
@@ -232,8 +232,8 @@ const updateWorkspace = async (body = {}) => {
                           ...workspace,
                           name: body.name || workspace.name,
                           description: body.description ?? workspace.description,
-                          updatedBy: body.updatedBy || user.id,
-                          updatedDate: new Date().toISOString()
+                          updated_by: body.updated_by || user.id,
+                          updated_date: new Date().toISOString()
                       }
                     : workspace
             )

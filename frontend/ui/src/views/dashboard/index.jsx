@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import PropTypes from 'prop-types'
 import moment from 'moment'
 import { useNavigate } from 'react-router-dom'
 
@@ -659,5 +660,7 @@ const Dashboard = () => {
         </ErrorBoundary>
     )
 }
+
+Dashboard.propTypes = {}
 
 export default Dashboard

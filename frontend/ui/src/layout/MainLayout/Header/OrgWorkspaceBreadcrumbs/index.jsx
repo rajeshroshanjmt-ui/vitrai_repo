@@ -145,7 +145,7 @@ const OrgWorkspaceBreadcrumbs = () => {
         try {
             const response = await userApi.getWorkspacesByUserId(user.id)
             const workspaces = response.data
-            const filteredAssignedWorkspaces = workspaces.filter((item) => item.workspace.organizationId === orgId)
+            const filteredAssignedWorkspaces = workspaces.filter((item) => item.workspace.organization_id === orgId)
             const formattedAssignedWorkspaces = filteredAssignedWorkspaces.map((item) => ({
                 id: item.workspaceId,
                 name: item.workspace.name
@@ -179,7 +179,7 @@ const OrgWorkspaceBreadcrumbs = () => {
     useEffect(() => {
         if (getWorkspacesByUserIdApi.data) {
             const filteredAssignedWorkspaces = getWorkspacesByUserIdApi.data.filter(
-                (item) => item.workspace.organizationId === activeOrganizationId
+                (item) => item.workspace.organization_id === activeOrganizationId
             )
             const formattedAssignedWorkspaces = filteredAssignedWorkspaces.map((item) => ({
                 id: item.workspaceId,

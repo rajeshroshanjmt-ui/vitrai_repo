@@ -113,19 +113,19 @@ function ShowWorkspaceRow(props) {
                     {truncateString(props.workspace?.description || '', 200)}
                 </StyledTableCell>
                 <StyledTableCell sx={{ textAlign: 'center' }}>
-                    {props.workspace.userCount}{' '}
-                    {props.workspace.userCount > 0 && (
+                    {props.workspace.user_count}{' '}
+                    {props.workspace.user_count > 0 && (
                         <IconButton
                             aria-label='expand row'
                             size='small'
                             color='inherit'
                             onClick={() => handleViewWorkspaceUsers(props.workspace.id)}
                         >
-                            {props.workspace.userCount > 0 && open ? <IconEyeOff /> : <IconEye />}
+                            {props.workspace.user_count > 0 && open ? <IconEyeOff /> : <IconEye />}
                         </IconButton>
                     )}
                 </StyledTableCell>
-                <StyledTableCell>{moment(props.workspace.updatedDate).format('MMMM Do YYYY, hh:mm A')}</StyledTableCell>
+                <StyledTableCell>{moment(props.workspace.updated_date).format('MMMM Do YYYY, hh:mm A')}</StyledTableCell>
                 <StyledTableCell>
                     {props.workspace.name !== 'Default Workspace' && (
                         <PermissionIconButton
@@ -143,7 +143,7 @@ function ShowWorkspaceRow(props) {
                         </IconButton>
                     </Link>
                     {props.workspace.name !== 'Default Workspace' &&
-                        (props.workspace.userCount > 1 || props.workspace.isOrgDefault === true ? (
+                        (props.workspace.user_count > 1 || props.workspace.is_org_default === true ? (
                             <IconButton title='Delete' disabled={true} color='error' onClick={() => props.onDeleteClick(props.workspace)}>
                                 <IconTrashOff />
                             </IconButton>

@@ -28,11 +28,11 @@ class WorkspaceResponse(BaseModel):
     id: str
     name: str
     description: str | None = None
-    organizationId: str
-    userCount: int
-    isOrgDefault: bool = False
-    createdDate: str | None = None
-    updatedDate: str | None = None
+    organization_id: str
+    user_count: int
+    is_org_default: bool = False
+    created_date: str | None = None
+    updated_date: str | None = None
 
     class Config:
         from_attributes = True
@@ -73,11 +73,11 @@ def list_workspaces(
                 id=resource.id,
                 name=resource.name,
                 description=payload.get("description"),
-                organizationId=tenant_id,
-                userCount=user_count,
-                isOrgDefault=payload.get("isOrgDefault", False),
-                createdDate=resource.created_at.isoformat() if resource.created_at else None,
-                updatedDate=resource.updated_at.isoformat() if resource.updated_at else None
+                organization_id=tenant_id,
+                user_count=user_count,
+                is_org_default=payload.get("isOrgDefault", False),
+                created_date=resource.created_at.isoformat() if resource.created_at else None,
+                updated_date=resource.updated_at.isoformat() if resource.updated_at else None
             )
         )
 
